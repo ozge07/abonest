@@ -1,0 +1,86 @@
+name: CI
+
+# Her PR'da ve main'e girişte çalışıyor. Amaç: bozuk kod main'e giremesin.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # Aynı dal için yeni push geldiğinde eskisini iptal et — boşuna dakika
+  # harcamıyoruz (ücretsiz katmanda kota var).
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kalite:
+    runs-on: ubuntu-latest
+
+    # Entegrasyon testleri gerçek PostgreSQL istiyor; taklit (mock) veritabanı
+    # kısıtları ve indeksleri doğrulayamaz — bu projede idempotency tam da
+    # kısıtlara dayandığı için gerçek veritabanı şart.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: abonelik_takip_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/abonelik_takip_test?schema=public
+      SESSION_SECRET: ci-icin-en-az-otuz-iki-karakter-uzunlugunda
+      CRON_SECRET: ci-icin-en-az-otuz-iki-karakter-uzunlugunda-2
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: citext eklentisi
+        run: psql "$DATABASE_URL" -c 'CREATE EXTENSION IF NOT EXISTS citext;'
+
+      - name: Şemayı uygula
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Prisma istemcisini üret
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Tip denetimi
+        run: npm run typecheck
+
+      - name: Testler
+        run: npm test
+
+      - name: Derleme
+        run: npm run build
+
+  guvenlik:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Yüksek ve kritik açıklarda başarısız oluyor. Düşük seviyedekiler
+      # derlemeyi durdurmuyor; yoksa gürültü yüzünden kimse bakmaz.
+      - name: Bağımlılık açığı taraması
+        run: npm audit --audit-level=high

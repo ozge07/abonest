@@ -1,0 +1,257 @@
+// Şema tasarımının gerekçeleri: docs/database.md
+//
+// Üç kural bu dosyada tekrar tekrar görünüyor:
+//   1. Para BigInt minor unit — ondalık yok
+//   2. Fatura tarihleri @db.Date — anlık değil takvim günü
+//   3. Idempotency uygulama kodunda değil, @@unique kısıtlarında
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7'de bağlantı adresi şemada değil, prisma.config.ts içinde.
+datasource db {
+  provider = "postgresql"
+}
+
+enum BillingCycle {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum OccurrenceStatus {
+  SCHEDULED
+  PAID
+  SKIPPED
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  PAYMENT_TODAY
+  SPENDING_SUMMARY
+  SUBSCRIPTION_EXPIRED
+}
+
+model User {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  email           String    @unique @db.Citext
+  passwordHash    String
+  name            String
+  currency        String    @db.Char(3)
+  timezone        String    @default("Europe/Istanbul")
+  locale          String    @default("tr")
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  // Hesap silme geri alınabilir: 30 gün sonra temizlik işi kalıcı siliyor.
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions              Session[]
+  categories            Category[]
+  subscriptions         Subscription[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  verificationTokens    EmailVerificationToken[]
+  passwordResetTokens   PasswordResetToken[]
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @db.Uuid
+  // Ham token saklanmıyor, yalnızca SHA-256 özeti. Veritabanı sızsa bile
+  // oturumlar ele geçirilemez.
+  tokenHash  String   @unique
+  userAgent  String?
+  ipHash     String?
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Category {
+  id       String  @id @default(uuid(7)) @db.Uuid
+  // NULL = sistem kategorisi, tüm kullanıcılarda görünür.
+  userId   String? @db.Uuid
+  name     String
+  slug     String
+  icon     String?
+  color    String?
+  isSystem Boolean @default(false)
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+  providers     Provider[]
+
+  @@unique([userId, slug])
+  @@map("categories")
+}
+
+model Provider {
+  id                  String        @id @default(uuid(7)) @db.Uuid
+  name                String
+  slug                String        @unique
+  logoUrl             String?
+  website             String?
+  defaultCategoryId   String?       @db.Uuid
+  defaultBillingCycle BillingCycle?
+  defaultCurrency     String?       @db.Char(3)
+  isActive            Boolean       @default(true)
+
+  defaultCategory Category?      @relation(fields: [defaultCategoryId], references: [id])
+  subscriptions   Subscription[]
+
+  @@map("providers")
+}
+
+model Subscription {
+  id         String  @id @default(uuid(7)) @db.Uuid
+  userId     String  @db.Uuid
+  // NULL = katalogda olmayan, kullanıcının kendi yazdığı abonelik.
+  providerId String? @db.Uuid
+  categoryId String  @db.Uuid
+
+  name        String
+  description String?
+  notes       String?
+
+  // Kuruş/cent. Ondalık yok — bkz. packages/shared/src/money.ts
+  priceMinor         BigInt
+  currency           String       @db.Char(3)
+  billingCycle       BillingCycle
+  customIntervalDays Int?
+
+  // Takvim günü, anlık değil: bir ödeme "12 Ağustos"tur.
+  startDate       DateTime  @db.Date
+  // Türetilmiş değer; kaynak gerçek occurrence kayıtları.
+  nextPaymentDate DateTime? @db.Date
+  endDate         DateTime? @db.Date
+  trialEndsAt     DateTime? @db.Date
+  cancelledAt     DateTime?
+
+  status        SubscriptionStatus @default(ACTIVE)
+  paymentMethod String?
+  // Kullanıcının bildirdiği son kullanım; "kullanılmıyor" analizi buna bakıyor.
+  lastUsedAt    DateTime?          @db.Date
+
+  reminderEnabled    Boolean @default(true)
+  reminderDaysBefore Int     @default(3)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider    Provider?                @relation(fields: [providerId], references: [id])
+  category    Category                 @relation(fields: [categoryId], references: [id])
+  occurrences SubscriptionOccurrence[]
+
+  @@index([userId, status])
+  @@index([userId, nextPaymentDate])
+  @@index([categoryId])
+  @@map("subscriptions")
+}
+
+model SubscriptionOccurrence {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  subscriptionId String           @db.Uuid
+  dueDate        DateTime         @db.Date
+  // O tarihteki tutar: fiyat sonradan değişse bile geçmiş bozulmuyor.
+  amountMinor    BigInt
+  currency       String           @db.Char(3)
+  status         OccurrenceStatus @default(SCHEDULED)
+  reminderSentAt DateTime?
+
+  subscription  Subscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  // Aynı ödeme iki kez üretilemez. Idempotency'nin temeli.
+  @@unique([subscriptionId, dueDate])
+  @@index([dueDate, status])
+  @@map("subscription_occurrences")
+}
+
+model Notification {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  userId       String           @db.Uuid
+  type         NotificationType
+  title        String
+  body         String
+  metadata     Json?
+  occurrenceId String?          @db.Uuid
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurrence SubscriptionOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+
+  // Aynı ödeme için aynı türde ikinci bildirim oluşturulamaz. Bu kontrol
+  // uygulama kodunda yapılsaydı iki job aynı anda koştuğunda sızdırırdı.
+  @@unique([userId, type, occurrenceId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String?  @db.Uuid
+  action     String
+  entityType String?
+  entityId   String?  @db.Uuid
+  // HASSAS VERİ YAZILMAZ: şifre, token, tam e-posta, tutar detayı yok.
+  metadata   Json?
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}

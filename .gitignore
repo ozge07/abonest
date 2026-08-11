@@ -9,3 +9,6 @@ coverage/
 .DS_Store
 .idea/
 .vscode/
+
+# Prisma üretilmiş istemci
+apps/api/src/generated/
