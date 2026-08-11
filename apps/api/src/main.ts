@@ -38,7 +38,9 @@ async function bootstrap(): Promise<void> {
     new FastifyAdapter({
       // Her isteğe kimlik: log kaydıyla hata yanıtı bu değerle eşleşiyor.
       genReqId: () => crypto.randomUUID(),
-      trustProxy: true,
+      // Yapılandırmadan geliyor ve varsayılanı kapalı: açıkken istemci
+      // kendi IP'sini uydurabiliyor ve hız sınırını atlatıyor.
+      trustProxy: config.TRUST_PROXY,
     }),
     {
       logger: false,
@@ -50,7 +52,10 @@ async function bootstrap(): Promise<void> {
     },
   );
 
-  await configureApp(app, logger, { corsOrigin: config.WEB_ORIGIN });
+  await configureApp(app, logger, {
+    corsOrigin: config.WEB_ORIGIN,
+    production: config.NODE_ENV === 'production',
+  });
 
   // Kapanma sinyalinde açık istekler tamamlanıyor, bağlantılar kapanıyor.
   app.enableShutdownHooks();

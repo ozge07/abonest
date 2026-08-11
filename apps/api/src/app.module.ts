@@ -7,6 +7,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { AuditModule } from './infra/audit/audit.module.js';
 import { EmailModule } from './infra/email/email.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -22,6 +23,7 @@ import { LoggerModule } from './infra/logger/logger.module.js';
   imports: [
     LoggerModule,
     EmailModule,
+    AuditModule,
     AuthModule,
     UsersModule,
     SubscriptionsModule,

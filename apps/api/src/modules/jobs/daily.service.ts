@@ -4,8 +4,10 @@ import type { Logger } from 'pino';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { EmailSender } from '../../infra/email/email-sender.js';
 import { LOGGER } from '../../infra/logger/logger.token.js';
+import { AuditService } from '../../infra/audit/audit.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OccurrenceService, today } from '../subscriptions/occurrence.service.js';
+import { PURGE_AFTER_DAYS } from '../users/users.service.js';
 
 /**
  * Bir turda en fazla kaç abonelik işlenir.
@@ -21,6 +23,7 @@ export interface GunlukSonuc {
   uretilenOdeme: number;
   suresiDolan: number;
   yeniBildirim: number;
+  temizlenenHesap: number;
   gonderilenEposta: number;
   basarisizEposta: number;
   islenenAbonelik: number;
@@ -45,6 +48,7 @@ export class DailyJobService {
     private readonly occurrences: OccurrenceService,
     private readonly notifications: NotificationsService,
     private readonly email: EmailSender,
+    private readonly audit: AuditService,
     @Inject(LOGGER) private readonly logger: Logger,
   ) {}
 
@@ -53,6 +57,7 @@ export class DailyJobService {
       uretilenOdeme: 0,
       suresiDolan: 0,
       yeniBildirim: 0,
+      temizlenenHesap: 0,
       gonderilenEposta: 0,
       basarisizEposta: 0,
       islenenAbonelik: 0,
@@ -60,6 +65,7 @@ export class DailyJobService {
     };
 
     sonuc.suresiDolan = await this.bitmisAbonelikleriKapat(bugun);
+    sonuc.temizlenenHesap = await this.silinenHesaplariTemizle();
 
     const abonelikler = await this.prisma.subscription.findMany({
       where: { status: 'ACTIVE' },
@@ -92,6 +98,38 @@ export class DailyJobService {
 
     this.logger.info({ sonuc }, 'Günlük iş tamamlandı');
     return sonuc;
+  }
+
+  /**
+   * Silinme talebi üzerinden bekleme süresi geçmiş hesapları **kalıcı**
+   * siliyor.
+   *
+   * Hesap silme yumuşak: `deletedAt` işaretleniyor ve kullanıcıya "30 gün
+   * sonra kalıcı silinecek" deniyor. Bu vaadi tutan kod buydu ve yoktu —
+   * yani veri süresiz duruyordu. Bir kullanıcıya verisinin sileneceğini
+   * söyleyip silmemek, teknik bir eksiklik değil, sözü tutmamak.
+   *
+   * Silme ilişkiler üzerinden akıyor (`onDelete: Cascade`): abonelikler,
+   * ödemeler, oturumlar, bildirimler gidiyor. Denetim kayıtları
+   * `onDelete: SetNull` ile kalıyor ama kime ait oldukları kalmıyor.
+   */
+  private async silinenHesaplariTemizle(): Promise<number> {
+    const sinir = new Date(Date.now() - PURGE_AFTER_DAYS * 86_400_000);
+
+    const sonuc = await this.prisma.user.deleteMany({
+      where: { deletedAt: { not: null, lt: sinir } },
+    });
+
+    if (sonuc.count > 0) {
+      // Kimliği yazmıyoruz: kullanıcı artık yok, kaydın kime ait olduğunu
+      // saklamak silmenin amacına aykırı olurdu.
+      await this.audit.record({
+        action: 'account.purged',
+        metadata: { count: sonuc.count },
+      });
+    }
+
+    return sonuc.count;
   }
 
   /**

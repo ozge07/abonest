@@ -9,6 +9,7 @@ import { EmailSender } from '../../infra/email/email-sender.js';
 import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
+import { AuditService } from '../../infra/audit/audit.service.js';
 
 const VERIFICATION_TTL_HOURS = 24;
 const RESET_TTL_MINUTES = 30;
@@ -24,6 +25,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
+    private readonly audit: AuditService,
     private readonly sessions: SessionService,
     private readonly email: EmailSender,
   ) {}
@@ -74,11 +76,19 @@ export class AuthService {
     // mümkün kılardı.
     if (user === null || user.deletedAt !== null) {
       await this.passwords.wasteTime();
+      // Kullanıcı kimliği yok — e-posta yazılmıyor, çünkü denetim kaydı
+      // sızarsa kayıtlı adres listesi olurdu.
+      await this.audit.record({ action: 'auth.login_failed', ip: context.ip });
       throw new UnauthorizedException('E-posta ya da şifre hatalı');
     }
 
     const ok = await this.passwords.verify(user.passwordHash, input.password);
     if (!ok) {
+      await this.audit.record({
+        action: 'auth.login_failed',
+        userId: user.id,
+        ip: context.ip,
+      });
       // Mesaj, e-posta yanlış olduğunda dönenle **birebir aynı**. Farklı
       // mesaj vermek hangi adreslerin kayıtlı olduğunu söylerdi.
       throw new UnauthorizedException('E-posta ya da şifre hatalı');
@@ -87,6 +97,12 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
+    });
+
+    await this.audit.record({
+      action: 'auth.login',
+      userId: user.id,
+      ip: context.ip,
     });
 
     return this.sessions.create(user.id, context);
@@ -107,6 +123,11 @@ export class AuthService {
       // dolmuş" arasındaki farkı söylemek saldırgana bilgi verir.
       throw new GoneException('Doğrulama bağlantısı geçersiz ya da süresi dolmuş');
     }
+
+    await this.audit.record({
+      action: 'auth.email_verified',
+      userId: record.userId,
+    });
 
     await this.prisma.$transaction([
       this.prisma.user.update({
@@ -187,6 +208,10 @@ export class AuthService {
     // açık oturumu da düşmeli. Bunu yapmazsak sıfırlamanın koruyucu değeri
     // olmaz.
     await this.sessions.revokeAll(record.userId);
+    await this.audit.record({
+      action: 'auth.password_reset',
+      userId: record.userId,
+    });
   }
 
   async sendVerification(userId: string, email: string): Promise<void> {

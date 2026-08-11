@@ -28,6 +28,23 @@ const schema = z.object({
   /** GitHub Actions cron'unun günlük işi tetiklerken kullandığı sır. */
   CRON_SECRET: z.string().min(32),
 
+  /**
+   * Uygulamanın önündeki güvenilir vekil sayısı ya da `false`.
+   *
+   * **Varsayılan `false` ve bu bilinçli.** Açık olduğunda Fastify istemcinin
+   * IP'sini `X-Forwarded-For` başlığından okuyor; uygulamaya doğrudan
+   * erişilebiliyorsa o başlığı istemci kendisi yazabiliyor ve IP tabanlı
+   * hız sınırı işe yaramaz hâle geliyor. Ölçtük: açıkken sahte başlıkla
+   * arka arkaya dokuz hesap açılabiliyordu.
+   *
+   * Yayında uygulamanın önünde gerçekten bir vekil varsa atlanacak vekil
+   * sayısı yazılıyor (çoğu platformda `1`).
+   */
+  TRUST_PROXY: z
+    .union([z.literal('false'), z.coerce.number().int().min(0).max(10)])
+    .default('false')
+    .transform((deger) => (deger === 'false' ? false : deger)),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

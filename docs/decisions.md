@@ -312,3 +312,50 @@ yazıyoruz. Fiyat geçmişi tutulmaya başlanırsa bu sınır kalkar.
 vardı; duraklatmada hiçbir şey yoktu ve duraklatılmış abonelikler ya sonsuza
 kadar ödeniyor ya hiç ödenmemiş sayılacaktı. Para raporunda tahmin
 yürütmektense tek bir nullable sütun eklemek doğru olan.
+
+---
+
+## ADR-0018 · Vekil güveni varsayılan olarak kapalı
+
+**Bağlam.** `trustProxy: true` koşulsuz açıktı. Fastify istemci IP'sini
+`X-Forwarded-For` başlığından okuyor.
+
+**Ölçüm.** Sahte başlıkla arka arkaya dokuz hesap açıldı; kayıt ucunun saatlik
+beş sınırı tamamen atlatıldı. Giriş ucu daha az etkileniyordu çünkü e-posta
+bazında ikinci bir kova var.
+
+**Karar.** `TRUST_PROXY` ortam değişkeni; varsayılan `false`, yayında vekil
+sayısı yazılıyor.
+
+**Sonuç.** Varsayılan güvenli. Yanlış tarafta hata yapmak burada "yayında IP
+`::1` görünür ve hız sınırı herkesi tek kovaya koyar" demek — rahatsız edici
+ama açık değil. Tersi, sessiz bir açık.
+
+---
+
+## ADR-0019 · Güvenlik başlıkları elle, Helmet'siz
+
+**Bağlam.** Beş güvenlik başlığı eksikti.
+
+**Karar.** `configureApp` içinde `onSend` kancasıyla elle ekleniyor.
+
+**Sonuç.** Bu bir JSON API; Helmet'in değerinin çoğu HTML uygulamalarına
+yönelik varsayılanlardan geliyor. Beş satırlık liste, her satırın neden orada
+olduğu yazılı ve anlamadığımız bir bağımlılık yok. Karşılığında Helmet'in
+ileride ekleyeceği yeni varsayılanları kendiliğinden almıyoruz — liste elle
+gözden geçirilecek.
+
+---
+
+## ADR-0020 · Denetim kaydı en iyi çaba
+
+**Bağlam.** `AuditLog` modeli vardı ama hiç yazılmıyordu.
+
+**Karar.** Güvenlik olayları kaydediliyor; **yazma başarısız olursa istek
+düşmüyor**, hata loglanıp devam ediliyor.
+
+**Sonuç.** Şifresini değiştiren kullanıcı, denetim tablosu doluysa şifresini
+değiştiremez hâle gelmiyor. Karşılığında kayıt eksiksiz değil — denetim
+kaydını hukuki delil değil, olay incelemesi aracı olarak konumlandırıyoruz.
+Eksiksizlik gerekirse aynı işlemde (transaction) yazmaya geçilir ve o zaman
+kullanılabilirlik bedeli kabul edilir.

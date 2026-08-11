@@ -1,15 +1,24 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { PasswordService } from '../auth/password.service.js';
+import { AuditService } from '../../infra/audit/audit.service.js';
 
 /** Hesap silme kararının geri alınabileceği süre. */
-const PURGE_AFTER_DAYS = 30;
+/**
+ * Silinmiş hesabın kalıcı temizlenmesine kadar geçen süre.
+ *
+ * Dışa açık: günlük temizlik işi aynı değeri kullanıyor. İki yerde ayrı
+ * sabit tutmak, kullanıcıya söylenen süre ile gerçekte beklenen sürenin
+ * sessizce ayrışması demek olurdu.
+ */
+export const PURGE_AFTER_DAYS = 30;
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
+    private readonly audit: AuditService,
   ) {}
 
   async profile(userId: string) {
@@ -56,6 +65,8 @@ export class UsersService {
       where: { id: userId },
       data: { passwordHash: await this.passwords.hash(newPassword) },
     });
+
+    await this.audit.record({ action: 'auth.password_changed', userId });
   }
 
   /**
@@ -71,6 +82,8 @@ export class UsersService {
       where: { id: userId },
       data: { deletedAt: now },
     });
+
+    await this.audit.record({ action: 'account.deleted', userId });
     return new Date(now.getTime() + PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000);
   }
 }
