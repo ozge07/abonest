@@ -69,6 +69,8 @@ ikisi de 404 döner.
 
 ### Auth
 
+> Phase 3'te uygulandı ve uçtan uca doğrulandı.
+
 ```
 POST   /auth/register           201 · 409 e-posta kayıtlı · 422
 POST   /auth/login              200 + oturum · 401 · 429

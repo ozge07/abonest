@@ -4,10 +4,12 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import fastifyCookie from '@fastify/cookie';
 import { AppModule } from './app.module.js';
 import { loadConfig } from './infra/config/config.js';
 import { createLogger } from './infra/logger/logger.js';
 import { ProblemFilter } from './infra/errors/problem.js';
+import { LOGGER } from './infra/logger/logger.token.js';
 
 /**
  * API giriş noktası.
@@ -53,6 +55,9 @@ async function bootstrap(): Promise<void> {
     // Sağlık uçları sürüm dışında: altyapı bunları sabit adreste bekliyor.
     exclude: ['health', 'ready'],
   });
+
+  // Cookie okuma/yazma. Guard oturum cookie'sini buradan görüyor.
+  await app.register(fastifyCookie);
 
   app.useGlobalFilters(new ProblemFilter(logger));
 
