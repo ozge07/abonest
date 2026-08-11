@@ -229,3 +229,54 @@ Kabul edilebilir, çünkü tek tüketicisi bizim arayüzümüz.
 karıştırmak, kurları bilmeden anlamsız bir oran üretirdi. Arayüz de bu yüzden
 listeyi para birimine göre ayırıyor — düz listede aynı kategori iki kez
 görünüyor ve %100'lük çubuk "en büyük kalemim" diye okunuyordu.
+
+---
+
+## ADR-0015 · Günlük iş istek içinde koşuyor; pg-boss ertelendi
+
+**ADR-0004'ü kısmen değiştiriyor.**
+
+**Bağlam.** ADR-0004 kuyruk için `pg-boss` seçmişti. Uygulama sırası gelince
+şu soru çıktı: tetikleyici işi kuyruğa mı atsın, yoksa doğrudan mı koştursun?
+
+**Karar.** `POST /internal/jobs/daily` işi **istek içinde senkron** koşturuyor.
+`pg-boss` şimdilik eklenmedi.
+
+**Gerekçe.** Kuyruk, arkada sürekli çalışan bir işçi süreci gerektiriyor.
+ADR-0004'ün kendisi ücretsiz barındırmanın trafik yokken uykuya geçtiğini
+söylüyor — bu, kuyruğun temel varsayımını bozuyor: iş kuyruğa atılır, yanıt
+döner, süreç uyur ve işi kimse almaz. "Kuyruğa attım" ile "iş koştu" arasındaki
+fark sessiz, yani hatırlatma gelmediğinde kimse fark etmez.
+
+Senkron koşturmak bu belirsizliği kaldırıyor: HTTP 200 dönüyorsa iş bitti,
+dönmüyorsa GitHub Actions adımı kırmızı yanıyor.
+
+**Karşılığında ne veriyoruz.** Yeniden deneme ve ölü mektup kutusu yok. Bunun
+yerine:
+
+- Her adım idempotent; işi tekrar çağırmak zararsız (`workflow_dispatch` ile
+  elle tetiklenebiliyor).
+- E-posta gönderimi bildirim üretiminden ayrı izleniyor. Gönderim başarısızsa
+  `reminderSentAt` boş kalıyor ve ertesi günkü tur tekrar deniyor.
+- Tek aboneliğin hatası turu düşürmüyor; loglanıp devam ediliyor ve iş
+  "tamamlanmadı" diye raporluyor.
+- Parti sınırı (500) tek isteğin sonsuza kadar sürmesini engelliyor.
+
+**Ne zaman geri dönülür.** İş tek istekte bitmemeye başladığında ya da
+barındırma sürekli ayakta bir sürece geçtiğinde. O gün `DailyJobService.run()`
+olduğu gibi bir kuyruk işçisinin içine taşınır — iş mantığı taşımadan
+etkilenmiyor, çünkü tetikleyiciyi hiç bilmiyor.
+
+---
+
+## ADR-0016 · Test dosyaları sırayla koşuyor
+
+**Bağlam.** Entegrasyon testleri tek bir Postgres veritabanını paylaşıyor.
+Günlük iş tasarımı gereği **bütün** kullanıcıları tarıyor.
+
+**Karar.** `vitest.config.ts` içinde `fileParallelism: false`.
+
+**Sonuç.** Bir dosyanın ürettiği abonelik başka bir dosyanın sayaçlarına
+karışmıyor. Paralel koşarken testler çoğu zaman geçiyor, ara sıra düşüyordu —
+ara sıra düşen test hiç olmayandan zararlı, çünkü insanı "yine o bilinen hata"
+demeye alıştırıyor. Maliyeti düşük: bütün paket birkaç saniye.

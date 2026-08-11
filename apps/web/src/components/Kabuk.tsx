@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
 import { useCikis, useOturum } from '../lib/oturum';
+import { BildirimZili } from './BildirimZili';
 
 /** Giriş yapmış kullanıcının gördüğü çerçeve: başlık, gezinme, içerik. */
 export function Kabuk({ children }: { children: ReactNode }) {
@@ -18,7 +19,8 @@ export function Kabuk({ children }: { children: ReactNode }) {
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
+            <BildirimZili />
             <span className="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">
               {kullanici?.name}
             </span>

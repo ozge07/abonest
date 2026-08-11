@@ -6,6 +6,9 @@ import { UsersModule } from './modules/users/users.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { EmailModule } from './infra/email/email.module.js';
+import { JobsModule } from './modules/jobs/jobs.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { LoggerModule } from './infra/logger/logger.module.js';
 
 /**
@@ -17,11 +20,14 @@ import { LoggerModule } from './infra/logger/logger.module.js';
   // LoggerModule ilk sırada: global olduğu için diğerleri onu görebilsin.
   imports: [
     LoggerModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     SubscriptionsModule,
     CatalogModule,
     DashboardModule,
+    NotificationsModule,
+    JobsModule,
   ],
   controllers: [HealthController],
   providers: [PrismaService],

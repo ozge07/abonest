@@ -61,6 +61,13 @@ jobs:
         working-directory: apps/api
         run: npx prisma generate
 
+      # Entegrasyon testleri sistem kategorilerine dayanıyor (abonelik bir
+      # kategoriye bağlanmak zorunda). Tohumlama olmadan boş veritabanında
+      # düşerler.
+      - name: Başlangıç verisi
+        working-directory: apps/api
+        run: npm run seed
+
       - name: Tip denetimi
         run: npm run typecheck
 

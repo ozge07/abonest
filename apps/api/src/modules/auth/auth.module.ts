@@ -1,8 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaService } from '../../infra/database/prisma.service.js';
-import { EmailSender } from '../../infra/email/email-sender.js';
-import { ConsoleEmailSender } from '../../infra/email/console-email-sender.js';
 import { RateLimitGuard } from '../../common/rate-limit.guard.js';
 import { LOGGER } from '../../infra/logger/logger.token.js';
 import { AuthController } from './auth.controller.js';
@@ -31,11 +29,6 @@ import { TokenService } from './token.service.js';
     TokenService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RateLimitGuard },
-    {
-      provide: EmailSender,
-      useFactory: (logger) => new ConsoleEmailSender(logger),
-      inject: [LOGGER],
-    },
   ],
   exports: [SessionService, PasswordService, TokenService, PrismaService],
 })

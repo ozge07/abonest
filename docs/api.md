@@ -194,6 +194,8 @@ GET /analytics/unused?thresholdDays=30      uzun süredir kullanılmayanlar
 
 ### Bildirimler
 
+> Phase 6'da uygulandı ve uçtan uca doğrulandı.
+
 ```
 GET    /notifications?unreadOnly=true&cursor=&limit=
 GET    /notifications/unread-count      200  { "count": 3 }
@@ -219,6 +221,24 @@ GET /ready     200  veritabanı erişilebilir · 503 değilse
 POST /internal/jobs/daily            GitHub Actions cron tetikler
                                      paylaşılan gizli anahtarla korunur
 ```
+
+Günlük iş `x-cron-secret` başlığıyla korunuyor; değer sabit zamanda
+karşılaştırılıyor. Kullanıcı oturumu bu ucu **açmıyor** — çağıran bir insan
+değil, zamanlayıcı.
+
+İş istek içinde senkron koşuyor ve ne yaptığını özetleyen bir gövde dönüyor:
+
+```json
+{
+  "uretilenOdeme": 12, "suresiDolan": 1, "yeniBildirim": 4,
+  "gonderilenEposta": 4, "basarisizEposta": 0,
+  "islenenAbonelik": 37, "tamamlandi": true
+}
+```
+
+`tamamlandi: false` bir şeyin yarım kaldığını söylüyor: ya parti sınırına
+dayanıldı ya bir abonelik hata verdi. İş idempotent olduğu için tetikleyiciyi
+tekrar çağırmak güvenli (bkz. ADR-0015).
 
 ## Yetkilendirme — IDOR'a karşı yapısal önlem
 

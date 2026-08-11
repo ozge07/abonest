@@ -1,0 +1,45 @@
+name: Günlük iş
+
+# Zamanlayıcı neden burada, sunucunun içinde değil:
+# ücretsiz barındırma trafik yokken süreci uyutuyor ve süreç içi cron
+# tetiklenmiyor. GitHub Actions dışarıdan çağırdığı için uygulamayı hem
+# uyandırıyor hem işi başlatıyor (bkz. docs/decisions.md, ADR-0004).
+on:
+  schedule:
+    # 06:00 Türkiye saati (UTC+3). GitHub cron yalnızca UTC kabul ediyor.
+    - cron: '0 3 * * *'
+  # Elle tetiklemek için: hata sonrası tekrar denemek gerekebiliyor ve iş
+  # idempotent olduğu için tekrar çağırmak zararsız.
+  workflow_dispatch:
+
+jobs:
+  tetikle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Günlük işi çağır
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          # Ücretsiz barındırma uykudaysa ilk istek yavaş yanıtlıyor;
+          # --max-time buna göre geniş tutuldu.
+          kod=$(curl -sS --max-time 300 \
+            -o yanit.json -w '%{http_code}' \
+            -X POST "$API_URL/api/v1/internal/jobs/daily" \
+            -H "x-cron-secret: $CRON_SECRET")
+
+          echo "HTTP $kod"
+          cat yanit.json
+
+          if [ "$kod" != "200" ]; then
+            echo "::error::Günlük iş başarısız (HTTP $kod)"
+            exit 1
+          fi
+
+          # İş "tamamlanmadı" diyorsa bir şey yarım kalmış demek: ya parti
+          # sınırına dayanıldı ya bir abonelik hata verdi. Sessizce geçmiyoruz.
+          if ! grep -q '"tamamlandi":true' yanit.json; then
+            echo "::warning::İş tamamlanmadı; günlüklere bak."
+          fi

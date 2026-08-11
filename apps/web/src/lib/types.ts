@@ -99,3 +99,19 @@ export interface Kullanici {
   currency: string;
   emailVerifiedAt: string | null;
 }
+
+export type BildirimTuru =
+  | 'PAYMENT_REMINDER'
+  | 'PAYMENT_TODAY'
+  | 'SPENDING_SUMMARY'
+  | 'SUBSCRIPTION_EXPIRED';
+
+export interface Bildirim {
+  id: string;
+  type: BildirimTuru;
+  title: string;
+  body: string;
+  metadata: unknown;
+  readAt: string | null;
+  createdAt: string;
+}

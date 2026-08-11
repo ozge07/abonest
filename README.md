@@ -4,8 +4,9 @@ Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 
-> **Durum: Phase 5 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
-> ana ekran özeti) ve React arayüzü var. Sırada bildirimler var.
+> **Durum: Phase 6 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
+> ana ekran özeti, hatırlatma ve bildirimler), günlük iş ve React arayüzü var.
+> Sırada harcama analizi var.
 
 ## Ne çözüyor
 
@@ -86,9 +87,31 @@ sorunsuz çalışıyor.
 kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
 
 ```bash
-npm test --workspaces      # 74 test
+npm test --workspaces      # 95 test
 npm run typecheck          # bütün paketler
 ```
+
+**Testler geliştirme veritabanına yazıyor.** Kendi kullanıcılarını temizliyorlar
+ama günlük iş tasarımı gereği bütün abonelikleri tarıyor, dolayısıyla elle
+eklediğin kayıtlar için de bildirim üretebiliyor. Ayrı bir veritabanı
+istiyorsan `DATABASE_URL=... npm test` yeterli.
+
+## Günlük iş
+
+Hatırlatmaları üreten iş dışarıdan tetikleniyor:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/internal/jobs/daily \
+  -H "x-cron-secret: $CRON_SECRET"
+```
+
+Yayında bunu GitHub Actions çağırıyor (`.github/workflows/gunluk-is.yml`,
+her gün 06:00 TSİ). Zamanlayıcının uygulamanın dışında olmasının sebebi
+ücretsiz barındırmanın uykuya geçmesi — süreç içi cron tetiklenmez, dışarıdan
+gelen istek hem uyandırır hem işi başlatır.
+
+İş **idempotent**: aynı gün beş kez çağırsan da kullanıcı hatırlatmayı bir kez
+alır. Tekillik uygulama kodunda değil veritabanı kısıtında (bkz. ADR-0015).
 
 ## Yol haritası
 

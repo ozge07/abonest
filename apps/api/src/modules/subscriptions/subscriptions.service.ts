@@ -10,24 +10,19 @@ import {
 } from '@abonelik/shared';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { scopeTo } from '../../infra/database/scoped.repository.js';
+import { OccurrenceService, today } from './occurrence.service.js';
 import type {
   CreateSubscriptionInput,
   ListQuery,
   UpdateSubscriptionInput,
 } from './subscriptions.dto.js';
 
-/**
- * Beklenen ödemelerin kaç gün ileriye kadar üretileceği.
- *
- * Sonsuza kadar üretmek tabloyu şişirir; çok kısa tutmak hatırlatma işinin
- * kaçırmasına yol açar. 60 gün, en uzun hatırlatma penceresinin (kullanıcı en
- * fazla 30 gün önceden uyarı isteyebiliyor) rahatça iki katı.
- */
-const HORIZON_DAYS = 60;
-
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly occurrences_: OccurrenceService,
+  ) {}
 
   async list(userId: string, query: ListQuery) {
     const scope = scopeTo(this.prisma, userId);
@@ -83,7 +78,7 @@ export class SubscriptionsService {
       ...optional(input),
     });
 
-    await this.syncOccurrences(row.id);
+    await this.occurrences_.syncFor(row.id);
     return toDto(row);
   }
 
@@ -141,7 +136,7 @@ export class SubscriptionsService {
       ),
     });
 
-    await this.syncOccurrences(id);
+    await this.occurrences_.syncFor(id);
     return this.findOne(userId, id);
   }
 
@@ -162,7 +157,7 @@ export class SubscriptionsService {
     if (!ok) {
       throw new NotFoundException('Abonelik bulunamadı');
     }
-    await this.clearFutureOccurrences(id);
+    await this.occurrences_.clearFuture(id);
     return this.findOne(userId, id);
   }
 
@@ -174,7 +169,7 @@ export class SubscriptionsService {
     if (!ok) {
       throw new NotFoundException('Abonelik bulunamadı');
     }
-    await this.clearFutureOccurrences(id);
+    await this.occurrences_.clearFuture(id);
     return this.findOne(userId, id);
   }
 
@@ -198,7 +193,7 @@ export class SubscriptionsService {
       ),
     });
 
-    await this.syncOccurrences(id);
+    await this.occurrences_.syncFor(id);
     return this.findOne(userId, id);
   }
 
@@ -218,53 +213,6 @@ export class SubscriptionsService {
       currency: row.currency,
       status: row.status,
     }));
-  }
-
-  /**
-   * Ufuk boyunca beklenen ödemeleri üretiyor.
-   *
-   * `createMany` + `skipDuplicates`: aynı ödeme iki kez üretilmeye
-   * çalışılırsa veritabanı kısıtı zaten engelliyor, `skipDuplicates` de
-   * hatayı sessizce yutuyor. Bu, işin **idempotent** olmasını sağlıyor —
-   * aynı anda iki kez çalışsa bile sonuç aynı.
-   */
-  private async syncOccurrences(subscriptionId: string): Promise<void> {
-    const sub = await this.prisma.subscription.findUnique({
-      where: { id: subscriptionId },
-    });
-    if (sub === null || sub.status !== 'ACTIVE') {
-      return;
-    }
-
-    const bugun = today();
-    const ufuk = new Date(bugun.getTime() + HORIZON_DAYS * 86_400_000);
-
-    const tarihler = occurrencesBetween(
-      sub.startDate,
-      {
-        cycle: sub.billingCycle,
-        customIntervalDays: sub.customIntervalDays ?? undefined,
-      },
-      bugun,
-      ufuk,
-      sub.endDate,
-    );
-
-    if (tarihler.length === 0) {
-      return;
-    }
-
-    await this.prisma.subscriptionOccurrence.createMany({
-      data: tarihler.map((dueDate: Date) => ({
-        subscriptionId,
-        dueDate,
-        // Tutar o günkü fiyattan kopyalanıyor: fiyat sonradan değişse bile
-        // geçmiş ödemeler bozulmuyor.
-        amountMinor: sub.priceMinor,
-        currency: sub.currency,
-      })),
-      skipDuplicates: true,
-    });
   }
 
   /**
@@ -291,20 +239,6 @@ export class SubscriptionsService {
     }
   }
 
-  /** Gelecekteki planlanmış ödemeleri siliyor; geçmiş kayıtlara dokunmuyor. */
-  private async clearFutureOccurrences(subscriptionId: string): Promise<void> {
-    await this.prisma.subscriptionOccurrence.deleteMany({
-      where: {
-        subscriptionId,
-        status: 'SCHEDULED',
-        dueDate: { gte: today() },
-      },
-    });
-  }
-}
-
-function today(): Date {
-  return toCalendarDate(new Date());
 }
 
 function optional(input: CreateSubscriptionInput) {
