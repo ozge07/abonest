@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { Kabuk } from './components/Kabuk';
 import { useOturum } from './lib/oturum';
 import { AnaSayfa } from './pages/AnaSayfa';
+import { AnalizSayfasi } from './pages/AnalizSayfasi';
 import { AbonelikSayfasi } from './pages/AbonelikSayfasi';
 import { GirisSayfasi } from './pages/GirisSayfasi';
 import { KayitSayfasi } from './pages/KayitSayfasi';
@@ -30,6 +31,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<AnaSayfa />} />
         <Route path="/abonelikler" element={<AbonelikSayfasi />} />
+        <Route path="/analiz" element={<AnalizSayfasi />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Kabuk>

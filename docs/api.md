@@ -187,10 +187,44 @@ Toplamlar **para birimi başına liste** — bkz. `database.md`, kritik karar 5.
 
 ### Analytics
 
+> Phase 7'de uygulandı ve uçtan uca doğrulandı.
+
 ```
 GET /analytics/spending?from=2026-01-01&to=2026-08-01&groupBy=month|category
 GET /analytics/unused?thresholdDays=30      uzun süredir kullanılmayanlar
 ```
+
+`spending` yanıtı:
+
+```json
+{
+  "from": "2026-01-01", "to": "2026-08-31", "groupBy": "month",
+  "totals": [{ "currency": "TRY", "totalMinor": 399890 }],
+  "buckets": [
+    { "period": "2026-01", "currency": "TRY", "totalMinor": 22999, "count": 1 }
+  ]
+}
+```
+
+`groupBy=category` olduğunda kovalar `period` yerine `categoryId` ve `name`
+taşır. **Kovalar her zaman para birimi başına ayrıdır**; aynı ay iki para
+biriminde iki kova üretir.
+
+Geçmiş, saklanan ödeme kayıtlarından değil **fatura döngüsünden** hesaplanır —
+kayıtlar aboneliğin eklendiği günden ileriye üretildiği için geçmişi
+kapsamazlar (ADR-0017). Ters aralık `422` alır.
+
+`unused` yanıtı, yılda ne kadara mal olduğuna göre büyükten küçüğe sıralı:
+
+```json
+[{ "id": "…", "name": "Spor Salonu", "idleDays": 95,
+   "lastUsedAt": "2026-05-08", "monthlyEquivalentMinor": 75000,
+   "wastedPerYearMinor": 900000 }]
+```
+
+`lastUsedAt: null` "hiç işaretlenmedi" demek, "kullanılmıyor" demek değil;
+ayrımı arayüz gösterir. Yeni eklenmiş abonelikler listeye girmez — eşik
+`createdAt` için de geçerli.
 
 ### Bildirimler
 

@@ -1,3 +1,10 @@
+-- citext: e-posta karşılaştırmasını büyük/küçük harften bağımsız yapıyor.
+--
+-- Migration'ın içinde, çünkü dışarıda elle kurulduğunda `prisma migrate dev`
+-- gölge veritabanında düşüyor ve depoyu klonlayan geliştirici şema
+-- değiştiremiyor. `IF NOT EXISTS`: platform önceden kurmuşsa işlem yok.
+CREATE EXTENSION IF NOT EXISTS citext;
+
 -- CreateEnum
 CREATE TYPE "BillingCycle" AS ENUM ('WEEKLY', 'MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', 'CUSTOM');
 

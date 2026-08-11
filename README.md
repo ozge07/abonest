@@ -4,9 +4,9 @@ Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 
-> **Durum: Phase 6 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
-> ana ekran özeti, hatırlatma ve bildirimler), günlük iş ve React arayüzü var.
-> Sırada harcama analizi var.
+> **Durum: Phase 7 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
+> ana ekran özeti, hatırlatma ve bildirimler, harcama analizi), günlük iş ve
+> React arayüzü var. Sırada güvenlik gözden geçirmesi var.
 
 ## Ne çözüyor
 
@@ -57,7 +57,8 @@ yok. Ölçüm gerektiğini gösterdiğinde eklenir.
 
 ## Kurulum
 
-Gereken tek şey Node 22+ ve PostgreSQL 17. Docker gerekmiyor.
+Gereken tek şey Node 22+ ve PostgreSQL 17. Docker gerekmiyor. `citext`
+eklentisini ilk migration kendisi kuruyor, elle bir şey yapmak gerekmiyor.
 
 ```bash
 # 1. Veritabanı (macOS, Homebrew)
@@ -87,7 +88,7 @@ sorunsuz çalışıyor.
 kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
 
 ```bash
-npm test --workspaces      # 95 test
+npm test --workspaces      # 110 test
 npm run typecheck          # bütün paketler
 ```
 

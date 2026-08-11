@@ -280,3 +280,35 @@ Günlük iş tasarımı gereği **bütün** kullanıcıları tarıyor.
 karışmıyor. Paralel koşarken testler çoğu zaman geçiyor, ara sıra düşüyordu —
 ara sıra düşen test hiç olmayandan zararlı, çünkü insanı "yine o bilinen hata"
 demeye alıştırıyor. Maliyeti düşük: bütün paket birkaç saniye.
+
+---
+
+## ADR-0017 · Geçmiş harcama takvimden hesaplanır, kayıtlardan değil
+
+**Bağlam.** `/analytics/spending` geçmiş dönemleri raporluyor. İlk akla gelen
+kaynak `subscription_occurrences` tablosu — ama o tablo geçmişi kapsamıyor.
+Kayıtlar aboneliğin **uygulamaya eklendiği** günden ileriye üretiliyor.
+
+Ölçtük: Ocak'ta başlayıp Ağustos'ta eklenen bir abonelikte en eski kayıt
+Ağustos'a ait, yedi ay eksik. Yıllık bir abonelikte ise ilk ödeme 60 günlük
+ufkun ötesinde kaldığı için **hiç** kayıt yok.
+
+**Karar.** Ödeme takvimi fatura döngüsünden hesaplanıyor
+(`occurrencesBetween`, çapadan). Tutar için: o tarihe ait kayıt varsa oradan
+okunuyor — kayıt ödemenin o günkü fiyatını taşıyor — yoksa bugünkü fiyat
+kullanılıyor.
+
+**Sonuç.** Kullanıcı "bu yıl ne harcadım" sorusuna dolu bir cevap alıyor.
+Kayıtlara dayansaydı cevap makul görünen ama yanlış bir sayı olurdu; en kötü
+hata türü, çünkü yanlış olduğu anlaşılmıyor.
+
+**Bilinen sınır.** Fiyatı sonradan değişmiş bir aboneliğin, kayıt bulunmayan
+geçmiş dönemleri bugünkü fiyatla hesaplanıyor. Geçmiş fiyat hiçbir yerde
+saklanmıyor, dolayısıyla daha iyisi mümkün değil. Uydurmak yerine arayüzde
+yazıyoruz. Fiyat geçmişi tutulmaya başlanırsa bu sınır kalkar.
+
+**Yan sonuç: `pausedAt` şemaya eklendi.** Analiz "bu abonelik ne zamana kadar
+ödendi" sorusunu cevaplamak zorunda. İptalde `cancelledAt`, bitişte `endDate`
+vardı; duraklatmada hiçbir şey yoktu ve duraklatılmış abonelikler ya sonsuza
+kadar ödeniyor ya hiç ödenmemiş sayılacaktı. Para raporunda tahmin
+yürütmektense tek bir nullable sütun eklemek doğru olan.

@@ -164,6 +164,9 @@ export class SubscriptionsService {
   async pause(userId: string, id: string) {
     const ok = await scopeTo(this.prisma, userId).update(id, {
       status: 'PAUSED',
+      // Ne zaman duraklatıldığı kaydediliyor: harcama analizi "bu abonelik
+      // ne zamana kadar ödendi" sorusunu tahminle değil veriyle cevaplasın.
+      pausedAt: new Date(),
       nextPaymentDate: null,
     });
     if (!ok) {
@@ -182,6 +185,7 @@ export class SubscriptionsService {
 
     await scope.update(id, {
       status: 'ACTIVE',
+      pausedAt: null,
       nextPaymentDate: nextOccurrence(
         mevcut.startDate,
         {

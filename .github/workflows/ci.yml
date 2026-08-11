@@ -50,9 +50,8 @@ jobs:
       - name: Bağımlılıkları kur
         run: npm ci
 
-      - name: citext eklentisi
-        run: psql "$DATABASE_URL" -c 'CREATE EXTENSION IF NOT EXISTS citext;'
-
+      # citext'i migration'ın kendisi kuruyor. Burada elle kurmak, o
+      # migration bozulsa bile CI'ın yeşil kalması demek olurdu.
       - name: Şemayı uygula
         working-directory: apps/api
         run: npx prisma migrate deploy

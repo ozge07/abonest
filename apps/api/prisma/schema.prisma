@@ -105,7 +105,7 @@ model Category {
 
   // Dikkat: bu kısıt sistem kategorilerini kapsamıyor — onlarda userId NULL ve
   // Postgres NULL'ları farklı sayıyor. Sistem tarafı, migration
-  // 20260811090000 içindeki kısmi indeksle korunuyor (Prisma şeması kısmi
+  // 20260811140000 içindeki kısmi indeksle korunuyor (Prisma şeması kısmi
   // indeks ifade edemiyor).
   @@unique([userId, slug])
   @@map("categories")
@@ -152,6 +152,10 @@ model Subscription {
   endDate         DateTime? @db.Date
   trialEndsAt     DateTime? @db.Date
   cancelledAt     DateTime?
+  // Duraklatma anı. Harcama analizi "bu abonelik ne zamana kadar ödendi"
+  // sorusunu cevaplayabilsin diye tutuluyor; olmadığı sürece duraklatılmış
+  // aboneliklerin geçmişi tahmin edilmek zorunda kalıyordu.
+  pausedAt        DateTime?
 
   status        SubscriptionStatus @default(ACTIVE)
   paymentMethod String?

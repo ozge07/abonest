@@ -115,3 +115,33 @@ export interface Bildirim {
   readAt: string | null;
   createdAt: string;
 }
+
+export interface HarcamaKovasi {
+  period?: string;
+  categoryId?: string;
+  name?: string;
+  currency: string;
+  totalMinor: number;
+  count: number;
+}
+
+export interface Harcama {
+  from: string;
+  to: string;
+  groupBy: 'month' | 'category';
+  totals: { currency: string; totalMinor: number }[];
+  buckets: HarcamaKovasi[];
+}
+
+export interface KullanilmayanAbonelik {
+  id: string;
+  name: string;
+  category: { id: string; name: string };
+  priceMinor: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  monthlyEquivalentMinor: number;
+  lastUsedAt: string | null;
+  idleDays: number;
+  wastedPerYearMinor: number;
+}

@@ -4,6 +4,7 @@ import { HealthController } from './modules/health/health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
+import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { EmailModule } from './infra/email/email.module.js';
@@ -26,6 +27,7 @@ import { LoggerModule } from './infra/logger/logger.module.js';
     SubscriptionsModule,
     CatalogModule,
     DashboardModule,
+    AnalyticsModule,
     NotificationsModule,
     JobsModule,
   ],

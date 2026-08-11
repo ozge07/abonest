@@ -17,6 +17,7 @@ export function Kabuk({ children }: { children: ReactNode }) {
           <nav className="flex gap-1">
             <Baglanti to="/">Özet</Baglanti>
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
+            <Baglanti to="/analiz">Analiz</Baglanti>
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

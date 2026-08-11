@@ -193,6 +193,7 @@ model Subscription {
   endDate             DateTime?    @db.Date
   trialEndsAt         DateTime?    @db.Date
   cancelledAt         DateTime?
+  pausedAt            DateTime?               // harcama analizi için
 
   status              SubStatus    @default(ACTIVE)
   paymentMethod       String?
