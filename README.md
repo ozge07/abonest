@@ -4,8 +4,8 @@ Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 
-> **Durum: Phase 1 — mimari tasarım.** Henüz uygulama kodu yok. Bu depoda şu an
-> yalnızca tasarım belgeleri var.
+> **Durum: Phase 5 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
+> ana ekran özeti) ve React arayüzü var. Sırada bildirimler var.
 
 ## Ne çözüyor
 
@@ -26,7 +26,7 @@ soruyu cevaplıyor: **ne kadar gidiyor, sırada ne var, neyi kullanmıyorum.**
 
 | Katman | Seçim |
 |---|---|
-| Frontend | React 19 · Vite 8 · TanStack Query · Zod · Tailwind |
+| Frontend | React 19 · Vite 8 · TanStack Query · React Router · Tailwind 4 |
 | Backend | NestJS 11 · TypeScript 6 |
 | Veritabanı | PostgreSQL 17 · Prisma 7 |
 | Kuyruk | pg-boss (Postgres) — Redis yok |
@@ -56,7 +56,39 @@ yok. Ölçüm gerektiğini gösterdiğinde eklenir.
 
 ## Kurulum
 
-Phase 2'de eklenecek.
+Gereken tek şey Node 22+ ve PostgreSQL 17. Docker gerekmiyor.
+
+```bash
+# 1. Veritabanı (macOS, Homebrew)
+brew services start postgresql@17
+createdb abonelik_takip
+
+# 2. Bağımlılıklar
+npm install
+
+# 3. Ortam değişkenleri
+cp apps/api/.env.example apps/api/.env    # DATABASE_URL'i düzenle
+
+# 4. Şema ve başlangıç verisi
+npm run prisma:migrate -w @abonelik/api
+npm run seed -w @abonelik/api             # 11 kategori, 30 sağlayıcı
+
+# 5. Çalıştır — iki ayrı terminalde
+npm run build -w @abonelik/api && npm start -w @abonelik/api   # :3000
+npm run dev -w @abonelik/web                                   # :5173
+```
+
+Arayüz `http://localhost:5173` adresinde. Vite, `/api` isteklerini API'ye
+yönlendiriyor; tarayıcı her şeyi tek origin'den gördüğü için cookie'ler
+sorunsuz çalışıyor.
+
+**E-posta doğrulama kodu** geliştirmede gönderilmiyor, API loguna yazılıyor —
+kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
+
+```bash
+npm test --workspaces      # 74 test
+npm run typecheck          # bütün paketler
+```
 
 ## Yol haritası
 

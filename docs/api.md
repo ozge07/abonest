@@ -17,6 +17,18 @@ anında etkili olmasını sağlıyor.
 Sunucu ikisini de kabul eder; guard hangi taşımanın kullanıldığını bilir ve
 CSRF kontrolünü yalnızca cookie yolunda uygular.
 
+**İki ayrı cookie var.** Girişte sunucu ikisini de bırakıyor:
+
+| Cookie | `httpOnly` | Ne işe yarıyor |
+|---|---|---|
+| `oturum` | evet | Oturum token'ı. JavaScript okuyamıyor, XSS ile çalınamıyor. |
+| `csrf` | **hayır** | Double-submit değeri. İstemci okuyup `x-csrf-token` başlığına koyuyor. |
+
+CSRF cookie'sinin okunabilir olması zorunlu: `httpOnly` olsaydı istemci onu
+başlığa koyamaz ve hiçbir yazma isteği yapamazdı. Okunabilir olması bir şey
+kaybettirmiyor, çünkü başka bir origin bu cookie'yi zaten okuyamıyor —
+korumanın dayandığı nokta bu (bkz. ADR-0013).
+
 Veritabanında ham token **durmaz**, yalnızca SHA-256 özeti. Veritabanı sızsa
 bile oturumlar ele geçirilemez.
 
@@ -141,6 +153,8 @@ sayfalar kayar ve kullanıcı aynı kaydı iki kez görür ya da hiç görmez.
 ```
 
 ### Dashboard
+
+> Phase 5'te uygulandı ve uçtan uca doğrulandı.
 
 Tek çağrı — ekranın ihtiyacı olan her şey. Beş ayrı istek atmak mobil ağda
 gözle görülür gecikme demek.

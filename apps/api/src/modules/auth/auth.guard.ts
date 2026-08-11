@@ -12,6 +12,7 @@ import { TokenService } from './token.service.js';
 import { IS_PUBLIC, NEEDS_VERIFIED_EMAIL } from './auth.decorators.js';
 
 export const SESSION_COOKIE = 'oturum';
+export const CSRF_COOKIE = 'csrf';
 const CSRF_HEADER = 'x-csrf-token';
 
 /** İsteğe eklenen kullanıcı; `@CurrentUser()` bunu okuyor. */
@@ -62,7 +63,7 @@ export class AuthGuard implements CanActivate {
 
     // Cookie ile gelen istekte CSRF token'ı isteniyor. Bearer'da istenmiyor.
     if (bearerToken === undefined && isStateChanging(request.method)) {
-      this.assertCsrf(request, cookieToken);
+      this.assertCsrf(request);
     }
 
     const user = await this.sessions.validate(token);
@@ -89,18 +90,30 @@ export class AuthGuard implements CanActivate {
    * Double-submit cookie deseni: aynı değer hem cookie'de hem başlıkta
    * olmalı. Başka bir site cookie'yi gönderebilir ama **okuyamaz**,
    * dolayısıyla başlığa koyamaz.
+   *
+   * ## Neden ayrı bir CSRF cookie'si
+   *
+   * Karşılaştırma önceden oturum cookie'sinin kendisiyle yapılıyordu. O
+   * cookie `httpOnly` — yani tarayıcıdaki JavaScript onu **okuyamıyor** ve
+   * başlığa koyamıyor. Sonuç: web istemcisi hiçbir yazma isteği yapamıyordu.
+   * curl'le test ederken görünmedi, çünkü curl iki değeri de elle
+   * koyabiliyor.
+   *
+   * Bu yüzden `csrf` ayrı bir cookie ve `httpOnly` **değil**: JavaScript onu
+   * okuyup başlığa koyabiliyor. Oturum token'ı httpOnly kalmaya devam
+   * ediyor, yani XSS ile oturum çalınamıyor — CSRF token'ının okunabilir
+   * olması bir şey kaybettirmiyor, çünkü tek işi "bu istek bizim
+   * sayfamızdan mı geldi" sorusunu cevaplamak.
    */
-  private assertCsrf(
-    request: AuthenticatedRequest,
-    cookieToken: string | undefined,
-  ): void {
+  private assertCsrf(request: AuthenticatedRequest): void {
     const header = request.headers[CSRF_HEADER];
     const sent = Array.isArray(header) ? header[0] : header;
+    const cookie = request.cookies?.[CSRF_COOKIE];
 
     if (
       sent === undefined ||
-      cookieToken === undefined ||
-      !this.tokens.safeEqual(sent, cookieToken)
+      cookie === undefined ||
+      !this.tokens.safeEqual(sent, cookie)
     ) {
       throw new ForbiddenException('CSRF doğrulaması başarısız');
     }

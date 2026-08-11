@@ -187,3 +187,45 @@ slug'la iki sistem kategorisi eklenebildiği ölçüldü.
 **Sonuç.** Tohumlama scripti idempotent olabiliyor ve katalog bozulamıyor.
 Karşılığında şemayla migration arasında Prisma'nın bilmediği bir fark var;
 schema.prisma'ya bunu anlatan bir yorum bırakıldı.
+
+---
+
+## ADR-0013 · CSRF token'ı ayrı, okunabilir bir cookie
+
+**Bağlam.** Double-submit kontrolü oturum cookie'sinin kendisiyle yapılıyordu.
+O cookie `httpOnly` — tarayıcıdaki JavaScript onu okuyup `x-csrf-token`
+başlığına koyamıyor. Yani web istemcisi hiçbir yazma isteği yapamıyordu.
+
+**Karar.** `csrf` adında ikinci bir cookie; oturum token'ından bağımsız
+rastgele değer, `httpOnly` **değil**. Guard başlığı bu cookie ile
+karşılaştırıyor.
+
+**Sonuç.** Oturum token'ı JavaScript'e kapalı kalıyor (XSS ile çalınamıyor),
+CSRF token'ı okunabilir oluyor. Okunabilir olması bir şey kaybettirmiyor:
+tek işi "bu istek bizim sayfamızdan mı geldi" sorusunu cevaplamak ve başka
+bir origin onu zaten okuyamıyor.
+
+**Nasıl kaçırdık.** Phase 3'te CSRF'i curl ile doğrulamıştım; curl iki değeri
+de elle koyabildiği için kontrol geçiyordu. Hata ancak arayüz yazılırken
+ortaya çıktı. Bunun tekrarlamaması için `csrf.integration.test.ts` yalnızca
+tarayıcının erişebildiği bilgiyle çalışıyor: `httpOnly` cookie'lerin değerini
+hiç okumuyor.
+
+---
+
+## ADR-0014 · Dashboard tek uç
+
+**Bağlam.** Ana ekran beş ayrı veri kümesi gösteriyor: toplamlar, yaklaşan
+ödemeler, kategori dağılımı, aktif sayısı, bu ay iptal edilenler.
+
+**Karar.** Hepsi tek `GET /dashboard` çağrısında; şekli arayüzün ihtiyacına
+göre belirlendi, tablolara göre değil.
+
+**Sonuç.** Yavaş ağda ekran tek seferde doluyor, parça parça dolup düzen
+zıplamıyor. Karşılığında bu uç arayüze bağlı: ekran değişirse uç da değişir.
+Kabul edilebilir, çünkü tek tüketicisi bizim arayüzümüz.
+
+**Kategori payları para birimi başına.** Farklı para birimlerini tek yüzdede
+karıştırmak, kurları bilmeden anlamsız bir oran üretirdi. Arayüz de bu yüzden
+listeyi para birimine göre ayırıyor — düz listede aynı kategori iki kez
+görünüyor ve %100'lük çubuk "en büyük kalemim" diye okunuyordu.

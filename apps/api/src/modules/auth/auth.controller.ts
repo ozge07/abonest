@@ -7,6 +7,7 @@ import {
   Res,
   UsePipes,
 } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import type { FastifyReply } from 'fastify';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe.js';
 import { Throttle } from '../../common/rate-limit.guard.js';
@@ -14,6 +15,7 @@ import { AuthService } from './auth.service.js';
 import { Public } from './auth.decorators.js';
 import {
   type AuthenticatedRequest,
+  CSRF_COOKIE,
   SESSION_COOKIE,
 } from './auth.guard.js';
 import { SessionService } from './session.service.js';
@@ -61,6 +63,7 @@ export class AuthController {
     });
 
     setSessionCookie(reply, token, expiresAt);
+    setCsrfCookie(reply, expiresAt);
 
     // Token gövdede de dönüyor: mobil istemci cookie kullanmıyor, bunu
     // işletim sistemi keychain'ine yazacak. Tarayıcı gövdedeki değeri yok
@@ -143,6 +146,25 @@ function setSessionCookie(
   });
 }
 
+/**
+ * CSRF token'ı — oturum token'ından **bağımsız** rastgele değer.
+ *
+ * `httpOnly` bilerek verilmiyor: web istemcisinin bunu okuyup
+ * `x-csrf-token` başlığına koyması gerekiyor. Başka bir sitedeki sayfa aynı
+ * origin olmadığı için bu cookie'yi okuyamıyor, dolayısıyla başlığı
+ * dolduramıyor — korumanın dayandığı nokta bu.
+ */
+function setCsrfCookie(reply: FastifyReply, expiresAt: Date): void {
+  void reply.setCookie(CSRF_COOKIE, randomBytes(32).toString('base64url'), {
+    httpOnly: false,
+    secure: process.env['NODE_ENV'] === 'production',
+    sameSite: 'lax',
+    path: '/',
+    expires: expiresAt,
+  });
+}
+
 function clearSessionCookie(reply: FastifyReply): void {
   void reply.clearCookie(SESSION_COOKIE, { path: '/' });
+  void reply.clearCookie(CSRF_COOKIE, { path: '/' });
 }
