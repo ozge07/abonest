@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/abonelikformu.tsx","./src/components/kabuk.tsx","./src/components/form.tsx","./src/lib/api.ts","./src/lib/money.ts","./src/lib/oturum.tsx","./src/lib/types.ts","./src/pages/aboneliksayfasi.tsx","./src/pages/anasayfa.tsx","./src/pages/girissayfasi.tsx","./src/pages/kayitsayfasi.tsx","./vite.config.ts"],"version":"6.0.3"}
