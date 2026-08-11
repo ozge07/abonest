@@ -98,6 +98,9 @@ DELETE /me/sessions/{id}        204
 
 ### Abonelikler
 
+> Phase 4'te uygulandı ve uçtan uca doğrulandı (entegrasyon testleri:
+> `apps/api/src/modules/subscriptions/subscriptions.integration.test.ts`).
+
 ```
 GET    /subscriptions           200
 POST   /subscriptions           201
@@ -124,6 +127,11 @@ GET    /subscriptions/{id}/occurrences  200   ödeme geçmişi + planı
 &order=asc|desc
 &cursor=<opak>&limit=20        (varsayılan 20, en fazla 100)
 ```
+
+`categoryId` yalnızca sistem kategorisi ya da isteği yapan kullanıcının kendi
+kategorisi olabilir; başkasının kategorisi `404` alır. Yabancı anahtar kısıtı
+tek başına "kategori var mı" diye bakar, **kimin** olduğuna bakmaz — o kontrol
+serviste.
 
 **Sayfalama cursor tabanlı**, offset değil. Offset'te yeni kayıt eklendiğinde
 sayfalar kayar ve kullanıcı aynı kaydı iki kez görür ya da hiç görmez.

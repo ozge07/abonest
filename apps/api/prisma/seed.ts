@@ -1,0 +1,193 @@
+/**
+ * Başlangıç verisi: sistem kategorileri ve sağlayıcı kataloğu.
+ *
+ * **Tekrar çalıştırılabilir.** Her kayıt slug üzerinden `upsert` ediliyor, yani
+ * script iki kez koşarsa ikinci koşu hiçbir şeyi bozmuyor. Bu önemli: tohum
+ * verisi kurulum adımı değil, güncellenen bir katalog — yeni bir sağlayıcı
+ * eklendiğinde script yeniden çalıştırılacak.
+ *
+ * Kullanıcı verisine dokunulmuyor. Buradaki kategoriler `userId = NULL` ile
+ * yazılıyor; kullanıcının kendi kategorileri ayrı satırlar.
+ */
+
+import { PrismaPg } from '@prisma/adapter-pg';
+import { type BillingCycle, PrismaClient } from '@prisma/client';
+import 'dotenv/config';
+
+const connectionString = process.env['DATABASE_URL'];
+if (connectionString === undefined) {
+  throw new Error('DATABASE_URL tanımlı değil.');
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+
+interface KategoriTohumu {
+  slug: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+/**
+ * Sistem kategorileri.
+ *
+ * Renkler tek bir paletten seçildi; arayüzde rozet arka planı olarak
+ * kullanılacaklar, o yüzden hepsi koyu metinle okunabilecek tonda.
+ */
+const KATEGORILER: KategoriTohumu[] = [
+  { slug: 'video', name: 'Video ve Dizi', icon: 'clapperboard', color: '#E11D48' },
+  { slug: 'muzik', name: 'Müzik', icon: 'music', color: '#7C3AED' },
+  { slug: 'oyun', name: 'Oyun', icon: 'gamepad-2', color: '#2563EB' },
+  { slug: 'yazilim', name: 'Yazılım ve Araçlar', icon: 'code', color: '#0891B2' },
+  { slug: 'bulut', name: 'Bulut Depolama', icon: 'cloud', color: '#0D9488' },
+  { slug: 'haber', name: 'Haber ve Yayın', icon: 'newspaper', color: '#B45309' },
+  { slug: 'spor', name: 'Spor ve Sağlık', icon: 'dumbbell', color: '#16A34A' },
+  { slug: 'egitim', name: 'Eğitim', icon: 'graduation-cap', color: '#CA8A04' },
+  { slug: 'internet', name: 'İnternet ve Telefon', icon: 'wifi', color: '#4F46E5' },
+  { slug: 'fatura', name: 'Faturalar', icon: 'receipt', color: '#57534E' },
+  { slug: 'diger', name: 'Diğer', icon: 'ellipsis', color: '#6B7280' },
+];
+
+interface SaglayiciTohumu {
+  slug: string;
+  name: string;
+  kategori: string;
+  website: string;
+  /**
+   * Yalnızca Türkiye'de TL ile faturalandırdığından emin olduğum
+   * sağlayıcılarda dolu. Emin olmadığım yerlerde boş bırakıyorum; form o
+   * durumda kullanıcının varsayılan para birimini kullanıyor. Yanlış bir
+   * varsayılan, kullanıcının fark etmeden yanlış para biriminde kayıt
+   * açmasına yol açar.
+   */
+  currency?: string;
+  cycle?: BillingCycle;
+}
+
+const SAGLAYICILAR: SaglayiciTohumu[] = [
+  // Video
+  { slug: 'netflix', name: 'Netflix', kategori: 'video', website: 'https://www.netflix.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'disney-plus', name: 'Disney+', kategori: 'video', website: 'https://www.disneyplus.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'amazon-prime-video', name: 'Amazon Prime Video', kategori: 'video', website: 'https://www.primevideo.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'blutv', name: 'BluTV', kategori: 'video', website: 'https://www.blutv.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'exxen', name: 'Exxen', kategori: 'video', website: 'https://www.exxen.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'youtube-premium', name: 'YouTube Premium', kategori: 'video', website: 'https://www.youtube.com/premium', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'mubi', name: 'MUBI', kategori: 'video', website: 'https://mubi.com', cycle: 'MONTHLY' },
+
+  // Müzik
+  { slug: 'spotify', name: 'Spotify', kategori: 'muzik', website: 'https://www.spotify.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'apple-music', name: 'Apple Music', kategori: 'muzik', website: 'https://music.apple.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'fizy', name: 'fizy', kategori: 'muzik', website: 'https://fizy.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'deezer', name: 'Deezer', kategori: 'muzik', website: 'https://www.deezer.com', cycle: 'MONTHLY' },
+
+  // Oyun
+  { slug: 'xbox-game-pass', name: 'Xbox Game Pass', kategori: 'oyun', website: 'https://www.xbox.com/xbox-game-pass', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'playstation-plus', name: 'PlayStation Plus', kategori: 'oyun', website: 'https://www.playstation.com/ps-plus', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'nintendo-switch-online', name: 'Nintendo Switch Online', kategori: 'oyun', website: 'https://www.nintendo.com/switch/online', cycle: 'YEARLY' },
+
+  // Yazılım ve araçlar
+  { slug: 'adobe-creative-cloud', name: 'Adobe Creative Cloud', kategori: 'yazilim', website: 'https://www.adobe.com/creativecloud.html', cycle: 'MONTHLY' },
+  { slug: 'microsoft-365', name: 'Microsoft 365', kategori: 'yazilim', website: 'https://www.microsoft.com/microsoft-365', currency: 'TRY', cycle: 'YEARLY' },
+  { slug: 'canva', name: 'Canva Pro', kategori: 'yazilim', website: 'https://www.canva.com', cycle: 'MONTHLY' },
+  { slug: 'notion', name: 'Notion', kategori: 'yazilim', website: 'https://www.notion.so', currency: 'USD', cycle: 'MONTHLY' },
+  { slug: 'github', name: 'GitHub', kategori: 'yazilim', website: 'https://github.com', currency: 'USD', cycle: 'MONTHLY' },
+  { slug: 'chatgpt-plus', name: 'ChatGPT Plus', kategori: 'yazilim', website: 'https://chat.openai.com', currency: 'USD', cycle: 'MONTHLY' },
+  { slug: 'claude-pro', name: 'Claude Pro', kategori: 'yazilim', website: 'https://claude.ai', currency: 'USD', cycle: 'MONTHLY' },
+
+  // Bulut depolama
+  { slug: 'icloud-plus', name: 'iCloud+', kategori: 'bulut', website: 'https://www.icloud.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'google-one', name: 'Google One', kategori: 'bulut', website: 'https://one.google.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'dropbox', name: 'Dropbox', kategori: 'bulut', website: 'https://www.dropbox.com', cycle: 'MONTHLY' },
+
+  // Spor ve eğitim
+  { slug: 'strava', name: 'Strava', kategori: 'spor', website: 'https://www.strava.com', cycle: 'MONTHLY' },
+  { slug: 'duolingo-super', name: 'Duolingo Super', kategori: 'egitim', website: 'https://www.duolingo.com', cycle: 'YEARLY' },
+  { slug: 'udemy', name: 'Udemy', kategori: 'egitim', website: 'https://www.udemy.com', cycle: 'MONTHLY' },
+
+  // İnternet ve telefon
+  { slug: 'turk-telekom', name: 'Türk Telekom', kategori: 'internet', website: 'https://www.turktelekom.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'turkcell', name: 'Turkcell', kategori: 'internet', website: 'https://www.turkcell.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'vodafone', name: 'Vodafone', kategori: 'internet', website: 'https://www.vodafone.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
+];
+
+async function main(): Promise<void> {
+  const kategoriKimlikleri = await tohumlaKategoriler();
+  const saglayiciSayisi = await tohumlaSaglayicilar(kategoriKimlikleri);
+
+  console.log(
+    `Tohumlama tamam: ${kategoriKimlikleri.size} kategori, ${saglayiciSayisi} sağlayıcı.`,
+  );
+}
+
+/**
+ * Kategorileri yazıp slug → id eşlemesini döndürüyor.
+ *
+ * `upsert` yerine önce arayıp sonra yazıyoruz: `upsert` tekil bir anahtar
+ * istiyor, sistem kategorilerinin tekilliği ise kısmi indeksle sağlanıyor ve
+ * Prisma o indeksi bilmiyor.
+ */
+async function tohumlaKategoriler(): Promise<Map<string, string>> {
+  const eslesme = new Map<string, string>();
+
+  for (const kategori of KATEGORILER) {
+    const mevcut = await prisma.category.findFirst({
+      where: { userId: null, slug: kategori.slug },
+    });
+
+    const satir =
+      mevcut === null
+        ? await prisma.category.create({
+            data: { ...kategori, userId: null, isSystem: true },
+          })
+        : await prisma.category.update({
+            where: { id: mevcut.id },
+            data: { name: kategori.name, icon: kategori.icon, color: kategori.color },
+          });
+
+    eslesme.set(kategori.slug, satir.id);
+  }
+
+  return eslesme;
+}
+
+async function tohumlaSaglayicilar(
+  kategoriKimlikleri: Map<string, string>,
+): Promise<number> {
+  for (const saglayici of SAGLAYICILAR) {
+    const kategoriId = kategoriKimlikleri.get(saglayici.kategori);
+    if (kategoriId === undefined) {
+      throw new Error(
+        `${saglayici.slug}: '${saglayici.kategori}' kategorisi tanımlı değil.`,
+      );
+    }
+
+    // Logo adresleri bilerek boş: elimde barındırdığım bir logo seti yok ve
+    // üçüncü taraf CDN adresi uydurmak kırık görsel demek. Arayüz logo
+    // yokken kategori simgesini gösteriyor.
+    const alanlar = {
+      name: saglayici.name,
+      website: saglayici.website,
+      defaultCategoryId: kategoriId,
+      defaultCurrency: saglayici.currency ?? null,
+      defaultBillingCycle: saglayici.cycle ?? null,
+      isActive: true,
+    };
+
+    await prisma.provider.upsert({
+      where: { slug: saglayici.slug },
+      create: { slug: saglayici.slug, ...alanlar },
+      update: alanlar,
+    });
+  }
+
+  return SAGLAYICILAR.length;
+}
+
+main()
+  .catch((hata: unknown) => {
+    console.error('Tohumlama başarısız:', hata);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    void prisma.$disconnect();
+  });

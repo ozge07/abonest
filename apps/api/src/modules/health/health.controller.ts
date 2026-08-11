@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../infra/database/prisma.service.js';
+import { Public } from '../auth/auth.decorators.js';
 
 /**
  * Sağlık uçları. İkisi ayrı şeyler ölçüyor:
@@ -11,8 +12,12 @@ import { PrismaService } from '../../infra/database/prisma.service.js';
  * başarılı), ama trafik de gönderilmemeli (ready başarısız).
  *
  * Kimlik doğrulama gerektirmiyor — altyapı bunları oturum açmadan çağırıyor.
+ * `@Public()` bunun için şart: kimlik guard'ı global ve işaret olmadan bu
+ * uçlar da 401 dönüyor. O hâlde yük dengeleyici ayakta olan uygulamayı ölü
+ * sayar ve örneği sürekli yeniden başlatır.
  */
 @Controller()
+@Public()
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 

@@ -103,6 +103,10 @@ model Category {
   subscriptions Subscription[]
   providers     Provider[]
 
+  // Dikkat: bu kısıt sistem kategorilerini kapsamıyor — onlarda userId NULL ve
+  // Postgres NULL'ları farklı sayıyor. Sistem tarafı, migration
+  // 20260811090000 içindeki kısmi indeksle korunuyor (Prisma şeması kısmi
+  // indeks ifade edemiyor).
   @@unique([userId, slug])
   @@map("categories")
 }

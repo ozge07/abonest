@@ -139,3 +139,51 @@ arayüzü biraz daha tören gerektiriyor.
 **Sonuç.** Zincirleme hesapta kırpma kalıcı hâle gelir: 31 Oca → 28 Şub → 28
 Mar (yanlış). Çapadan hesapta 31 Oca + 2 ay = 31 Mar (doğru). Karşılığında
 hesap her seferinde başlangıçtan yapılır — maliyeti yok.
+
+---
+
+## ADR-0010 · Doğrulama pipe'ı yalnızca gövde ve sorguya bakar
+
+**Bağlam.** `@UsePipes()` metot seviyesinde yazıldığında Nest pipe'ı handler'ın
+bütün parametrelerine uyguluyor — `@CurrentUser()` gibi özel dekoratörler
+dahil.
+
+**Karar.** `ZodValidationPipe` `ArgumentMetadata.type` değeri `body` ya da
+`query` değilse değeri dokunmadan geçiriyor.
+
+**Sonuç.** Pipe nereye takılırsa takılsın yalnızca kullanıcıdan gelen veriye
+bakıyor. Bu davranış canlı denemede yakalandı: gövde kusursuzken istek "bütün
+alanlar eksik" diye reddediliyordu, çünkü şema oturum nesnesini doğrulamaya
+çalışıyordu. Tip süzgeci olmadan aynı hata her yeni denetleyicide tekrar
+edebilirdi.
+
+---
+
+## ADR-0011 · HTTP kurulumu `main.ts` dışında
+
+**Bağlam.** Global prefix, cookie eklentisi, hata filtresi ve CORS `main.ts`
+içindeydi. Entegrasyon testi kendi uygulamasını kurduğu için bunları almıyor,
+üretimden farklı davranan bir uygulamayı test ediyordu.
+
+**Karar.** Kurulum `app.setup.ts` içindeki `configureApp()` fonksiyonunda;
+hem `main.ts` hem testler onu çağırıyor.
+
+**Sonuç.** "Testte geçti ama üretimde farklı" sınıfı ortadan kalkıyor. Bu da
+gerçek bir hatayla ortaya çıktı: test uygulamasında `ProblemFilter` olmadığı
+için hata yanıtları RFC 9457 biçiminde değildi ve doğrulama testi yanlış
+yerde patladı.
+
+---
+
+## ADR-0012 · Sistem kategorilerinin tekilliği kısmi indeksle
+
+**Bağlam.** `@@unique([userId, slug])` sistem kategorilerini kapsamıyor:
+onlarda `userId` NULL ve Postgres NULL'ları birbirinden farklı sayıyor. Aynı
+slug'la iki sistem kategorisi eklenebildiği ölçüldü.
+
+**Karar.** `CREATE UNIQUE INDEX ... ON categories(slug) WHERE "userId" IS NULL`
+— elle yazılmış migration, çünkü Prisma şeması kısmi indeks ifade edemiyor.
+
+**Sonuç.** Tohumlama scripti idempotent olabiliyor ve katalog bozulamıyor.
+Karşılığında şemayla migration arasında Prisma'nın bilmediği bir fark var;
+schema.prisma'ya bunu anlatan bir yorum bırakıldı.

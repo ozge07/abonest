@@ -4,11 +4,10 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import fastifyCookie from '@fastify/cookie';
 import { AppModule } from './app.module.js';
+import { configureApp } from './app.setup.js';
 import { loadConfig } from './infra/config/config.js';
 import { createLogger } from './infra/logger/logger.js';
-import { ProblemFilter } from './infra/errors/problem.js';
 import { LOGGER } from './infra/logger/logger.token.js';
 
 /**
@@ -51,21 +50,7 @@ async function bootstrap(): Promise<void> {
     },
   );
 
-  app.setGlobalPrefix('api/v1', {
-    // Sağlık uçları sürüm dışında: altyapı bunları sabit adreste bekliyor.
-    exclude: ['health', 'ready'],
-  });
-
-  // Cookie okuma/yazma. Guard oturum cookie'sini buradan görüyor.
-  await app.register(fastifyCookie);
-
-  app.useGlobalFilters(new ProblemFilter(logger));
-
-  app.enableCors({
-    origin: config.WEB_ORIGIN,
-    // Oturum cookie'si için şart; `*` ile birlikte çalışmaz.
-    credentials: true,
-  });
+  await configureApp(app, logger, { corsOrigin: config.WEB_ORIGIN });
 
   // Kapanma sinyalinde açık istekler tamamlanıyor, bağlantılar kapanıyor.
   app.enableShutdownHooks();
