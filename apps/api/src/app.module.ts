@@ -11,6 +11,7 @@ import { AuditModule } from './infra/audit/audit.module.js';
 import { EmailModule } from './infra/email/email.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { RatesModule } from './modules/rates/rates.module.js';
 import { LoggerModule } from './infra/logger/logger.module.js';
 
 /**
@@ -31,6 +32,7 @@ import { LoggerModule } from './infra/logger/logger.module.js';
     DashboardModule,
     AnalyticsModule,
     NotificationsModule,
+    RatesModule,
     JobsModule,
   ],
   controllers: [HealthController],

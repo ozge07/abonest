@@ -4,6 +4,7 @@ import { ApiError, api } from '../lib/api';
 import { tutariKurusaCevir } from '../lib/money';
 import type { Abonelik, Kategori, Saglayici } from '../lib/types';
 import { Alan, Dugme, HataKutusu, Secim } from './form';
+import { SaglayiciSecici } from './SaglayiciSecici';
 
 const PARA_BIRIMLERI = ['TRY', 'USD', 'EUR', 'GBP'] as const;
 
@@ -73,12 +74,12 @@ export function AbonelikFormu({
    * kataloğumuzda tutulmuyor. Yanlış bir fiyatı hazır getirmek, kullanıcının
    * kontrol etmeden kaydetmesine yol açardı.
    */
-  function saglayiciSec(id: string) {
-    setSaglayiciId(id);
-    const saglayici = saglayicilar.data?.find((s) => s.id === id);
-    if (saglayici === undefined) {
+  function saglayiciSec(saglayici: Saglayici | null) {
+    if (saglayici === null) {
+      setSaglayiciId('');
       return;
     }
+    setSaglayiciId(saglayici.id);
     setAd(saglayici.name);
     if (saglayici.defaultCategoryId !== null) {
       setKategoriId(saglayici.defaultCategoryId);
@@ -124,19 +125,11 @@ export function AbonelikFormu({
         <HataKutusu mesaj={hata.problem.title} />
       )}
 
-      <Secim
-        etiket="Hazır sağlayıcıdan seç"
-        name="provider"
-        value={saglayiciId}
-        onChange={(o) => saglayiciSec(o.target.value)}
-      >
-        <option value="">— kendim yazacağım —</option>
-        {(saglayicilar.data ?? []).map((saglayici) => (
-          <option key={saglayici.id} value={saglayici.id}>
-            {saglayici.name}
-          </option>
-        ))}
-      </Secim>
+      <SaglayiciSecici
+        saglayicilar={saglayicilar.data ?? []}
+        seciliId={saglayiciId}
+        onSec={saglayiciSec}
+      />
 
       <Alan
         etiket="Ad"
@@ -145,6 +138,11 @@ export function AbonelikFormu({
         value={ad}
         onChange={(o) => setAd(o.target.value)}
         hata={alanHatalari['name']}
+        ipucu={
+          saglayiciId === ''
+            ? 'Listede yoksa kendin yaz — spor salonu, aidat, kira…'
+            : undefined
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

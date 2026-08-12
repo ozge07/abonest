@@ -4,6 +4,7 @@ import { AbonelikFormu } from '../components/AbonelikFormu';
 import { Dugme } from '../components/form';
 import { MarkaKarosu } from '../components/MarkaKarosu';
 import { api } from '../lib/api';
+import { tryKarsiligi, useKurlar, type Kurlar } from '../lib/kur';
 import { donguYaz, gunSayisiYaz, paraYaz, tarihYaz } from '../lib/money';
 import type { Abonelik, Sayfa } from '../lib/types';
 
@@ -32,6 +33,8 @@ export function AbonelikSayfasi() {
     queryFn: () => api.get<Sayfa<Abonelik>>('/subscriptions?limit=100'),
   });
 
+  const kurlar = useKurlar();
+
   const durumDegistir = useMutation({
     mutationFn: ({ id, eylem }: { id: string; eylem: string }) =>
       api.post<Abonelik>(`/subscriptions/${id}/${eylem}`),
@@ -52,10 +55,17 @@ export function AbonelikSayfasi() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold">Abonelikler</h1>
-          {aktifler.length > 0 && <OzetSatiri abonelikler={aktifler} />}
+          {aktifler.length > 0 && (
+            <OzetSatiri abonelikler={aktifler} kurlar={kurlar.data} />
+          )}
         </div>
         {!formAcik && (
-          <Dugme onClick={() => setFormAcik(true)}>Yeni abonelik</Dugme>
+          <Dugme onClick={() => setFormAcik(true)}>
+            <span className="flex items-center gap-1.5">
+              <ArtiSimgesi />
+              Yeni abonelik
+            </span>
+          </Dugme>
         )}
       </div>
 
@@ -75,6 +85,7 @@ export function AbonelikSayfasi() {
       {aktifler.length > 0 && (
         <Liste
           abonelikler={aktifler}
+          kurlar={kurlar.data}
           onEylem={(id, eylem) => durumDegistir.mutate({ id, eylem })}
         />
       )}
@@ -86,6 +97,7 @@ export function AbonelikSayfasi() {
           </h2>
           <Liste
             abonelikler={pasifler}
+            kurlar={kurlar.data}
             soluk
             onEylem={(id, eylem) => durumDegistir.mutate({ id, eylem })}
           />
@@ -107,7 +119,13 @@ function sirala(abonelikler: Abonelik[]): Abonelik[] {
   });
 }
 
-function OzetSatiri({ abonelikler }: { abonelikler: Abonelik[] }) {
+function OzetSatiri({
+  abonelikler,
+  kurlar,
+}: {
+  abonelikler: Abonelik[];
+  kurlar: Kurlar | undefined;
+}) {
   // Para birimleri toplanmıyor; her biri kendi toplamını taşıyor.
   const toplamlar = new Map<string, number>();
   for (const abonelik of abonelikler) {
@@ -116,6 +134,27 @@ function OzetSatiri({ abonelikler }: { abonelikler: Abonelik[] }) {
       (toplamlar.get(abonelik.currency) ?? 0) + abonelik.monthlyEquivalentMinor,
     );
   }
+
+  /*
+   * Yabancı paralar TL'ye çevrilip **tek bir aylık toplam** da veriliyor.
+   *
+   * ADR-0007 toplamların para birimi başına ayrı kalmasını söylüyor ve o
+   * karar duruyor: her para birimi kendi satırında. Buradaki ek satır
+   * uydurma bir kurla değil TCMB'nin günlük kuruyla hesaplanıyor ve
+   * "yaklaşık" olduğu, hangi güne ait olduğu yazıyor.
+   */
+  const tumuTry = [...toplamlar].every(([birim]) => birim === 'TRY');
+  const tryToplam = [...toplamlar].reduce((toplam, [birim, tutar]) => {
+    if (birim === 'TRY') return toplam + tutar;
+    const cevrilmis = tryKarsiligi(tutar, birim, kurlar);
+    return cevrilmis === null ? toplam : toplam + cevrilmis;
+  }, 0);
+
+  const cevrilebilir =
+    !tumuTry &&
+    [...toplamlar].every(
+      ([birim]) => birim === 'TRY' || tryKarsiligi(1, birim, kurlar) !== null,
+    );
 
   return (
     <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -126,16 +165,31 @@ function OzetSatiri({ abonelikler }: { abonelikler: Abonelik[] }) {
           .join(' + ')}
       </span>{' '}
       / ay
+      {cevrilebilir && (
+        <span
+          className="tabular-nums"
+          title={
+            kurlar?.date != null
+              ? `${kurlar.date} tarihli TCMB kuruyla`
+              : undefined
+          }
+        >
+          {' '}
+          · yaklaşık {paraYaz(tryToplam, 'TRY')}
+        </span>
+      )}
     </p>
   );
 }
 
 function Liste({
   abonelikler,
+  kurlar,
   soluk = false,
   onEylem,
 }: {
   abonelikler: Abonelik[];
+  kurlar: Kurlar | undefined;
   soluk?: boolean;
   onEylem: (id: string, eylem: string) => void;
 }) {
@@ -147,7 +201,12 @@ function Liste({
       ].join(' ')}
     >
       {abonelikler.map((abonelik) => (
-        <Satir key={abonelik.id} abonelik={abonelik} onEylem={onEylem} />
+        <Satir
+          key={abonelik.id}
+          abonelik={abonelik}
+          kurlar={kurlar}
+          onEylem={onEylem}
+        />
       ))}
     </ul>
   );
@@ -155,13 +214,29 @@ function Liste({
 
 function Satir({
   abonelik,
+  kurlar,
   onEylem,
 }: {
   abonelik: Abonelik;
+  kurlar: Kurlar | undefined;
   onEylem: (id: string, eylem: string) => void;
 }) {
+  const kalanGun =
+    abonelik.nextPaymentDate === null
+      ? null
+      : gunFarki(abonelik.nextPaymentDate);
+  // Üç gün ve altı: kullanıcı iptal edecekse son şansı burada.
+  const cokYakin =
+    abonelik.status === 'ACTIVE' && kalanGun !== null && kalanGun <= 3;
+
   return (
-    <li className="group flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+    <li
+      className={[
+        'group relative flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 transition-colors',
+        'hover:bg-slate-50 dark:hover:bg-slate-800/40',
+        cokYakin ? 'nabiz bg-amber-50/60 dark:bg-amber-500/5' : '',
+      ].join(' ')}
+    >
       <MarkaKarosu
         ad={abonelik.name}
         renk={abonelik.provider?.color}
@@ -188,17 +263,32 @@ function Satir({
       <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
         <SonrakiOdeme tarih={abonelik.nextPaymentDate} />
 
-        <div className="text-right sm:w-32">
-        <p className="font-semibold tabular-nums">
-          {paraYaz(abonelik.priceMinor, abonelik.currency)}
-        </p>
-        {abonelik.billingCycle !== 'MONTHLY' && (
-          // Aylık karşılık, farklı döngüleri karşılaştırılabilir kılan tek
-          // sayı: yıllık 1.299 TL ile aylık 89 TL'yi kafadan kıyaslamak zor.
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            ayda {paraYaz(abonelik.monthlyEquivalentMinor, abonelik.currency)}
+          <div className="text-right sm:w-36">
+          <p className="font-semibold tabular-nums">
+            {paraYaz(abonelik.priceMinor, abonelik.currency)}
           </p>
-        )}
+
+          {/*
+            * Yabancı paranın TL karşılığı.
+            *
+            * Tutar kendi para biriminde kalıyor — kullanıcı 24 doları
+            * ödüyor, 1.146 lirayı değil. TL karşılığı yanında, **yaklaşık**
+            * işaretiyle: kur her gün değişiyor ve kartın kestiği kur
+            * bankanınkinden farklı olabiliyor.
+            */}
+          <TryKarsiligi
+            minor={abonelik.priceMinor}
+            currency={abonelik.currency}
+            kurlar={kurlar}
+          />
+
+          {abonelik.billingCycle !== 'MONTHLY' && (
+            // Aylık karşılık, farklı döngüleri karşılaştırılabilir kılan tek
+            // sayı: yıllık 1.299 TL ile aylık 89 TL'yi kafadan kıyaslamak zor.
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              ayda {paraYaz(abonelik.monthlyEquivalentMinor, abonelik.currency)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -224,6 +314,53 @@ function Satir({
         )}
       </div>
     </li>
+  );
+}
+
+function TryKarsiligi({
+  minor,
+  currency,
+  kurlar,
+}: {
+  minor: number;
+  currency: string;
+  kurlar: Kurlar | undefined;
+}) {
+  const karsilik = tryKarsiligi(minor, currency, kurlar);
+  if (karsilik === null) {
+    // Kur bilinmiyorsa hiçbir şey gösterilmiyor: yanlış bir TL karşılığı,
+    // hiç göstermemekten kötü.
+    return null;
+  }
+
+  return (
+    <p
+      className="text-xs text-slate-500 tabular-nums dark:text-slate-400"
+      title={
+        kurlar?.date != null
+          ? `${kurlar.date} tarihli TCMB kuruyla`
+          : undefined
+      }
+    >
+      ≈ {paraYaz(karsilik, 'TRY')}
+    </p>
+  );
+}
+
+function ArtiSimgesi() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
   );
 }
 

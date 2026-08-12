@@ -17,3 +17,37 @@
 html {
   color-scheme: light dark;
 }
+
+/*
+ * Ödemesi çok yakın olan aboneliğin kenarı nefes alıyor.
+ *
+ * Sert bir yanıp sönme (görünür/kaybolur) dikkat çekmekten çok rahatsız
+ * ediyor ve okumayı zorlaştırıyor; burada yalnızca kenar rengi yumuşakça
+ * gidip geliyor.
+ */
+@keyframes nabiz {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(245 158 11 / 0);
+  }
+}
+
+.nabiz {
+  animation: nabiz 2s ease-in-out infinite;
+}
+
+/*
+ * Hareketi azaltılmış tercihte animasyon durduruluyor.
+ *
+ * Vestibüler rahatsızlığı olan kullanıcılar için sürekli hareket gerçek bir
+ * sorun. Uyarı kaybolmuyor — kenar sabit kalıyor, yalnızca hareket bitiyor.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .nabiz {
+    animation: none;
+    box-shadow: 0 0 0 2px rgb(245 158 11 / 0.45);
+  }
+}

@@ -223,6 +223,26 @@ model Notification {
   @@map("notifications")
 }
 
+/**
+ * Döviz kuru — TCMB'nin günlük bülteninden.
+ *
+ * Kur **saklanıyor**, her istekte çekilmiyor: dış servis düştüğünde ekranın
+ * boş kalmaması ve kullanıcıya hangi günün kuruyla hesapladığımızı
+ * söyleyebilmek için. Tarih alanı bu yüzden var; "yaklaşık ₺X" derken hangi
+ * güne ait olduğunu da yazıyoruz.
+ */
+model ExchangeRate {
+  // ISO 4217 kodu; TRY'nin kendisi saklanmıyor (kendine oranı 1).
+  code      String   @id @db.Char(3)
+  // 1 birim yabancı para kaç TRY. Ondalık, çünkü kur para değil oran.
+  tryPerUnit Decimal @db.Decimal(18, 6)
+  // Kurun ait olduğu gün (TCMB hafta sonu yayın yapmıyor).
+  rateDate  DateTime @db.Date
+  fetchedAt DateTime @default(now())
+
+  @@map("exchange_rates")
+}
+
 model AuditLog {
   id         String   @id @default(uuid(7)) @db.Uuid
   userId     String?  @db.Uuid

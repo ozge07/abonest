@@ -7,6 +7,7 @@ import { LOGGER } from '../../infra/logger/logger.token.js';
 import { AuditService } from '../../infra/audit/audit.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OccurrenceService, today } from '../subscriptions/occurrence.service.js';
+import { RatesService } from '../rates/rates.service.js';
 import { PURGE_AFTER_DAYS } from '../users/users.service.js';
 
 /**
@@ -27,6 +28,7 @@ export interface GunlukSonuc {
   gonderilenEposta: number;
   basarisizEposta: number;
   islenenAbonelik: number;
+  guncellenenKur: number;
   tamamlandi: boolean;
 }
 
@@ -49,6 +51,7 @@ export class DailyJobService {
     private readonly notifications: NotificationsService,
     private readonly email: EmailSender,
     private readonly audit: AuditService,
+    private readonly rates: RatesService,
     @Inject(LOGGER) private readonly logger: Logger,
   ) {}
 
@@ -61,8 +64,13 @@ export class DailyJobService {
       gonderilenEposta: 0,
       basarisizEposta: 0,
       islenenAbonelik: 0,
+      guncellenenKur: 0,
       tamamlandi: true,
     };
+
+    // Kur çekilemezse iş düşmüyor: hatırlatmalar kurdan bağımsız ve elde
+    // zaten son bilinen kur var.
+    sonuc.guncellenenKur = await this.rates.refresh();
 
     sonuc.suresiDolan = await this.bitmisAbonelikleriKapat(bugun);
     sonuc.temizlenenHesap = await this.silinenHesaplariTemizle();
