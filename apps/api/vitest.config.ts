@@ -15,5 +15,26 @@ export default defineConfig({
      * Maliyeti düşük; bütün paket birkaç saniye sürüyor.
      */
     fileParallelism: false,
+
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/main.ts'],
+      /*
+       * Eşikler mevcut seviyenin biraz altında.
+       *
+       * Amaç yüzdeyi yükseltmek değil, **düşüşü fark etmek**. Eşiği tam
+       * mevcut değere koymak, ilgisiz bir düzenlemede CI'ı kırar ve insanı
+       * testi değil eşiği düzeltmeye iter. Yüzdeyi hedef yapmak da kapsam
+       * tiyatrosu üretir: her satıra dokunan ama hiçbir şey iddia etmeyen
+       * testler.
+       */
+      thresholds: {
+        statements: 90,
+        branches: 65,
+        functions: 90,
+        lines: 90,
+      },
+    },
   },
 });

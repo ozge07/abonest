@@ -4,10 +4,10 @@ Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 
-> **Durum: Phase 8 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
+> **Durum: Phase 9 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
 > ana ekran özeti, hatırlatma ve bildirimler, harcama analizi), günlük iş,
 > denetim kaydı ve React arayüzü var. Güvenlik gözden geçirmesi yapıldı —
-> bkz. [`docs/security.md`](docs/security.md). Sırada test derinleştirme var.
+> bkz. [`docs/security.md`](docs/security.md). Sırada yayına hazırlık var.
 
 ## Ne çözüyor
 
@@ -24,6 +24,7 @@ soruyu cevaplıyor: **ne kadar gidiyor, sırada ne var, neyi kullanmıyorum.**
 | [`docs/api.md`](docs/api.md) | Uç noktalar, hata biçimi, kimlik doğrulama, yetkilendirme |
 | [`docs/decisions.md`](docs/decisions.md) | Mimari kararlar ve gerekçeleri (ADR) |
 | [`docs/security.md`](docs/security.md) | Neyin yoklandığı, ne bulunduğu, neye bakılmadığı |
+| [`docs/testing.md`](docs/testing.md) | Test yaklaşımı, kapsam ve mutasyon denemesi |
 
 ## Teknoloji
 
@@ -90,8 +91,9 @@ sorunsuz çalışıyor.
 kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
 
 ```bash
-npm test --workspaces      # 126 test
+npm test --workspaces      # 182 test
 npm run typecheck          # bütün paketler
+npm run test:coverage -w @abonelik/api   # kapsam raporu ve eşikler
 ```
 
 **Testler geliştirme veritabanına yazıyor.** Kendi kullanıcılarını temizliyorlar

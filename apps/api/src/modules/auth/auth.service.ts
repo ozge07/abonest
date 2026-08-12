@@ -214,6 +214,37 @@ export class AuthService {
     });
   }
 
+  /**
+   * Doğrulama kodunu yeniden gönderiyor.
+   *
+   * Uç `docs/api.md` içinde yazıyordu ama uygulanmamıştı: doğrulama
+   * e-postasını kaçıran kullanıcının yeni kod alma yolu yoktu ve hesabı
+   * kalıcı olarak yarım kalıyordu.
+   *
+   * Zaten doğrulanmış hesapta sessizce hiçbir şey yapmıyor — istemciye
+   * "bu adres zaten doğrulanmış" demek, oturumu olmayan biri için bilgi
+   * sızıntısı olurdu; burada oturum var ama davranışı tutarlı tutuyoruz.
+   */
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: { id: true, email: true, emailVerifiedAt: true },
+    });
+
+    if (user === null || user.emailVerifiedAt !== null) {
+      return;
+    }
+
+    // Eski kodlar geçersiz kalıyor: aynı anda birden çok geçerli kod
+    // dolaşması, çalınan bir kodun ömrünü uzatır.
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    await this.sendVerification(user.id, user.email);
+  }
+
   async sendVerification(userId: string, email: string): Promise<void> {
     const { token, hash } = this.tokens.generate();
 

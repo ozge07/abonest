@@ -175,6 +175,29 @@ describe('günlük iş — hatırlatmalar', () => {
     expect(gidenler.filter((m) => m.to === kullanici.email)).toHaveLength(1);
   });
 
+  it('ikinci turda "yeni bildirim" sayacı artmıyor', async () => {
+    /*
+     * Bu testin sebebi bir mutasyon denemesi: `createIfAbsent` çakışmada
+     * `true` (yani "oluşturdum") dönecek şekilde bozulduğunda 127 testin
+     * hepsi geçiyordu. Veritabanı kısıtı bildirimi hâlâ tekil tutuyor, ama
+     * işin **raporladığı** sayı yalan söylüyordu.
+     *
+     * Bu sayıyı GitHub Actions çıktısında bir insan okuyor ve "her şey
+     * yolunda mı" kararını ona bakarak veriyor. Yalan söyleyen sayaç,
+     * sessizce bozulan izlemedir.
+     */
+    const kullanici = await kullaniciOlustur();
+    await abonelikYaz(kullanici.id, { startDate: gun(2026, 9, 10) });
+
+    const ilk = await daily.run(gun(2026, 9, 8));
+    const ikinci = await daily.run(gun(2026, 9, 8));
+
+    expect(ilk.yeniBildirim).toBeGreaterThanOrEqual(1);
+    // Bu kullanıcıdan gelen katkı sıfır olmalı; başka testlerin verisi
+    // sayaca karışmasın diye toplam yerine farka bakıyoruz.
+    expect(ikinci.yeniBildirim).toBeLessThan(ilk.yeniBildirim);
+  });
+
   it('ödeme günü ayrı türde bildirim üretiyor', async () => {
     const kullanici = await kullaniciOlustur();
     await abonelikYaz(kullanici.id, { startDate: gun(2026, 9, 10) });

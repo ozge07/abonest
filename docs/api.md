@@ -89,7 +89,7 @@ POST   /auth/login              200 + oturum · 401 · 429
 POST   /auth/logout             204
 POST   /auth/logout-all         204   diğer tüm oturumları kapat
 POST   /auth/verify-email       204 · 410 token süresi doldu
-POST   /auth/resend-verification 202 · 429
+POST   /auth/resend-verification 202 · 429   ← oturum gerekiyor
 POST   /auth/forgot-password    202   ← e-posta var/yok AYRIMI SIZDIRILMAZ
 POST   /auth/reset-password     204 · 410
 ```
@@ -105,7 +105,9 @@ PATCH  /me                      200   ad, para birimi, saat dilimi, dil
 PATCH  /me/password             204   → tüm diğer oturumlar düşer
 DELETE /me                      202   30 günlük geri alınabilir silme
 GET    /me/sessions             200   aktif oturumlar
-DELETE /me/sessions/{id}        204
+DELETE /me/sessions/{id}        204   başkasının oturumu da 204 alır ama
+                                      hiçbir şey silinmez — varlık bilgisi
+                                      sızmasın diye
 ```
 
 ### Abonelikler

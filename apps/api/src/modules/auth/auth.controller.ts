@@ -93,6 +93,22 @@ export class AuthController {
     }
   }
 
+  /**
+   * Doğrulama kodunu yeniden gönderiyor.
+   *
+   * `@Public()` **değil**: kullanıcı giriş yapmış olmalı. Herkese açık
+   * olsaydı, e-posta adresi bilen biri o adrese istediği kadar posta
+   * gönderttirebilirdi.
+   */
+  @Post('resend-verification')
+  @HttpCode(202)
+  @Throttle({ limit: 3, windowMs: 60 * 60 * 1000 })
+  async resendVerification(@Req() request: AuthenticatedRequest): Promise<void> {
+    if (request.user !== undefined) {
+      await this.auth.resendVerification(request.user.id);
+    }
+  }
+
   @Public()
   @Post('verify-email')
   @HttpCode(204)

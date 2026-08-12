@@ -359,3 +359,22 @@ değiştiremez hâle gelmiyor. Karşılığında kayıt eksiksiz değil — dene
 kaydını hukuki delil değil, olay incelemesi aracı olarak konumlandırıyoruz.
 Eksiksizlik gerekirse aynı işlemde (transaction) yazmaya geçilir ve o zaman
 kullanılabilirlik bedeli kabul edilir.
+
+---
+
+## ADR-0021 · Kapsam eşiği hedef değil, düşüş alarmı
+
+**Bağlam.** Kapsam ölçümü gerçek boşluklar gösterdi (`catalog.service` %44,
+`users.service` %50) ve bunlar kapatıldı: %86 → %94 satır.
+
+**Karar.** Eşikler mevcut seviyenin **altında** sabitlendi: %90 satır, %65 dal.
+
+**Sonuç.** Büyük bir düşüş CI'ı kırıyor, normal düzenleme kırmıyor. Eşiği tam
+mevcut değere koymak, ilgisiz bir değişiklikte insanı testi değil eşiği
+düzeltmeye iterdi. Yüzdeyi hedef yapmak da kapsam tiyatrosu üretir: her satıra
+dokunan ama hiçbir şey iddia etmeyen testler.
+
+**Neden yüzde tek başına yetmiyor.** Mutasyon denemesinde
+`notifications.service` %97 kapsamdayken, "çakışmada oluşturdum de" mutasyonu
+128 testin hiçbirini düşürmedi. Kapsam çalışan satırı sayıyor, iddia edileni
+değil. Boşluk kapatıldı; ayrıntı `docs/testing.md`.

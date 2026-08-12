@@ -73,6 +73,12 @@ jobs:
       - name: Testler
         run: npm test
 
+      # Kapsam eşiği: yüzdeyi hedef yapmak için değil, düşüşü fark etmek
+      # için. Eşikler mevcut seviyenin altında (bkz. apps/api/vitest.config.ts).
+      - name: Kapsam eşiği
+        working-directory: apps/api
+        run: npm run test:coverage
+
       - name: Derleme
         run: npm run build
 
