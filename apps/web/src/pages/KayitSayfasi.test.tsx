@@ -180,6 +180,71 @@ describe('kayıt formu — sunucudan gelen alan hatası', () => {
   });
 });
 
+describe('şifre göster/gizle', () => {
+  const gozDugmesi = () => screen.getByRole('button', { name: /şifreyi göster/i });
+
+  it('varsayılan olarak şifre gizli', () => {
+    // Omuz üstünden bakan biri varken şifreyi ekranda tutmak kullanıcının
+    // tercihi olmalı, bizim varsayılanımız değil.
+    ciz();
+    expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'password');
+  });
+
+  it('göze basınca şifre görünür oluyor', async () => {
+    const kullanici = userEvent.setup();
+    ciz();
+
+    await kullanici.type(screen.getByLabelText('Şifre'), 'gizli123');
+    await kullanici.click(gozDugmesi());
+
+    const alan = screen.getByLabelText('Şifre');
+    expect(alan).toHaveAttribute('type', 'text');
+    expect(alan).toHaveValue('gizli123');
+  });
+
+  it('tekrar basınca yeniden gizleniyor', async () => {
+    const kullanici = userEvent.setup();
+    ciz();
+
+    await kullanici.click(gozDugmesi());
+    await kullanici.click(screen.getByRole('button', { name: /şifreyi gizle/i }));
+
+    expect(screen.getByLabelText('Şifre')).toHaveAttribute('type', 'password');
+  });
+
+  it('göze basmak formu göndermiyor', async () => {
+    // Düğmenin varsayılan türü `submit`; belirtilmeseydi her tıklama formu
+    // gönderirdi ve kullanıcı şifresini görmek isterken hata alırdı.
+    const kullanici = userEvent.setup();
+    ciz();
+
+    await kullanici.type(screen.getByLabelText('Ad'), 'Özge');
+    await kullanici.type(screen.getByLabelText('E-posta'), 'ozge@example.com');
+    await kullanici.type(screen.getByLabelText('Şifre'), 'abc123');
+    await kullanici.click(gozDugmesi());
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('durumu ekran okuyucuya bildiriyor', async () => {
+    const kullanici = userEvent.setup();
+    ciz();
+
+    expect(gozDugmesi()).toHaveAttribute('aria-pressed', 'false');
+    await kullanici.click(gozDugmesi());
+    expect(screen.getByRole('button', { name: /şifreyi gizle/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('şifre olmayan alanlarda göz yok', () => {
+    ciz();
+    // Ad ve e-posta alanlarında düğme olmamalı: formda tek göz var.
+    expect(screen.queryAllByRole('button', { name: /şifreyi/i })).toHaveLength(1);
+  });
+});
+
 describe('kayıt formu — yeni kurallar', () => {
   it('altı karakterlik şifreyi kabul ediyor', async () => {
     const kullanici = userEvent.setup();

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -24,19 +25,50 @@ export function Alan({ etiket, hata, ipucu, id, ...rest }: AlanProps) {
   const alanId = id ?? rest.name ?? etiket;
   const hataId = `${alanId}-hata`;
 
+  /*
+   * Şifre alanında göz düğmesi.
+   *
+   * Yazdığını göremeden uzun bir şifre girmek hata üretiyor ve kullanıcı
+   * neyi yanlış yazdığını anlamıyor. Görünürlük **varsayılan olarak kapalı**:
+   * omuz üstünden bakan biri varken şifreyi ekranda tutmak kullanıcının
+   * kendi tercihi olmalı, bizim varsayılanımız değil.
+   */
+  const [gorunur, setGorunur] = useState(false);
+  const sifreAlaniMi = rest.type === 'password';
 
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={alanId} className="text-sm font-medium">
         {etiket}
       </label>
-      <input
-        id={alanId}
-        aria-invalid={hata !== undefined}
-        aria-describedby={hata !== undefined ? hataId : undefined}
-        className={girdiSinifi(hata !== undefined)}
-        {...rest}
-      />
+
+      <div className="relative">
+        <input
+          id={alanId}
+          aria-invalid={hata !== undefined}
+          aria-describedby={hata !== undefined ? hataId : undefined}
+          className={girdiSinifi(hata !== undefined, sifreAlaniMi)}
+          {...rest}
+          {...(sifreAlaniMi ? { type: gorunur ? 'text' : 'password' } : {})}
+        />
+
+        {sifreAlaniMi && (
+          <button
+            // `type="button"`: varsayılan `submit` olsaydı göze her
+            // tıklayışta form gönderilirdi.
+            type="button"
+            onClick={() => setGorunur((o) => !o)}
+            aria-label={gorunur ? 'Şifreyi gizle' : 'Şifreyi göster'}
+            aria-pressed={gorunur}
+            // Şifre yöneticileri ve ekran okuyucular için alanın kendisi
+            // önemli; düğme sekme sırasında ondan sonra geliyor.
+            className="absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-md text-slate-500 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-marka-500/40 focus-visible:outline-none dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            <GozSimgesi kapali={gorunur} />
+          </button>
+        )}
+      </div>
+
       {ipucu !== undefined && hata === undefined && (
         <p className="text-xs text-slate-500 dark:text-slate-400">{ipucu}</p>
       )}
@@ -46,6 +78,32 @@ export function Alan({ etiket, hata, ipucu, id, ...rest }: AlanProps) {
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Göz simgesi; şifre görünürken üzeri çizili.
+ *
+ * `aria-hidden`: anlamı zaten düğmenin `aria-label`'ında, ekran okuyucu aynı
+ * şeyi iki kez söylemesin.
+ */
+function GozSimgesi({ kapali }: { kapali: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7" />
+      <circle cx="12" cy="12" r="3" />
+      {kapali && <path d="M3 3l18 18" />}
+    </svg>
   );
 }
 
@@ -73,9 +131,11 @@ export function Secim({ etiket, hata, id, children, ...rest }: SecimProps) {
   );
 }
 
-function girdiSinifi(hatali: boolean): string {
+function girdiSinifi(hatali: boolean, sagBosluk = false): string {
   return [
-    'rounded-md border px-3 py-2 text-sm outline-none transition-colors',
+    'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors',
+    // Göz düğmesi metnin üstüne binmesin.
+    sagBosluk ? 'pr-10' : '',
     'bg-white dark:bg-slate-900',
     'focus:ring-2 focus:ring-marka-500/40',
     hatali
