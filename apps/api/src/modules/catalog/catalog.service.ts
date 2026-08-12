@@ -14,7 +14,7 @@ export class CatalogService {
           : {}),
       },
       select: {
-        id: true, name: true, slug: true, logoUrl: true, website: true,
+        id: true, name: true, slug: true, logoUrl: true, website: true, color: true,
         defaultCategoryId: true, defaultBillingCycle: true, defaultCurrency: true,
       },
       orderBy: { name: 'asc' },

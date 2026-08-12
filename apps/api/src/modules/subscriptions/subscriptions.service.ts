@@ -314,7 +314,12 @@ function toDto(row: Row) {
     category: { id: row.category.id, name: row.category.name },
     provider:
       row.provider !== null
-        ? { id: row.provider.id, name: row.provider.name, logoUrl: row.provider.logoUrl }
+        ? {
+            id: row.provider.id,
+            name: row.provider.name,
+            logoUrl: row.provider.logoUrl,
+            color: row.provider.color,
+          }
         : null,
     createdAt: row.createdAt.toISOString(),
   };

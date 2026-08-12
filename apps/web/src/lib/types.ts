@@ -34,6 +34,8 @@ export interface Saglayici {
   name: string;
   slug: string;
   logoUrl: string | null;
+  /** Markanın ana rengi; arayüz marka karosunu bununla çiziyor. */
+  color: string | null;
   website: string | null;
   defaultCategoryId: string | null;
   defaultBillingCycle: BillingCycle | null;
@@ -61,7 +63,12 @@ export interface Abonelik {
   reminderEnabled: boolean;
   reminderDaysBefore: number;
   category: { id: string; name: string };
-  provider: { id: string; name: string; logoUrl: string | null } | null;
+  provider: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    color: string | null;
+  } | null;
   createdAt: string;
 }
 

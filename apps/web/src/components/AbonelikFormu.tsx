@@ -36,6 +36,15 @@ export function AbonelikFormu({
   });
 
   const [ad, setAd] = useState('');
+  /*
+   * Seçilen sağlayıcı **kaydediliyor**.
+   *
+   * Önce yalnızca formu dolduruyor, `providerId` gönderilmiyordu: katalogdaki
+   * marka bilgisi aboneliğe hiç bağlanmıyor, dolayısıyla listede marka rengi
+   * ve rozeti gösterilemiyordu. Veritabanında 19 aboneliğin 19'u sağlayıcısız
+   * duruyordu.
+   */
+  const [saglayiciId, setSaglayiciId] = useState('');
   const [tutar, setTutar] = useState('');
   const [paraBirimi, setParaBirimi] = useState('TRY');
   const [dongu, setDongu] = useState('MONTHLY');
@@ -65,6 +74,7 @@ export function AbonelikFormu({
    * kontrol etmeden kaydetmesine yol açardı.
    */
   function saglayiciSec(id: string) {
+    setSaglayiciId(id);
     const saglayici = saglayicilar.data?.find((s) => s.id === id);
     if (saglayici === undefined) {
       return;
@@ -98,6 +108,7 @@ export function AbonelikFormu({
       currency: paraBirimi,
       billingCycle: dongu,
       startDate: baslangic,
+      ...(saglayiciId !== '' ? { providerId: saglayiciId } : {}),
       ...(dongu === 'CUSTOM' ? { customIntervalDays: Number(aralik) } : {}),
     });
   }
@@ -116,7 +127,7 @@ export function AbonelikFormu({
       <Secim
         etiket="Hazır sağlayıcıdan seç"
         name="provider"
-        defaultValue=""
+        value={saglayiciId}
         onChange={(o) => saglayiciSec(o.target.value)}
       >
         <option value="">— kendim yazacağım —</option>

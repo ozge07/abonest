@@ -62,52 +62,60 @@ interface SaglayiciTohumu {
    */
   currency?: string;
   cycle?: BillingCycle;
+  /**
+   * Markanın ana rengi.
+   *
+   * Yalnızca emin olduklarım dolu. Emin olmadığım markalarda boş bırakıyorum;
+   * arayüz o zaman adından türettiği kararlı bir renk kullanıyor. Uydurma bir
+   * marka rengi, uydurma bir logo adresi kadar yanlış olurdu.
+   */
+  color?: string;
 }
 
 const SAGLAYICILAR: SaglayiciTohumu[] = [
   // Video
-  { slug: 'netflix', name: 'Netflix', kategori: 'video', website: 'https://www.netflix.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'disney-plus', name: 'Disney+', kategori: 'video', website: 'https://www.disneyplus.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'amazon-prime-video', name: 'Amazon Prime Video', kategori: 'video', website: 'https://www.primevideo.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'netflix', name: 'Netflix', kategori: 'video', website: 'https://www.netflix.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#E50914' },
+  { slug: 'disney-plus', name: 'Disney+', kategori: 'video', website: 'https://www.disneyplus.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#113CCF' },
+  { slug: 'amazon-prime-video', name: 'Amazon Prime Video', kategori: 'video', website: 'https://www.primevideo.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#00A8E1' },
   { slug: 'blutv', name: 'BluTV', kategori: 'video', website: 'https://www.blutv.com', currency: 'TRY', cycle: 'MONTHLY' },
   { slug: 'exxen', name: 'Exxen', kategori: 'video', website: 'https://www.exxen.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'youtube-premium', name: 'YouTube Premium', kategori: 'video', website: 'https://www.youtube.com/premium', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'youtube-premium', name: 'YouTube Premium', kategori: 'video', website: 'https://www.youtube.com/premium', currency: 'TRY', cycle: 'MONTHLY' , color: '#FF0000' },
   { slug: 'mubi', name: 'MUBI', kategori: 'video', website: 'https://mubi.com', cycle: 'MONTHLY' },
 
   // Müzik
-  { slug: 'spotify', name: 'Spotify', kategori: 'muzik', website: 'https://www.spotify.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'apple-music', name: 'Apple Music', kategori: 'muzik', website: 'https://music.apple.com', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'spotify', name: 'Spotify', kategori: 'muzik', website: 'https://www.spotify.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#1DB954' },
+  { slug: 'apple-music', name: 'Apple Music', kategori: 'muzik', website: 'https://music.apple.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#FA243C' },
   { slug: 'fizy', name: 'fizy', kategori: 'muzik', website: 'https://fizy.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'deezer', name: 'Deezer', kategori: 'muzik', website: 'https://www.deezer.com', cycle: 'MONTHLY' },
+  { slug: 'deezer', name: 'Deezer', kategori: 'muzik', website: 'https://www.deezer.com', cycle: 'MONTHLY' , color: '#A238FF' },
 
   // Oyun
-  { slug: 'xbox-game-pass', name: 'Xbox Game Pass', kategori: 'oyun', website: 'https://www.xbox.com/xbox-game-pass', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'playstation-plus', name: 'PlayStation Plus', kategori: 'oyun', website: 'https://www.playstation.com/ps-plus', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'nintendo-switch-online', name: 'Nintendo Switch Online', kategori: 'oyun', website: 'https://www.nintendo.com/switch/online', cycle: 'YEARLY' },
+  { slug: 'xbox-game-pass', name: 'Xbox Game Pass', kategori: 'oyun', website: 'https://www.xbox.com/xbox-game-pass', currency: 'TRY', cycle: 'MONTHLY' , color: '#107C10' },
+  { slug: 'playstation-plus', name: 'PlayStation Plus', kategori: 'oyun', website: 'https://www.playstation.com/ps-plus', currency: 'TRY', cycle: 'MONTHLY' , color: '#003791' },
+  { slug: 'nintendo-switch-online', name: 'Nintendo Switch Online', kategori: 'oyun', website: 'https://www.nintendo.com/switch/online', cycle: 'YEARLY' , color: '#E60012' },
 
   // Yazılım ve araçlar
   { slug: 'adobe-creative-cloud', name: 'Adobe Creative Cloud', kategori: 'yazilim', website: 'https://www.adobe.com/creativecloud.html', cycle: 'MONTHLY' },
-  { slug: 'microsoft-365', name: 'Microsoft 365', kategori: 'yazilim', website: 'https://www.microsoft.com/microsoft-365', currency: 'TRY', cycle: 'YEARLY' },
-  { slug: 'canva', name: 'Canva Pro', kategori: 'yazilim', website: 'https://www.canva.com', cycle: 'MONTHLY' },
-  { slug: 'notion', name: 'Notion', kategori: 'yazilim', website: 'https://www.notion.so', currency: 'USD', cycle: 'MONTHLY' },
-  { slug: 'github', name: 'GitHub', kategori: 'yazilim', website: 'https://github.com', currency: 'USD', cycle: 'MONTHLY' },
-  { slug: 'chatgpt-plus', name: 'ChatGPT Plus', kategori: 'yazilim', website: 'https://chat.openai.com', currency: 'USD', cycle: 'MONTHLY' },
-  { slug: 'claude-pro', name: 'Claude Pro', kategori: 'yazilim', website: 'https://claude.ai', currency: 'USD', cycle: 'MONTHLY' },
+  { slug: 'microsoft-365', name: 'Microsoft 365', kategori: 'yazilim', website: 'https://www.microsoft.com/microsoft-365', currency: 'TRY', cycle: 'YEARLY' , color: '#D83B01' },
+  { slug: 'canva', name: 'Canva Pro', kategori: 'yazilim', website: 'https://www.canva.com', cycle: 'MONTHLY' , color: '#00C4CC' },
+  { slug: 'notion', name: 'Notion', kategori: 'yazilim', website: 'https://www.notion.so', currency: 'USD', cycle: 'MONTHLY' , color: '#000000' },
+  { slug: 'github', name: 'GitHub', kategori: 'yazilim', website: 'https://github.com', currency: 'USD', cycle: 'MONTHLY' , color: '#181717' },
+  { slug: 'chatgpt-plus', name: 'ChatGPT Plus', kategori: 'yazilim', website: 'https://chat.openai.com', currency: 'USD', cycle: 'MONTHLY' , color: '#10A37F' },
+  { slug: 'claude-pro', name: 'Claude Pro', kategori: 'yazilim', website: 'https://claude.ai', currency: 'USD', cycle: 'MONTHLY' , color: '#D97757' },
 
   // Bulut depolama
   { slug: 'icloud-plus', name: 'iCloud+', kategori: 'bulut', website: 'https://www.icloud.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'google-one', name: 'Google One', kategori: 'bulut', website: 'https://one.google.com', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'dropbox', name: 'Dropbox', kategori: 'bulut', website: 'https://www.dropbox.com', cycle: 'MONTHLY' },
+  { slug: 'google-one', name: 'Google One', kategori: 'bulut', website: 'https://one.google.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#4285F4' },
+  { slug: 'dropbox', name: 'Dropbox', kategori: 'bulut', website: 'https://www.dropbox.com', cycle: 'MONTHLY' , color: '#0061FF' },
 
   // Spor ve eğitim
-  { slug: 'strava', name: 'Strava', kategori: 'spor', website: 'https://www.strava.com', cycle: 'MONTHLY' },
-  { slug: 'duolingo-super', name: 'Duolingo Super', kategori: 'egitim', website: 'https://www.duolingo.com', cycle: 'YEARLY' },
-  { slug: 'udemy', name: 'Udemy', kategori: 'egitim', website: 'https://www.udemy.com', cycle: 'MONTHLY' },
+  { slug: 'strava', name: 'Strava', kategori: 'spor', website: 'https://www.strava.com', cycle: 'MONTHLY' , color: '#FC4C02' },
+  { slug: 'duolingo-super', name: 'Duolingo Super', kategori: 'egitim', website: 'https://www.duolingo.com', cycle: 'YEARLY' , color: '#58CC02' },
+  { slug: 'udemy', name: 'Udemy', kategori: 'egitim', website: 'https://www.udemy.com', cycle: 'MONTHLY' , color: '#A435F0' },
 
   // İnternet ve telefon
   { slug: 'turk-telekom', name: 'Türk Telekom', kategori: 'internet', website: 'https://www.turktelekom.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'turkcell', name: 'Turkcell', kategori: 'internet', website: 'https://www.turkcell.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
-  { slug: 'vodafone', name: 'Vodafone', kategori: 'internet', website: 'https://www.vodafone.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
+  { slug: 'turkcell', name: 'Turkcell', kategori: 'internet', website: 'https://www.turkcell.com.tr', currency: 'TRY', cycle: 'MONTHLY' , color: '#FFC900' },
+  { slug: 'vodafone', name: 'Vodafone', kategori: 'internet', website: 'https://www.vodafone.com.tr', currency: 'TRY', cycle: 'MONTHLY' , color: '#E60000' },
 ];
 
 async function main(): Promise<void> {
@@ -167,6 +175,7 @@ async function tohumlaSaglayicilar(
     const alanlar = {
       name: saglayici.name,
       website: saglayici.website,
+      color: saglayici.color ?? null,
       defaultCategoryId: kategoriId,
       defaultCurrency: saglayici.currency ?? null,
       defaultBillingCycle: saglayici.cycle ?? null,

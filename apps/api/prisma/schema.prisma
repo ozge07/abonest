@@ -116,6 +116,10 @@ model Provider {
   name                String
   slug                String        @unique
   logoUrl             String?
+  // Markanın ana rengi. Logo dosyası barındırmıyoruz; arayüz bu renkle
+  // markanın baş harflerinden bir karo çiziyor. Tanınırlığın çoğu zaten
+  // renkten geliyor ve hiçbir dış isteğe ihtiyaç kalmıyor.
+  color               String?       @db.VarChar(9)
   website             String?
   defaultCategoryId   String?       @db.Uuid
   defaultBillingCycle BillingCycle?
