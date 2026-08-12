@@ -161,31 +161,38 @@ html {
 }
 
 /*
- * Renkler birbirine yakın tonlardan seçildi: mavi → çivit → deniz mavisi.
- * İlk denemede üçüncü leke mor ve baskındı; üç ayrı renk ekranı dağıtıyor
- * ve markanın mavisiyle yarışıyordu. Komşu tonlar tek bir atmosfer
- * kuruyor, dikkat çekmiyor.
+ * Renk seçimi iki turda oturdu.
+ *
+ * Önce üçüncü leke mordu ve baskındı — üç ayrı renk ekranı dağıtıyor,
+ * markanın mavisiyle yarışıyordu. Komşu tonlara çekildi.
+ *
+ * Sonra hepsi maviye çok yakın kalınca ekran tek renge boğuldu ve gözü
+ * yormaya başladı. Şimdiki palet **doygunluğu düşük**: bir leke hafif
+ * mavi, biri nötr sıcak gri, biri soluk yeşilimsi. Aralarındaki fark
+ * derinlik veriyor ama hiçbiri renk olarak öne çıkmıyor. Marka mavisi
+ * yalnızca düğmelerde ve kartın kendisinde kalıyor — ayırt edici olması
+ * gereken yerde.
  */
 
 /* Açık tema */
 :root {
-  --tema-zemin: #f6f8fc;
-  --tema-leke-guc: 0.45;
-  --tema-leke-a: #bcd7f8;
-  --tema-leke-b: #cbd8f7;
-  --tema-leke-c: #c3e4ef;
-  --tema-cizgi: rgb(15 23 42 / 0.04);
+  --tema-zemin: #fafbfc;
+  --tema-leke-guc: 0.32;
+  --tema-leke-a: #dbe3ee;
+  --tema-leke-b: #ece8e3;
+  --tema-leke-c: #e0e8e6;
+  --tema-cizgi: rgb(15 23 42 / 0.035);
 }
 
 /* Koyu tema */
 @media (prefers-color-scheme: dark) {
   :root {
-    --tema-zemin: #070c17;
-    --tema-leke-guc: 0.3;
-    --tema-leke-a: #1d4ed8;
-    --tema-leke-b: #3730a3;
-    --tema-leke-c: #0e7490;
-    --tema-cizgi: rgb(148 163 184 / 0.055);
+    --tema-zemin: #0a0d13;
+    --tema-leke-guc: 0.22;
+    --tema-leke-a: #1e293b;
+    --tema-leke-b: #262433;
+    --tema-leke-c: #1a2b2c;
+    --tema-cizgi: rgb(148 163 184 / 0.045);
   }
 }
 
