@@ -84,6 +84,8 @@ export interface Ozet {
   upcoming: {
     subscriptionId: string;
     name: string;
+    logoUrl: string | null;
+    color: string | null;
     amountMinor: number;
     currency: string;
     dueDate: string;
@@ -92,6 +94,7 @@ export interface Ozet {
   byCategory: {
     categoryId: string;
     name: string;
+    color: string | null;
     currency: string;
     monthlyMinor: number;
     share: number;

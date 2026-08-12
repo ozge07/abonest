@@ -26,6 +26,8 @@ interface MarkaKarosuProps {
   /** Depodaki logo yolu; yoksa harf karosu çiziliyor. */
   logo?: string | null | undefined;
   boyut?: 'kucuk' | 'normal';
+  /** Ödemesi çok yakınsa karo nefes alıyor. */
+  nabiz?: boolean;
 }
 
 export function MarkaKarosu({
@@ -33,13 +35,16 @@ export function MarkaKarosu({
   renk,
   logo,
   boyut = 'normal',
+  nabiz = false,
 }: MarkaKarosuProps) {
   const arkaPlan = renk ?? renkTuret(ad);
   const koyuMetin = acikRenkMi(arkaPlan);
   const [logoBozuk, setLogoBozuk] = useState(false);
 
-  const olculer =
-    boyut === 'kucuk' ? 'h-8 w-8 text-xs' : 'h-11 w-11 text-sm';
+  const olculer = [
+    boyut === 'kucuk' ? 'h-8 w-8 text-xs' : 'h-11 w-11 text-sm',
+    nabiz ? 'nabiz' : '',
+  ].join(' ');
 
   if (logo != null && logo !== '' && !logoBozuk) {
     return (

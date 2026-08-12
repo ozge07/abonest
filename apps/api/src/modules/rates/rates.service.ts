@@ -35,12 +35,24 @@ export class RatesService {
     @Inject(LOGGER) private readonly logger: Logger,
   ) {}
 
-  /** Arayüzün kullandığı biçim: 1 birim yabancı para kaç TRY. */
+  /**
+   * Arayüzün kullandığı biçim: 1 birim yabancı para kaç TRY.
+   *
+   * **Bayatsa anında tazeleniyor.** Yalnızca gecelik işe bırakmak, gün
+   * içinde uygulamayı ilk açan kullanıcının dünkü kuru görmesi demekti.
+   * TCMB günde bir kez (~15:30) yayımladığı için "anlık kur" diye bir şey
+   * yok; elde edilebilecek en güncel değer bugünün bülteni ve burada o
+   * garanti ediliyor.
+   */
   async latest(): Promise<{
     base: 'TRY';
     date: string | null;
     rates: Record<string, number>;
   }> {
+    if (await this.bayatMi()) {
+      await this.refresh();
+    }
+
     const satirlar = await this.prisma.exchangeRate.findMany();
 
     const rates: Record<string, number> = {};
@@ -58,6 +70,38 @@ export class RatesService {
       date: enYeni === null ? null : enYeni.toISOString().slice(0, 10),
       rates,
     };
+  }
+
+  /**
+   * Saklanan kur bugünden eski mi?
+   *
+   * Hafta sonu ve tatillerde TCMB yayın yapmıyor; o günlerde tazeleme
+   * denemesi sonuç getirmiyor ve elde son iş gününün kuru kalıyor — doğru
+   * davranış bu. Deneme ucuz: başarısız olursa saklanan veri değişmiyor.
+   */
+  private async bayatMi(): Promise<boolean> {
+    const enYeni = await this.prisma.exchangeRate.findFirst({
+      orderBy: { rateDate: 'desc' },
+      select: { rateDate: true, fetchedAt: true },
+    });
+
+    if (enYeni === null) {
+      return true;
+    }
+
+    const bugun = new Date();
+    const bugunGun = Date.UTC(
+      bugun.getUTCFullYear(),
+      bugun.getUTCMonth(),
+      bugun.getUTCDate(),
+    );
+
+    // Kur bugüne aitse taze. Değilse, bugün zaten denediysek tekrar
+    // denemiyoruz — hafta sonu her istekte TCMB'ye gitmenin anlamı yok.
+    if (enYeni.rateDate.getTime() >= bugunGun) {
+      return false;
+    }
+    return enYeni.fetchedAt.getTime() < bugunGun;
   }
 
   /**

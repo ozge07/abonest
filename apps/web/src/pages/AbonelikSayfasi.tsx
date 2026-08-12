@@ -234,13 +234,14 @@ function Satir({
       className={[
         'group relative flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 transition-colors',
         'hover:bg-slate-50 dark:hover:bg-slate-800/40',
-        cokYakin ? 'nabiz bg-amber-50/60 dark:bg-amber-500/5' : '',
+        cokYakin ? 'bg-amber-50/60 dark:bg-amber-500/5' : '',
       ].join(' ')}
     >
       <MarkaKarosu
         ad={abonelik.name}
         renk={abonelik.provider?.color}
         logo={abonelik.provider?.logoUrl}
+        nabiz={cokYakin}
       />
 
       <div className="min-w-0 flex-1">

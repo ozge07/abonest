@@ -19,24 +19,36 @@ html {
 }
 
 /*
- * Ödemesi çok yakın olan aboneliğin kenarı nefes alıyor.
+ * Ödemesi çok yakın olan servisin logosu nefes alıyor.
+ *
+ * Efekt **karonun etrafında**, satırın değil: satıra verildiğinde
+ * `divide-y` ile bölünmüş listede gölge kırpılıyor ve ortadaki ayraç
+ * çizgisi yanıp sönüyormuş gibi görünüyordu.
  *
  * Sert bir yanıp sönme (görünür/kaybolur) dikkat çekmekten çok rahatsız
- * ediyor ve okumayı zorlaştırıyor; burada yalnızca kenar rengi yumuşakça
- * gidip geliyor.
+ * ediyor; burada halka dışarı doğru açılıp sönüyor — göz otomatik olarak
+ * oraya gidiyor ama satırı okumak zorlaşmıyor.
  */
 @keyframes nabiz {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(245 158 11 / 0.45);
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(245 158 11 / 0.7),
+      0 0 0 0 rgb(245 158 11 / 0.4);
   }
-  50% {
-    box-shadow: 0 0 0 4px rgb(245 158 11 / 0);
+  70% {
+    box-shadow:
+      0 0 0 6px rgb(245 158 11 / 0),
+      0 0 0 12px rgb(245 158 11 / 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(245 158 11 / 0),
+      0 0 0 0 rgb(245 158 11 / 0);
   }
 }
 
 .nabiz {
-  animation: nabiz 2s ease-in-out infinite;
+  animation: nabiz 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /*
@@ -48,6 +60,6 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .nabiz {
     animation: none;
-    box-shadow: 0 0 0 2px rgb(245 158 11 / 0.45);
+    box-shadow: 0 0 0 3px rgb(245 158 11 / 0.6);
   }
 }
