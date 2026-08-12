@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { occurrencesBetween, toCalendarDate } from '@abonelik/shared';
+import {
+  nextOccurrence,
+  occurrencesBetween,
+  toCalendarDate,
+} from '@abonelik/shared';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 
 /**
@@ -42,14 +46,37 @@ export class OccurrenceService {
       return 0;
     }
 
+    const spec = {
+      cycle: sub.billingCycle,
+      customIntervalDays: sub.customIntervalDays ?? undefined,
+    };
+
+    /*
+     * "Sıradaki ödeme" tarihi burada tazeleniyor.
+     *
+     * Alan yalnızca abonelik oluşturulurken/güncellenirken yazılıyordu ve
+     * **hiçbir yerde ilerletilmiyordu**: ödeme günü geçtikten sonra listede
+     * geçmiş bir tarih görünmeye devam ediyordu. Silmeden geri getirmede de
+     * boş kalıyordu — silerken `null` yapılıyor ama geri getirirken kimse
+     * geri koymuyordu, dolayısıyla geri gelen abonelikte "sıradaki ödeme"
+     * hiç görünmüyordu.
+     *
+     * Burası doğru yer: bu servis zaten her gün bütün aktif abonelikler
+     * için çalışıyor ve "sırada ne var" sorusunun cevabını hesaplıyor.
+     */
+    const siradaki = nextOccurrence(sub.startDate, spec, bugun, sub.endDate);
+    if (siradaki?.getTime() !== sub.nextPaymentDate?.getTime()) {
+      await this.prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: { nextPaymentDate: siradaki },
+      });
+    }
+
     const ufuk = new Date(bugun.getTime() + HORIZON_DAYS * 86_400_000);
 
     const tarihler = occurrencesBetween(
       sub.startDate,
-      {
-        cycle: sub.billingCycle,
-        customIntervalDays: sub.customIntervalDays ?? undefined,
-      },
+      spec,
       bugun,
       ufuk,
       sub.endDate,

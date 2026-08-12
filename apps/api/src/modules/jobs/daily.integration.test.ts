@@ -380,6 +380,33 @@ describe('günlük iş — ödeme üretimi', () => {
     // giriyor, 10 Kasım girmiyor.
     expect(sayi).toBe(2);
   });
+
+  it('ödeme günü geçtikten sonra "sıradaki ödeme" ilerliyor', async () => {
+    /*
+     * `nextPaymentDate` yalnızca abonelik oluşturulup güncellenirken
+     * yazılıyordu; **hiçbir yerde ilerletilmiyordu**. Ödeme günü geçince
+     * listede geçmiş bir tarih asılı kalıyordu ve kullanıcı bunu "tarihler
+     * yanlış" olarak görüyordu.
+     */
+    const kullanici = await kullaniciOlustur();
+    const abonelik = await abonelikYaz(kullanici.id, {
+      startDate: gun(2026, 9, 10),
+    });
+
+    await daily.run(gun(2026, 9, 8));
+    expect(
+      (await prisma.subscription.findUniqueOrThrow({ where: { id: abonelik.id } }))
+        .nextPaymentDate,
+    ).toEqual(gun(2026, 9, 10));
+
+    // 10 Eylül geçti; sıradaki 10 Ekim olmalı.
+    await daily.run(gun(2026, 9, 11));
+
+    expect(
+      (await prisma.subscription.findUniqueOrThrow({ where: { id: abonelik.id } }))
+        .nextPaymentDate,
+    ).toEqual(gun(2026, 10, 10));
+  });
 });
 
 describe('tetikleyici ucu', () => {

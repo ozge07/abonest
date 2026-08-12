@@ -166,6 +166,29 @@ describe('silme geri alınabilir', () => {
     expect(odeme).toBeGreaterThan(0);
   });
 
+  it('geri getirilen abonelikte sıradaki ödeme tarihi yerine dönüyor', async () => {
+    /*
+     * Silme `nextPaymentDate`'i boşaltıyor ama geri getirme onu geri
+     * koymuyordu: abonelik listeye dönüyor, "sıradaki ödeme" sütunu boş
+     * kalıyordu. Kullanıcı bunu "bildirimler yanlış" olarak görüyor.
+     */
+    const ayse = await kullaniciOlustur();
+    const id = await abonelikEkle(ayse);
+
+    const oncesi = await istek('GET', `/subscriptions/${id}`, ayse);
+    const beklenen = (oncesi.govde as { nextPaymentDate: string })
+      .nextPaymentDate;
+    expect(beklenen).not.toBeNull();
+
+    await istek('DELETE', `/subscriptions/${id}`, ayse);
+    await istek('POST', `/subscriptions/${id}/restore`, ayse);
+
+    const sonrasi = await istek('GET', `/subscriptions/${id}`, ayse);
+    expect((sonrasi.govde as { nextPaymentDate: string }).nextPaymentDate).toBe(
+      beklenen,
+    );
+  });
+
   it('silinmemiş aboneliği geri getirmeye çalışmak 404', async () => {
     // Sessizce başarılı görünmemeli.
     const ayse = await kullaniciOlustur();

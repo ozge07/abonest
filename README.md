@@ -103,10 +103,15 @@ npm run typecheck          # bütün paketler
 npm run test:coverage -w @abonelik/api   # kapsam raporu ve eşikler
 ```
 
-**Testler geliştirme veritabanına yazıyor.** Kendi kullanıcılarını temizliyorlar
-ama günlük iş tasarımı gereği bütün abonelikleri tarıyor, dolayısıyla elle
-eklediğin kayıtlar için de bildirim üretebiliyor. Ayrı bir veritabanı
-istiyorsan `DATABASE_URL=... npm test` yeterli.
+**Testler ayrı bir veritabanında koşuyor** (`<veritabanı>_test`). Yoksa
+kendisi oluşturuyor, şemayı ve başlangıç verisini uyguluyor — elle bir şey
+yapmak gerekmiyor. `TEST_DATABASE_URL` verirsen o kullanılıyor.
+
+Ayrım şart, çünkü günlük iş tasarımı gereği **bütün** abonelikleri tarıyor
+ve testler onu sahte bir "bugün" ile çağırıyor. Aynı veritabanında
+koşarken gerçek bir kullanıcının ziline "Netflix ödemesi bugün" bildirimi
+düştü — oysa ödeme 30 gün sonraydı. Bildirim yanlış değildi; ona verilen
+tarih sahteydi.
 
 ## Destek ve müdahale
 

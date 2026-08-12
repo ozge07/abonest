@@ -3,6 +3,19 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     /**
+     * Testler **ayrı bir veritabanında** koşuyor (`..._test`).
+     *
+     * Ayrım olmadan testler geliştirme verisinin üstüne çıkıyordu: günlük
+     * iş bütün aktif abonelikleri tarıyor ve testler onu sahte bir "bugün"
+     * ile çağırıyor. Gerçek bir kullanıcının ziline "Netflix ödemesi bugün"
+     * bildirimi böyle düştü — oysa ödeme 30 gün sonraydı.
+     *
+     * Kurulum kendi kendine: veritabanı yoksa oluşturuluyor, şema ve
+     * başlangıç verisi uygulanıyor.
+     */
+    globalSetup: ['./test/kurulum.ts'],
+
+    /**
      * Test dosyaları **sırayla** koşuyor.
      *
      * Entegrasyon testleri tek bir Postgres veritabanını paylaşıyor ve günlük

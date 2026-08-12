@@ -64,9 +64,13 @@ sayacı artmıyor") ve aynı mutasyon tekrar denendiğinde test düştü.
 - **Tek veritabanı paylaşılıyor.** Test dosyaları sırayla koşuyor
   (ADR-0016); paralel koşarken günlük işin sayaçlarına başka dosyaların
   verisi karışıyordu.
-- **Testler geliştirme veritabanına yazıyor.** Kendi kullanıcılarını
-  temizliyorlar ama günlük iş bütün abonelikleri tarıyor. Ayrı veritabanı
-  için `DATABASE_URL=... npm test`.
+- **Testler ayrı bir veritabanında koşuyor** (`<veritabanı>_test`); yoksa
+  kendisi oluşturup şemayı ve tohumu uyguluyor. Bu ayrım bir olaydan sonra
+  eklendi: testler geliştirme veritabanına yazıyordu ve günlük işi sahte bir
+  "bugün" ile çağırdıkları için gerçek bir kullanıcının ziline "Netflix
+  ödemesi bugün" bildirimi düştü — ödeme 30 gün sonraydı. "Ayrı veritabanı
+  kullanmayı unutmayın" bir çözüm değildi; unutulduğunda sessizce gerçek
+  veriyi bozuyordu.
 - **Hız sınırı bellek içi ve süreç boyunca paylaşılıyor.** Giriş ucu dakikada
   on, `forgot-password` saatte üç istekle sınırlı. Bu yüzden testler oturumu
   ve sıfırlama kodunu çoğunlukla servis üzerinden alıyor; **ucun kendisi**
