@@ -104,11 +104,19 @@ GET    /me                      200
 PATCH  /me                      200   ad, para birimi, saat dilimi, dil
 PATCH  /me/password             204   → tüm diğer oturumlar düşer
 DELETE /me                      202   30 günlük geri alınabilir silme
-GET    /me/sessions             200   aktif oturumlar
+GET    /me/sessions             200   aktif oturumlar; `current: true` çağıran
+                                      isteğin oturumunu işaretler
 DELETE /me/sessions/{id}        204   başkasının oturumu da 204 alır ama
                                       hiçbir şey silinmez — varlık bilgisi
                                       sızmasın diye
 ```
+
+`current` alanı olmadan liste kullanılamıyordu: satırlar birbirinin aynı
+görünüyor ve "şüpheli oturumu kapat" diyen kullanıcı kendi oturumunu
+kapatabiliyordu. Alan, ham token'ın özeti satırdaki `tokenHash` ile
+karşılaştırılarak hesaplanıyor; `tokenHash` yanıta hiç girmiyor.
+
+Bu uçların hepsi arayüzde **Hesabım** ekranında (`/hesap`).
 
 ### Abonelikler
 

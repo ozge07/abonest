@@ -53,8 +53,13 @@ export class UsersController {
   }
 
   @Get('sessions')
-  async listSessions(@CurrentUser() user: SessionUser) {
-    return this.sessions.list(user.id);
+  async listSessions(@Req() request: AuthenticatedRequest) {
+    if (request.user === undefined) {
+      return [];
+    }
+    // Mevcut oturumu işaretleyebilmek için ham token gerekiyor; guard onu
+    // isteğe koyuyor.
+    return this.sessions.list(request.user.id, request.sessionToken);
   }
 
   @Delete('sessions/:id')

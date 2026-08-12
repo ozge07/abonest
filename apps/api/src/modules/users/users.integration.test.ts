@@ -243,6 +243,34 @@ describe('oturum yönetimi', () => {
     expect(JSON.stringify(govde)).not.toMatch(/tokenHash/);
   });
 
+  it('hangi oturumun çağıranın kendisi olduğunu söylüyor', async () => {
+    /*
+     * Bu işaret olmadan liste kullanılamıyordu: satırlar birbirinin aynı
+     * görünüyor ve "şüpheli oturumu kapat" diyen kullanıcı kendini
+     * atabiliyordu. İşaret, hesabına başkasının girdiğini düşünen birinin
+     * doğru satırı seçmesi için gerekli.
+     */
+    const kullanici = await kullaniciOlustur();
+    const eski = await girisYap(kullanici.email);
+    const guncel = await girisYap(kullanici.email);
+
+    const liste = await istek('GET', '/me/sessions', guncel);
+    const oturumlar = liste.govde as { id: string; current: boolean }[];
+
+    expect(oturumlar.filter((o) => o.current)).toHaveLength(1);
+
+    // Aynı liste diğer oturumdan istendiğinde işaret yer değiştiriyor:
+    // "current" sabit bir satır değil, çağıranın kendisi.
+    const digerListe = await istek('GET', '/me/sessions', eski);
+    const digerOturumlar = digerListe.govde as { id: string; current: boolean }[];
+
+    const guncelId = oturumlar.find((o) => o.current)?.id;
+    const eskiId = digerOturumlar.find((o) => o.current)?.id;
+    expect(guncelId).toBeDefined();
+    expect(eskiId).toBeDefined();
+    expect(eskiId).not.toBe(guncelId);
+  });
+
   it('başka bir oturumu kapatabiliyor', async () => {
     const kullanici = await kullaniciOlustur();
     const eski = await girisYap(kullanici.email);

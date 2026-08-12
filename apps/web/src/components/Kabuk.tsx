@@ -33,6 +33,12 @@ export function Kabuk({ children }: { children: ReactNode }) {
             <Baglanti to="/">Özet</Baglanti>
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
             <Baglanti to="/analiz">Analiz</Baglanti>
+            {/*
+              * Hesap ayarları gezinmede açıkça duruyor. Yalnızca kullanıcı
+              * adına gizlenmiş bir bağlantı olsaydı, hesabını silmek isteyen
+              * kullanıcı nereye tıklayacağını bulamazdı — bulamadı da.
+              */}
+            <Baglanti to="/hesap">Hesabım</Baglanti>
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

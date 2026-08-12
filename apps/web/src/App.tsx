@@ -8,6 +8,7 @@ import { BaglantiylaDogrulama } from './pages/BaglantiylaDogrulama';
 import { DogrulamaSayfasi } from './pages/DogrulamaSayfasi';
 import { AbonelikSayfasi } from './pages/AbonelikSayfasi';
 import { GirisSayfasi } from './pages/GirisSayfasi';
+import { HesapSayfasi } from './pages/HesapSayfasi';
 import { KayitSayfasi } from './pages/KayitSayfasi';
 
 export function App() {
@@ -68,6 +69,7 @@ export function App() {
         <Route path="/" element={<AnaSayfa />} />
         <Route path="/abonelikler" element={<AbonelikSayfasi />} />
         <Route path="/analiz" element={<AnalizSayfasi />} />
+        <Route path="/hesap" element={<HesapSayfasi />} />
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Kabuk>

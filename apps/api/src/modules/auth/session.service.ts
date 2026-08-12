@@ -131,19 +131,45 @@ export class SessionService {
     return result.count;
   }
 
-  async list(userId: string): Promise<
+  /**
+   * Kullanıcının açık oturumları.
+   *
+   * `current` işareti şart: kullanıcı listede hangi satırın kendi kullandığı
+   * cihaz olduğunu göremezse, "şüpheli oturumu kapat" derken kendini
+   * atabiliyor. Ham token karşılaştırılmıyor, özeti karşılaştırılıyor —
+   * veritabanında zaten yalnızca özet var.
+   */
+  async list(
+    userId: string,
+    mevcutToken?: string,
+  ): Promise<
     {
       id: string;
       userAgent: string | null;
       lastSeenAt: Date;
       createdAt: Date;
+      current: boolean;
     }[]
   > {
-    return this.prisma.session.findMany({
+    const mevcutOzet =
+      mevcutToken === undefined ? null : this.tokens.hash(mevcutToken);
+
+    const oturumlar = await this.prisma.session.findMany({
       where: { userId },
-      select: { id: true, userAgent: true, lastSeenAt: true, createdAt: true },
+      select: {
+        id: true,
+        userAgent: true,
+        lastSeenAt: true,
+        createdAt: true,
+        tokenHash: true,
+      },
       orderBy: { lastSeenAt: 'desc' },
     });
+
+    return oturumlar.map(({ tokenHash, ...oturum }) => ({
+      ...oturum,
+      current: mevcutOzet !== null && tokenHash === mevcutOzet,
+    }));
   }
 
   /** Tek bir oturumu kapatır — yalnızca sahibi kapatabilir. */
