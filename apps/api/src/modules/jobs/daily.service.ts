@@ -26,6 +26,7 @@ export interface GunlukSonuc {
   suresiDolan: number;
   yeniBildirim: number;
   temizlenenHesap: number;
+  temizlenenAbonelik: number;
   gonderilenEposta: number;
   basarisizEposta: number;
   islenenAbonelik: number;
@@ -62,6 +63,7 @@ export class DailyJobService {
       suresiDolan: 0,
       yeniBildirim: 0,
       temizlenenHesap: 0,
+      temizlenenAbonelik: 0,
       gonderilenEposta: 0,
       basarisizEposta: 0,
       islenenAbonelik: 0,
@@ -75,9 +77,10 @@ export class DailyJobService {
 
     sonuc.suresiDolan = await this.bitmisAbonelikleriKapat(bugun);
     sonuc.temizlenenHesap = await this.silinenHesaplariTemizle();
+    sonuc.temizlenenAbonelik = await this.silinenAbonelikleriTemizle();
 
     const abonelikler = await this.prisma.subscription.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', deletedAt: null },
       select: { id: true },
       orderBy: { id: 'asc' },
       take: BATCH + 1,
@@ -142,6 +145,22 @@ export class DailyJobService {
   }
 
   /**
+   * Bekleme süresi dolmuş silinmiş abonelikleri **kalıcı** siliyor.
+   *
+   * Silme geri alınabilir: kullanıcı yanlışlıkla sildiğinde veri anında yok
+   * olmuyor. Bu iş, pencereyi kapatıp kaydı gerçekten kaldırıyor; ödeme
+   * kayıtları ilişki üzerinden gidiyor.
+   */
+  private async silinenAbonelikleriTemizle(): Promise<number> {
+    const sinir = new Date(Date.now() - PURGE_AFTER_DAYS * 86_400_000);
+
+    const sonuc = await this.prisma.subscription.deleteMany({
+      where: { deletedAt: { not: null, lt: sinir } },
+    });
+    return sonuc.count;
+  }
+
+  /**
    * Bitiş tarihi geçmiş abonelikleri `EXPIRED` yapıyor.
    *
    * Durum geçişinin kendisi tekillik koruması: `updateMany` yalnızca hâlâ
@@ -155,7 +174,7 @@ export class DailyJobService {
    */
   private async bitmisAbonelikleriKapat(bugun: Date): Promise<number> {
     const adaylar = await this.prisma.subscription.findMany({
-      where: { status: 'ACTIVE', endDate: { lt: bugun } },
+      where: { status: 'ACTIVE', endDate: { lt: bugun }, deletedAt: null },
       select: { id: true, userId: true, name: true },
     });
 
@@ -203,7 +222,9 @@ export class DailyJobService {
       where: {
         status: 'SCHEDULED',
         dueDate: { gte: bugun, lte: sinir },
-        subscription: { status: 'ACTIVE', reminderEnabled: true },
+        // Silinmiş abonelik için hatırlatma göndermek, kullanıcıya artık
+        // takip etmediği bir şeyi hatırlatmak olur.
+        subscription: { status: 'ACTIVE', reminderEnabled: true, deletedAt: null },
       },
       include: {
         subscription: {

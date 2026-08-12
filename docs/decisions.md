@@ -409,3 +409,41 @@ kuruyor ve Fastify ikincisini kabul etmiyor. Filtre yönlendiriciden sonra
 **Yan sonuç: iki ayrı CSP.** API yanıtları `default-src 'none'` ile kalıyor;
 HTML yanıtları kendi kaynaklarını yükleyebilen bir politika alıyor. Tek
 politika kullanılsaydı ya arayüz açılmazdı ya API gereksiz yere gevşerdi.
+
+---
+
+## ADR-0023 · Yönetici rolü yok, destek aracı var
+
+**Bağlam.** "Kullanıcının abonelikleri silinmiş, nasıl müdahale ederim?"
+Kodda hiçbir şey yoktu: rol yok, yönetici ucu yok, silme kalıcıydı ve
+silindiğine dair denetim kaydı bile tutulmuyordu.
+
+**Karar.** Yönetici rolü **eklenmedi**. İki şey yapıldı:
+
+1. Abonelik silme geri alınabilir hâle getirildi (hesap silmedeki desenin
+   aynısı): `deletedAt` işaretleniyor, günlük iş 30 gün sonra kalıcı
+   siliyor, kullanıcı kendi çöp kutusundan geri getirebiliyor.
+2. Veritabanı erişimiyle çalışan bir destek aracı yazıldı
+   (`apps/api/tool/destek.ts`).
+
+**Gerekçe.** Yönetici rolü bu sistemdeki **en değerli hedef** olurdu:
+herkesin finansal verisini okuyabilen tek bir hesap. Proje boyunca
+yetkilendirmeyi derleyiciye bağladık (ADR-0008) ve IDOR'u yapısal olarak
+kapattık; üstüne "her şeyi görebilen bir rol" koymak o işin çoğunu geri
+alır. Ayrıca o hesabın şifresi, oturumu ve kurtarma akışı yeni saldırı
+yüzeyi demek.
+
+Destek aracı yeni bir yetki açmıyor: zaten veritabanına erişebilen biri her
+şeyi yapabilir. Araç yalnızca elle SQL yazmanın hata payını kaldırıyor ve
+yazma işlemlerinde `--onayla` istiyor.
+
+**Sonuç.** Kazayla silme vakalarının çoğu operatöre hiç ulaşmıyor —
+kullanıcı kendi çözüyor. Karşılığında silinmiş kayıtlar 30 gün tabloda
+duruyor ve her okumada elenmesi gerekiyor; bu yüzden `deletedAt` filtresi
+kapsanmış deponun temel koşuluna kondu, tek tek sorgulara bırakılmadı.
+
+**Yan sonuç.** Yumuşak silme yabancı anahtarı serbest bırakmıyor: silinmiş
+bir abonelik hâlâ kategorisine bağlı ve kategori silinemiyor. Sayıma dahil
+edilseydi kullanıcı "hangi abonelik" diye bakıp hiçbir şey bulamazdı.
+Ayrı bir mesaj hem sebebi hem çıkış yolunu söylüyor; çöp kutusuna kalıcı
+silme düğmesi de bu yüzden var.

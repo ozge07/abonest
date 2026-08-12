@@ -45,6 +45,15 @@ export class SubscriptionsController {
     return this.subscriptions.create(user.id, body);
   }
 
+  /**
+   * Çöp kutusu. `:id` rotasından **önce** tanımlı olmalı, yoksa Nest
+   * "deleted" kelimesini kimlik sanıp UUID doğrulamasında takılıyor.
+   */
+  @Get('deleted')
+  async deleted(@CurrentUser() user: SessionUser) {
+    return this.subscriptions.deleted(user.id);
+  }
+
   @Get(':id')
   async findOne(@CurrentUser() user: SessionUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.subscriptions.findOne(user.id, id);
@@ -63,6 +72,25 @@ export class SubscriptionsController {
   @HttpCode(204)
   async remove(@CurrentUser() user: SessionUser, @Param('id', ParseUUIDPipe) id: string) {
     await this.subscriptions.remove(user.id, id);
+  }
+
+  /** Çöp kutusundan kalıcı silme; gerçekten geri dönüşsüz. */
+  @Delete(':id/purge')
+  @HttpCode(204)
+  async purge(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.subscriptions.purge(user.id, id);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(200)
+  async restore(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.subscriptions.restore(user.id, id);
   }
 
   @Post(':id/cancel')

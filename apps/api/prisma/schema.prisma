@@ -156,6 +156,9 @@ model Subscription {
   endDate         DateTime? @db.Date
   trialEndsAt     DateTime? @db.Date
   cancelledAt     DateTime?
+  /// Silme işareti. Silme geri alınabilir: kullanıcı yanlışlıkla sildiğinde
+  /// veri anında yok olmuyor, günlük iş bekleme süresi dolunca temizliyor.
+  deletedAt       DateTime?
   // Duraklatma anı. Harcama analizi "bu abonelik ne zamana kadar ödendi"
   // sorusunu cevaplayabilsin diye tutuluyor; olmadığı sürece duraklatılmış
   // aboneliklerin geçmişi tahmin edilmek zorunda kalıyordu.
@@ -178,6 +181,9 @@ model Subscription {
   occurrences SubscriptionOccurrence[]
 
   @@index([userId, status])
+  // Silinmişleri elemek her okumada yapılıyor; indeks olmadan tablo
+  // büyüdükçe her sorgu tam tarama olurdu.
+  @@index([deletedAt])
   @@index([userId, nextPaymentDate])
   @@index([categoryId])
   @@map("subscriptions")

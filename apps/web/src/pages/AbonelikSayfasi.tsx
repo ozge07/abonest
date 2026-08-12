@@ -42,6 +42,13 @@ export function AbonelikSayfasi() {
     queryFn: () => api.get<Sayfa<Abonelik>>('/subscriptions?limit=100'),
   });
 
+  // Çöp kutusu: silme geri alınabilir olduğu için kullanıcı kendi
+  // düzeltebiliyor, destek istemek zorunda kalmıyor.
+  const cop = useQuery({
+    queryKey: ['subscriptions', 'deleted'],
+    queryFn: () => api.get<Abonelik[]>('/subscriptions/deleted'),
+  });
+
   const kurlar = useKurlar();
 
   const durumDegistir = useMutation({
@@ -55,14 +62,23 @@ export function AbonelikSayfasi() {
     },
   });
 
+  async function tazele() {
+    await queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+  }
+
   const sil = useMutation({
     mutationFn: (id: string) => api.delete<void>(`/subscriptions/${id}`),
     onSuccess: async () => {
       setSilinecek(null);
-      await queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      await tazele();
     },
+  });
+
+  const geriGetir = useMutation({
+    mutationFn: (id: string) => api.post(`/subscriptions/${id}/restore`),
+    onSuccess: tazele,
   });
 
   const abonelikler = sirala(sorgu.data?.data ?? []);
@@ -124,16 +140,86 @@ export function AbonelikSayfasi() {
           />
         </section>
       )}
+      {(cop.data ?? []).length > 0 && (
+        <CopKutusu
+          abonelikler={cop.data ?? []}
+          onGeriGetir={(id) => geriGetir.mutate(id)}
+        />
+      )}
+
       {silinecek !== null && (
         <OnayKutusu
           baslik={`${silinecek.name} silinsin mi?`}
-          aciklama="Bu abonelik ve geçmiş ödeme kayıtları kalıcı olarak siliniyor; geri alınamaz. Yalnızca ödemeyi durdurmak istiyorsan 'İptal' daha doğru — geçmişin korunuyor."
+          aciklama="Abonelik çöp kutusuna taşınıyor ve 30 gün içinde geri getirebilirsin; sonra kalıcı olarak siliniyor. Yalnızca ödemeyi durdurmak istiyorsan 'İptal' daha doğru — geçmişin listede kalıyor."
           bekliyor={sil.isPending}
           onOnayla={() => sil.mutate(silinecek.id)}
           onVazgec={() => setSilinecek(null)}
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Çöp kutusu.
+ *
+ * Silinen abonelik hemen yok olmuyor; bekleme süresi boyunca burada duruyor
+ * ve tek tıkla geri geliyor. Kazayla silen kullanıcının kimseye sormasına
+ * gerek kalmıyor — eskiden veri kalıcı gidiyordu ve geri getirmenin hiçbir
+ * yolu yoktu.
+ */
+function CopKutusu({
+  abonelikler,
+  onGeriGetir,
+}: {
+  abonelikler: Abonelik[];
+  onGeriGetir: (id: string) => void;
+}) {
+  return (
+    <section>
+      <h2 className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+        Çöp kutusu
+      </h2>
+      <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white/80 backdrop-blur-xl dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900/70">
+        {abonelikler.map((abonelik) => (
+          <li
+            key={abonelik.id}
+            className="flex flex-wrap items-center gap-3 px-4 py-3"
+          >
+            <div className="opacity-50">
+              <MarkaKarosu
+                ad={abonelik.name}
+                renk={abonelik.provider?.color}
+                logo={abonelik.provider?.logoUrl}
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-slate-600 line-through dark:text-slate-400">
+                {abonelik.name}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {abonelik.deletedAt != null &&
+                  `${tarihYaz(abonelik.deletedAt.slice(0, 10))} tarihinde silindi · `}
+                30 gün sonra kalıcı olarak siliniyor
+              </p>
+            </div>
+
+            <span className="text-sm text-slate-500 tabular-nums dark:text-slate-400">
+              {paraYaz(abonelik.priceMinor, abonelik.currency)}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => onGeriGetir(abonelik.id)}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+            >
+              Geri getir
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

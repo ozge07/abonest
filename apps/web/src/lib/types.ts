@@ -57,6 +57,8 @@ export interface Abonelik {
   nextPaymentDate: string | null;
   /** Bugünden önceki son ödeme; türetilmiş değer. */
   lastPaymentDate: string | null;
+  /** Yalnızca çöp kutusu listesinde dolu. */
+  deletedAt?: string | null;
   endDate: string | null;
   trialEndsAt: string | null;
   lastUsedAt: string | null;

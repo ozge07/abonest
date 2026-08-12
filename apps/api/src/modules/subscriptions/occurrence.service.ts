@@ -36,7 +36,9 @@ export class OccurrenceService {
     const sub = await this.prisma.subscription.findUnique({
       where: { id: subscriptionId },
     });
-    if (sub === null || sub.status !== 'ACTIVE') {
+    // Silinmiş aboneliğe ödeme üretmek, geri getirilmediği sürece
+    // görünmeyecek kayıtlar biriktirmek olurdu.
+    if (sub === null || sub.status !== 'ACTIVE' || sub.deletedAt !== null) {
       return 0;
     }
 

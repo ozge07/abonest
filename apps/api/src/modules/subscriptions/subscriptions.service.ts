@@ -9,6 +9,7 @@ import {
   toISODate,
   type BillingCycle,
 } from '@abonelik/shared';
+import { AuditService } from '../../infra/audit/audit.service.js';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { scopeTo } from '../../infra/database/scoped.repository.js';
 import { OccurrenceService, today } from './occurrence.service.js';
@@ -23,6 +24,7 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly occurrences_: OccurrenceService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(userId: string, query: ListQuery) {
@@ -202,11 +204,72 @@ export class SubscriptionsService {
     return this.findOne(userId, id);
   }
 
+  /**
+   * Silme — geri alınabilir.
+   *
+   * Kayıt işaretleniyor; günlük iş bekleme süresi dolunca kalıcı siliyor.
+   * Gelecekteki ödemeler hemen kaldırılıyor ki hatırlatma gelmesin.
+   */
   async remove(userId: string, id: string): Promise<void> {
-    const ok = await scopeTo(this.prisma, userId).delete(id);
-    if (!ok) {
+    const scope = scopeTo(this.prisma, userId);
+    const mevcut = await scope.findById(id);
+    if (mevcut === null) {
       throw new NotFoundException('Abonelik bulunamadı');
     }
+
+    await scope.delete(id);
+    await this.occurrences_.clearFuture(id);
+
+    /*
+     * Silme denetime yazılıyor.
+     *
+     * Bu olay `AuditAction` listesinde baştan beri vardı ama hiçbir yerden
+     * çağrılmıyordu: bir abonelik silindiğinde silindiğine dair kayıt bile
+     * kalmıyordu. Ada değil kimliğe yazıyoruz — denetim kaydı sızarsa
+     * kullanıcının nelere abone olduğunu vermemeli.
+     */
+    await this.audit.record({
+      action: 'subscription.deleted',
+      userId,
+      entityType: 'subscription',
+      entityId: id,
+    });
+  }
+
+  /** Silinmiş abonelikler — kullanıcının çöp kutusu. */
+  async deleted(userId: string) {
+    const rows = await scopeTo(this.prisma, userId).findDeleted();
+    return rows.map((row) => ({
+      ...toDto(row),
+      deletedAt: row.deletedAt?.toISOString() ?? null,
+    }));
+  }
+
+  /**
+   * Çöp kutusundan **kalıcı** siliyor.
+   *
+   * Bekleme süresini beklemek istemeyen kullanıcı için. Bu gerçekten geri
+   * dönüşsüz; arayüz ayrı bir onay istiyor.
+   */
+  async purge(userId: string, id: string): Promise<void> {
+    const sonuc = await this.prisma.subscription.deleteMany({
+      where: { id, userId, deletedAt: { not: null } },
+    });
+    if (sonuc.count === 0) {
+      throw new NotFoundException('Silinmiş abonelik bulunamadı');
+    }
+  }
+
+  /** Silmeyi geri alıyor ve ödemelerini yeniden üretiyor. */
+  async restore(userId: string, id: string) {
+    const ok = await scopeTo(this.prisma, userId).restore(id);
+    if (!ok) {
+      throw new NotFoundException('Silinmiş abonelik bulunamadı');
+    }
+
+    // Silinirken gelecekteki ödemeler kaldırılmıştı; geri getiriyoruz.
+    await this.occurrences_.syncFor(id);
+    return this.findOne(userId, id);
   }
 
   async occurrences(userId: string, id: string) {

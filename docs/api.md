@@ -120,7 +120,10 @@ GET    /subscriptions           200
 POST   /subscriptions           201
 GET    /subscriptions/{id}      200 · 404
 PATCH  /subscriptions/{id}      200 · 404 · 422
-DELETE /subscriptions/{id}      204   kalıcı silme
+DELETE /subscriptions/{id}      204   çöp kutusuna taşır (30 gün geri alınabilir)
+GET    /subscriptions/deleted   200   çöp kutusu
+POST   /subscriptions/{id}/restore 200   silmeyi geri alır
+DELETE /subscriptions/{id}/purge   204   kalıcı siler, geri dönüşü yok
 POST   /subscriptions/{id}/cancel  200   iptal ≠ silme, geçmiş korunur
 POST   /subscriptions/{id}/pause   200
 POST   /subscriptions/{id}/resume  200

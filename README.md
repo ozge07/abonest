@@ -108,6 +108,30 @@ ama günlük iş tasarımı gereği bütün abonelikleri tarıyor, dolayısıyla
 eklediğin kayıtlar için de bildirim üretebiliyor. Ayrı bir veritabanı
 istiyorsan `DATABASE_URL=... npm test` yeterli.
 
+## Destek ve müdahale
+
+Yönetici rolü ve yönetici paneli **bilerek yok**. Herkesin finansal
+verisini okuyabilen tek bir hesap, bu sistemdeki en değerli hedef olurdu;
+proje boyunca yetkilendirmeyi derleyiciye bağlayıp IDOR'u yapısal olarak
+kapattıktan sonra üstüne öyle bir rol koymak o işin çoğunu geri alırdı.
+
+Bunun yerine veritabanı erişimiyle çalışan bir komut satırı aracı var:
+
+```bash
+npm run destek -w @abonelik/api                          # kullanım
+npm run destek -w @abonelik/api -- kullanici a@b.com     # hesap özeti
+npm run destek -w @abonelik/api -- abonelikler a@b.com   # silinmişler dahil
+npm run destek -w @abonelik/api -- gecmis a@b.com        # denetim kaydı
+npm run destek -w @abonelik/api -- geri-getir <id> --onayla
+npm run destek -w @abonelik/api -- hesap-sil a@b.com --onayla
+```
+
+Yazma işlemleri `--onayla` olmadan çalışmıyor: yanlış hesapta çalıştırılan
+bir komut, düzeltmeye çalıştığı sorundan büyük olabilir.
+
+Çoğu durumda araca gerek kalmıyor — abonelik silme geri alınabilir ve
+kullanıcı kendi çöp kutusundan 30 gün içinde geri getirebiliyor.
+
 ## Günlük iş
 
 Hatırlatmaları üreten iş dışarıdan tetikleniyor:

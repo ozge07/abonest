@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "seed": "node --experimental-strip-types prisma/seed.ts",
     "test:coverage": "vitest run --coverage",
-    "eposta:dene": "node --experimental-strip-types tool/eposta-dene.ts"
+    "eposta:dene": "node --experimental-strip-types tool/eposta-dene.ts",
+    "destek": "node --experimental-strip-types tool/destek.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

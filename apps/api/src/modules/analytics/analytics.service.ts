@@ -77,6 +77,7 @@ export class AnalyticsService {
       where: {
         userId,
         status: 'ACTIVE',
+        deletedAt: null,
         OR: [
           { lastUsedAt: { lt: esik } },
           { lastUsedAt: null, createdAt: { lt: esik } },
@@ -125,7 +126,9 @@ export class AnalyticsService {
     to: Date,
   ): Promise<Odeme[]> {
     const abonelikler = await this.prisma.subscription.findMany({
-      where: { userId },
+      // Silinmiş abonelikler harcama geçmişine girmiyor: kullanıcı onu
+      // listeden kaldırdı, raporda görmeyi beklemiyor.
+      where: { userId, deletedAt: null },
       include: { category: { select: { id: true, name: true } } },
     });
 

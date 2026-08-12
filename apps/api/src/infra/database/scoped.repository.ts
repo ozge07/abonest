@@ -36,9 +36,16 @@ export class ScopedSubscriptionRepository {
     private readonly userId: string,
   ) {}
 
-  /** Kapsam içindeki temel koşul. Her sorgu bununla başlıyor. */
-  private get scope(): { userId: string } {
-    return { userId: this.userId };
+  /**
+   * Kapsam içindeki temel koşul. Her sorgu bununla başlıyor.
+   *
+   * `deletedAt: null` de burada: silme geri alınabilir olduğu için silinmiş
+   * kayıtlar tabloda duruyor ve her okumada elenmesi gerekiyor. Tek tek
+   * sorgulara bırakılsaydı biri unutulur, kullanıcı sildiği aboneliği
+   * listede görürdü.
+   */
+  private get scope(): { userId: string; deletedAt: null } {
+    return { userId: this.userId, deletedAt: null };
   }
 
   async findMany(args: {
@@ -104,9 +111,41 @@ export class ScopedSubscriptionRepository {
     return result.count > 0;
   }
 
+  /**
+   * Silme — **geri alınabilir**.
+   *
+   * Kayıt işaretleniyor, tablodan çıkarılmıyor. Kazayla silen kullanıcı
+   * kendi geri getirebiliyor; günlük iş bekleme süresi dolunca kalıcı
+   * siliyor. Kalıcı silmede ödeme geçmişi de cascade ile gidiyordu ve geri
+   * getirmenin hiçbir yolu yoktu — yedek almadıysanız veri kayboluyordu.
+   */
   async delete(id: string): Promise<boolean> {
-    const result = await this.prisma.subscription.deleteMany({
+    const result = await this.prisma.subscription.updateMany({
       where: { id, ...this.scope },
+      data: { deletedAt: new Date(), nextPaymentDate: null },
+    });
+    return result.count > 0;
+  }
+
+  /** Silinmiş abonelikler — "çöp kutusu" görünümü için. */
+  async findDeleted() {
+    return this.prisma.subscription.findMany({
+      where: { userId: this.userId, deletedAt: { not: null } },
+      include: { category: true, provider: true },
+      orderBy: { deletedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Silmeyi geri alıyor.
+   *
+   * Koşulda `deletedAt: { not: null }` var: zaten silinmemiş bir kaydı
+   * "geri getirmek" sessizce başarılı görünmemeli.
+   */
+  async restore(id: string): Promise<boolean> {
+    const result = await this.prisma.subscription.updateMany({
+      where: { id, userId: this.userId, deletedAt: { not: null } },
+      data: { deletedAt: null },
     });
     return result.count > 0;
   }

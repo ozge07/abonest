@@ -67,10 +67,31 @@ export class CatalogService {
 
     // Kullanımdaki kategoriyi silmek aboneliği sahipsiz bırakırdı. Veritabanı
     // da zaten yabancı anahtarla engelliyor; burada anlaşılır mesaj veriyoruz.
-    const kullanim = await this.prisma.subscription.count({ where: { categoryId: id } });
+    const kullanim = await this.prisma.subscription.count({
+      where: { categoryId: id, deletedAt: null },
+    });
     if (kullanim > 0) {
       throw new ConflictException(
         `Bu kategori ${kullanim} abonelikte kullanılıyor; önce onları taşı`,
+      );
+    }
+
+    /*
+     * Silinmiş abonelikler ayrı ele alınıyor.
+     *
+     * Yumuşak silmede kayıt tabloda kalıyor ve yabancı anahtar kategoriyi
+     * tutmaya devam ediyor. Sayıma dahil edilselerdi kullanıcı "hangi
+     * abonelik" diye bakıp hiçbir şey bulamazdı — listede görünmüyorlar.
+     * Ayrı bir mesaj, hem sebebi hem çıkış yolunu söylüyor: çöp kutusundan
+     * kalıcı sil ya da geri getirip başka kategoriye taşı.
+     */
+    const silinmisKullanim = await this.prisma.subscription.count({
+      where: { categoryId: id, deletedAt: { not: null } },
+    });
+    if (silinmisKullanim > 0) {
+      throw new ConflictException(
+        `Çöp kutusunda bu kategoriyi kullanan ${silinmisKullanim} abonelik ` +
+          'var; onları kalıcı sil ya da geri getirip taşı',
       );
     }
 
