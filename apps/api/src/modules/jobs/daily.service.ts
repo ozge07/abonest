@@ -5,6 +5,7 @@ import { PrismaService } from '../../infra/database/prisma.service.js';
 import { EmailSender } from '../../infra/email/email-sender.js';
 import { LOGGER } from '../../infra/logger/logger.token.js';
 import { AuditService } from '../../infra/audit/audit.service.js';
+import { UYGULAMA_ADI } from '../../infra/marka.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OccurrenceService, today } from '../subscriptions/occurrence.service.js';
 import { RatesService } from '../rates/rates.service.js';
@@ -275,7 +276,7 @@ export class DailyJobService {
         await this.email.send({
           to: sub.user.email,
           subject: metin.baslik,
-          text: `Merhaba ${sub.user.name},\n\n${metin.govde}\n\nAbonelik Takip`,
+          text: `Merhaba ${sub.user.name},\n\n${metin.govde}\n\n${UYGULAMA_ADI}`,
         });
         await this.prisma.subscriptionOccurrence.update({
           where: { id: odeme.id },

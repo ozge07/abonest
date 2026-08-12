@@ -10,6 +10,7 @@ import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
 import { AuditService } from '../../infra/audit/audit.service.js';
+import { UYGULAMA_ADI } from '../../infra/marka.js';
 
 const VERIFICATION_TTL_HOURS = 24;
 const RESET_TTL_MINUTES = 30;
@@ -286,7 +287,7 @@ export class AuthService {
        * postayı telefonda açıp uygulamaya bilgisayardan giriyor.
        */
       text:
-        'Abonelik Takip hesabını etkinleştirmek için bu bağlantıya tıkla:\n\n' +
+        `${UYGULAMA_ADI} hesabını etkinleştirmek için bu bağlantıya tıkla:\n\n` +
         `${this.dogrulamaBaglantisi(token)}\n\n` +
         'Bağlantı çalışmazsa uygulamadaki doğrulama ekranına bu kodu ' +
         `yapıştırabilirsin:\n\n${token}\n\n` +

@@ -25,7 +25,7 @@ import { AppModule } from './app.module.js';
 import { configureApp } from './app.setup.js';
 
 const KOK = '/api/v1';
-const HTML = '<!doctype html><title>Abonelik Takip</title><div id="root"></div>';
+const HTML = '<!doctype html><title>Abonest</title><div id="root"></div>';
 
 let app: NestFastifyApplication;
 let webRoot: string;

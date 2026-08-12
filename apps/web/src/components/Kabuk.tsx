@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
+import { UYGULAMA_ADI } from '../lib/marka';
 import { useCikis, useOturum } from '../lib/oturum';
 import { BildirimZili } from './BildirimZili';
 
@@ -12,7 +13,16 @@ export function Kabuk({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
-          <span className="text-base font-semibold">Abonelik Takip</span>
+          <NavLink to="/" className="flex shrink-0 items-center gap-2">
+            <img
+              src="/logo.svg"
+              alt=""
+              width={28}
+              height={28}
+              className="rounded-lg"
+            />
+            <span className="text-base font-semibold">{UYGULAMA_ADI}</span>
+          </NavLink>
 
           <nav className="flex gap-1">
             <Baglanti to="/">Özet</Baglanti>
