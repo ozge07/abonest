@@ -447,3 +447,42 @@ bir abonelik hâlâ kategorisine bağlı ve kategori silinemiyor. Sayıma dahil
 edilseydi kullanıcı "hangi abonelik" diye bakıp hiçbir şey bulamazdı.
 Ayrı bir mesaj hem sebebi hem çıkış yolunu söylüyor; çöp kutusuna kalıcı
 silme düğmesi de bu yüzden var.
+
+---
+
+## ADR-0024 · Silinmiş hesap doğru şifreyle giriş yapınca geri geliyor
+
+**Bağlam.** Hesap silme yumuşaktı: kayıt 30 gün duruyor, günlük iş sonra
+kalıcı siliyor. Ama geri getirmenin **uygulama içinde hiçbir yolu yoktu**.
+Giriş ucu silinmiş hesabı, kayıtsız bir adresle aynı yanıtla reddediyordu:
+"E-posta ya da şifre hatalı".
+
+Bu gerçek bir kullanıcıda gözlendi. Hesabını sildi, sonra giremedi ve
+şifresini yanlış hatırladığını sandı; denetim kaydına bakılmasa sebep
+görünmüyordu. Tek çıkış yolu uygulamayı çalıştıran kişinin `destek`
+aracıyla müdahale etmesiydi — yani kullanıcının kurtuluşu bir başkasının
+müsaitliğine bağlıydı.
+
+**Karar.** 30 günlük pencere içindeki silinmiş hesap, **şifre doğrulandıktan
+sonra** giriş sırasında geri açılıyor. Yanıt `restored: true` taşıyor ve
+arayüz kullanıcıya "hesabın geri getirildi" diyor. Denetim kaydına
+`account.restored` yazılıyor.
+
+**Gerekçe.** Sızıntı endişesi bu kararda geçerli değil: geri getirme şifre
+doğrulandıktan **sonra** yapılıyor, yani hesabı dirilten kişi zaten hesabın
+sahibi. Şifre yanlışsa hiçbir şey değişmiyor ve yanıt eskisiyle birebir
+aynı kalıyor — silinmiş bir hesabın varlığı yine öğrenilemiyor. Sıra bu
+yüzden kritik ve testle sabitlendi: geri getirme şifre kontrolünden önce
+yapılsaydı, bir e-posta adresi bilen herkes başkasının silme kararını iptal
+edebilirdi.
+
+**Reddedilen seçenek: girişte "bu hesap silinmiş" demek.** Kullanıcıya
+doğrudan yardım ederdi ama hangi adreslerin kayıtlı olduğunu tarayarak
+öğrenmeyi mümkün kılardı — `forgot-password` ucunda kaçındığımız şeyin
+aynısı.
+
+**Sınır.** Pencere dolduysa geri getirilmiyor; kayıt temizlik sırasını
+bekliyor. "30 gün sonra kalıcı olarak silinecek" sözünü, silmeyi süresiz
+diriltilebilir tutarak bozmuyoruz. Operatör aracı (`hesap-geri-getir`) bu
+sınırı aşabiliyor: kayıt hâlâ tablodaysa geri getiriyor ve süre dolmuşsa
+uyarı yazıyor.

@@ -58,8 +58,8 @@ export class AuthController {
     @Body() body: LoginInput,
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<{ token: string; expiresAt: string }> {
-    const { token, expiresAt } = await this.auth.login(body, {
+  ): Promise<{ token: string; expiresAt: string; restored: boolean }> {
+    const { token, expiresAt, restored } = await this.auth.login(body, {
       userAgent: request.headers['user-agent'],
       ip: request.ip,
     });
@@ -70,7 +70,11 @@ export class AuthController {
     // Token gövdede de dönüyor: mobil istemci cookie kullanmıyor, bunu
     // işletim sistemi keychain'ine yazacak. Tarayıcı gövdedeki değeri yok
     // sayıp cookie'yi kullanıyor.
-    return { token, expiresAt: expiresAt.toISOString() };
+    //
+    // `restored`: bu giriş silinmiş bir hesabı geri açtıysa `true`. İstemci
+    // bunu kullanıcıya söylüyor — hesabının geri geldiğini sessizce
+    // öğrenmesi gereken bir şey değil.
+    return { token, expiresAt: expiresAt.toISOString(), restored };
   }
 
   @Post('logout')

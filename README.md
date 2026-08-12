@@ -127,10 +127,12 @@ npm run destek -w @abonelik/api -- hesap-sil a@b.com --onayla
 npm run destek -w @abonelik/api -- hesap-geri-getir a@b.com --onayla
 ```
 
-Silinmiş bir hesabı geri getiren komut sonuncusu. Kullanıcı "Hesabım"
-ekranından hesabını sildiğinde kayıt 30 gün duruyor; o pencere içinde bu
-komut hesabı geri açıyor ve kullanıcı yeniden giriş yapabiliyor. Süre
-dolduktan sonra günlük iş kaydı kalıcı olarak siliyor ve geri dönüş yok.
+Hesap geri getirmede **çoğu zaman bu komuta gerek yok**: kullanıcı 30 gün
+içinde aynı e-posta ve şifreyle giriş yaparsa hesabı kendiliğinden geri
+geliyor ve ekranda bunu söyleyen bir şerit çıkıyor (ADR-0024). Komut,
+pencerenin dolduğu ya da kullanıcının şifresini de unuttuğu durumlar için
+duruyor; süre dolmuşsa uyarı yazıyor. Kayıt kalıcı silindikten sonra geri
+dönüş yok.
 
 Yazma işlemleri `--onayla` olmadan çalışmıyor: yanlış hesapta çalıştırılan
 bir komut, düzeltmeye çalıştığı sorundan büyük olabilir.

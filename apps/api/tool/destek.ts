@@ -24,6 +24,10 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import {
+  PURGE_AFTER_DAYS,
+  geriGetirmeSuresiDoldu,
+} from '../src/modules/users/purge.js';
 
 const connectionString = process.env['DATABASE_URL'];
 if (connectionString === undefined) {
@@ -189,6 +193,23 @@ async function main(): Promise<void> {
       if (user.deletedAt === null) {
         console.log('Bu hesap silinmemiş; yapılacak bir şey yok.');
         break;
+      }
+
+      /*
+       * Çoğu durumda bu komuta gerek yok: kullanıcı 30 gün içinde aynı
+       * şifreyle giriş yaparsa hesap kendiliğinden geri geliyor
+       * (ADR-0024). Komut, pencerenin dolduğu ya da kullanıcının şifresini
+       * de unuttuğu durumlar için duruyor.
+       */
+      if (geriGetirmeSuresiDoldu(user.deletedAt)) {
+        console.log(
+          `UYARI: ${PURGE_AFTER_DAYS} günlük pencere dolmuş ` +
+            `(silinme: ${gun(user.deletedAt)}).`,
+        );
+        console.log(
+          'Bu kayıt kalıcı silinmeyi bekliyor; geri getirmek kullanıcıya ' +
+            'verilen sözün dışına çıkmak demek.',
+        );
       }
 
       onayIste(`${user.email} hesabı geri getirilecek`);

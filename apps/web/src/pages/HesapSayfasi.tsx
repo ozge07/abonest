@@ -381,16 +381,18 @@ function TehlikeliBolum() {
     return (
       <Bolum baslik="Hesabın silindi" tehlikeli>
         {/*
-          "Destekle iletişime geç" yazmıyor: bu uygulamada bir destek masası
-          yok, yazılsaydı olmayan bir kapıyı işaret ederdi. Cümle yalnızca
-          doğru olanı söylüyor — kayıt duruyor ve o tarihe kadar geri
-          getirilebilir. Geri getirme işini uygulamayı çalıştıran kişi
-          `destek` aracıyla yapıyor (bkz. README, "Destek aracı").
+          "Destekle iletişime geç" yazmıyor: bu uygulamada destek masası yok,
+          yazılsaydı olmayan bir kapıyı işaret ederdi. Kullanıcının kendi
+          başına yapabileceği bir şey söylüyoruz — geri dönüş yolu artık
+          giriş ekranından geçiyor, kimseye ulaşmak gerekmiyor.
         */}
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Verilerin {tarihYaz(silindi.slice(0, 10))} tarihine kadar duruyor, o
-          gün kalıcı olarak siliniyor. Fikrini değiştirirsen bu süre içinde
-          hesabın geri getirilebilir.
+          gün kalıcı olarak siliniyor. Fikrini değiştirirsen{' '}
+          <strong className="font-semibold">
+            o tarihe kadar aynı e-posta ve şifreyle giriş yap
+          </strong>
+          , hesabın aboneliklerinle birlikte geri gelir.
         </p>
         <div className="mt-4">
           <Dugme
@@ -413,7 +415,7 @@ function TehlikeliBolum() {
   return (
     <Bolum
       baslik="Hesabı sil"
-      aciklama="Aboneliklerin, ödeme geçmişin ve bildirimlerin kapanır. 30 gün içinde geri alınabilir; sonra veriler kalıcı olarak siliniyor."
+      aciklama="Aboneliklerin, ödeme geçmişin ve bildirimlerin kapanır. 30 gün içinde tekrar giriş yaparak geri getirebilirsin; sonra veriler kalıcı olarak siliniyor."
       tehlikeli
     >
       <button
@@ -433,7 +435,7 @@ function TehlikeliBolum() {
       {soruluyor && (
         <OnayKutusu
           baslik="Hesabın silinsin mi?"
-          aciklama="Bütün aboneliklerin ve geçmişin kapatılıyor, açık oturumların düşüyor. 30 gün içinde geri alınabilir; o süre dolunca veriler kalıcı olarak siliniyor."
+          aciklama="Bütün aboneliklerin ve geçmişin kapatılıyor, açık oturumların düşüyor. 30 gün içinde aynı şifreyle giriş yaparsan hesabın geri gelir; o süre dolunca veriler kalıcı olarak siliniyor."
           onaylaEtiketi="Evet, hesabımı sil"
           bekliyor={sil.isPending}
           onOnayla={() => sil.mutate()}

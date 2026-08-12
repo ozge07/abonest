@@ -94,6 +94,11 @@ POST   /auth/forgot-password    202   ← e-posta var/yok AYRIMI SIZDIRILMAZ
 POST   /auth/reset-password     204 · 410
 ```
 
+`login` yanıtı `restored` alanı taşıyor: giriş, 30 günlük pencere içindeki
+silinmiş bir hesabı geri açtıysa `true`. Geri getirme **şifre doğrulandıktan
+sonra** yapılıyor; yanlış şifre hesabı diriltmiyor ve yanıt kayıtsız adresle
+aynı kalıyor (ADR-0024).
+
 `forgot-password` her durumda 202 döner. 404 dönmek hangi e-postaların kayıtlı
 olduğunu tarayarak öğrenmeyi mümkün kılar.
 

@@ -189,6 +189,9 @@ describe('hesap silme', () => {
     // Kullanıcı geri dönüş penceresini görüyor: "kalıcı olarak silindi"
     // demek yanlış olurdu, 30 gün geri alınabiliyor.
     expect(await screen.findByText(/11 Eylül 2026/)).toBeInTheDocument();
+    // Ve geri dönüşün **nasıl** olacağını da: eskiden "destekle iletişime
+    // geç" yazıyordu, oysa ortada bir destek masası yok.
+    expect(screen.getByText(/giriş yap/i)).toBeInTheDocument();
     expect(
       cagrilar.some((c) => c.yol === '/me' && c.method === 'DELETE'),
     ).toBe(true);

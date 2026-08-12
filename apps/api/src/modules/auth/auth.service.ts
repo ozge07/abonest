@@ -11,6 +11,7 @@ import { SessionService } from './session.service.js';
 import { TokenService } from './token.service.js';
 import { AuditService } from '../../infra/audit/audit.service.js';
 import { UYGULAMA_ADI } from '../../infra/marka.js';
+import { geriGetirmeSuresiDoldu } from '../users/purge.js';
 
 const VERIFICATION_TTL_HOURS = 24;
 const RESET_TTL_MINUTES = 30;
@@ -63,10 +64,31 @@ export class AuthService {
     return { userId: user.id };
   }
 
+  /**
+   * Giriş.
+   *
+   * ## Silinmiş hesap doğru şifreyle geri geliyor
+   *
+   * Önce silinmiş hesap, kayıtsız adresle aynı yanıtı alıyordu:
+   * "E-posta ya da şifre hatalı". Bunu yaşayan kullanıcı şifresini yanlış
+   * hatırladığını sanıyor ve olmayan bir sorunun peşine düşüyordu — hesabını
+   * geri getirmenin ise uygulama içinde hiçbir yolu yoktu, tek çare
+   * uygulamayı çalıştıran kişiye ulaşmaktı. Kendi hesabını silen bir
+   * kullanıcının kurtuluşu bir başkasının müsaitliğine bağlı olamaz.
+   *
+   * Şimdi 30 günlük pencere içindeyse ve **şifre doğruysa** hesap geri
+   * açılıyor. Bu bilgi sızdırmıyor: şifreyi bilen kişi zaten hesabın
+   * sahibi. Şifre yanlışsa hiçbir şey değişmiyor ve yanıt eskisiyle aynı,
+   * yani silinmiş bir hesabın varlığı yine öğrenilemiyor.
+   *
+   * Pencere dolmuşsa geri getirmiyoruz. O kayıt temizlik işinin sırasını
+   * bekliyor; "silindi" dediğimiz veriyi süresiz diriltilebilir tutmak
+   * verdiğimiz sözü bozardı.
+   */
   async login(
     input: { email: string; password: string },
     context: RequestContext,
-  ): Promise<{ token: string; expiresAt: Date }> {
+  ): Promise<{ token: string; expiresAt: Date; restored: boolean }> {
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
       select: { id: true, passwordHash: true, deletedAt: true },
@@ -75,7 +97,7 @@ export class AuthService {
     // Kullanıcı yoksa da özet doğrulaması süresi kadar bekliyoruz. Hemen
     // dönmek, yanıt süresinden hangi adreslerin kayıtlı olduğunu okumayı
     // mümkün kılardı.
-    if (user === null || user.deletedAt !== null) {
+    if (user === null || geriGetirmeSuresiDoldu(user.deletedAt)) {
       await this.passwords.wasteTime();
       // Kullanıcı kimliği yok — e-posta yazılmıyor, çünkü denetim kaydı
       // sızarsa kayıtlı adres listesi olurdu.
@@ -95,10 +117,25 @@ export class AuthService {
       throw new UnauthorizedException('E-posta ya da şifre hatalı');
     }
 
+    const restored = user.deletedAt !== null;
+
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: {
+        lastLoginAt: new Date(),
+        // Silme geri alınıyor: abonelikler, ödeme geçmişi ve bildirimler
+        // zaten silinmemişti, hepsi olduğu gibi geri geliyor.
+        ...(restored ? { deletedAt: null } : {}),
+      },
     });
+
+    if (restored) {
+      await this.audit.record({
+        action: 'account.restored',
+        userId: user.id,
+        ip: context.ip,
+      });
+    }
 
     await this.audit.record({
       action: 'auth.login',
@@ -106,7 +143,7 @@ export class AuthService {
       ip: context.ip,
     });
 
-    return this.sessions.create(user.id, context);
+    return { ...(await this.sessions.create(user.id, context)), restored };
   }
 
   async verifyEmail(token: string): Promise<void> {

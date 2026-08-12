@@ -1,7 +1,12 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router';
 import { UYGULAMA_ADI } from '../lib/marka';
-import { useCikis, useOturum } from '../lib/oturum';
+import {
+  geriGetirildiMi,
+  geriGetirmeNotunuSil,
+  useCikis,
+  useOturum,
+} from '../lib/oturum';
 import { BildirimZili } from './BildirimZili';
 
 /** Giriş yapmış kullanıcının gördüğü çerçeve: başlık, gezinme, içerik. */
@@ -58,7 +63,53 @@ export function Kabuk({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        <GeriGetirmeSeridi />
+        {children}
+      </main>
+    </div>
+  );
+}
+
+/**
+ * "Hesabın geri getirildi" şeridi.
+ *
+ * Silinmiş bir hesapla giriş yapmak silmeyi geri alıyor. Bunun sessizce
+ * olması, kullanıcıyı hesabının hâlâ silinme sırasında olduğunu sanır
+ * hâlde bırakırdı — ya da tam tersi, sildiğini unutturur. Şerit bir kez
+ * çıkıyor ve kapatılabiliyor.
+ */
+function GeriGetirmeSeridi() {
+  // Not yalnızca **okunuyor**; silme işi efekte bırakılıyor, çünkü
+  // StrictMode bileşen gövdesini iki kez çalıştırıyor ve okurken silmek
+  // ikinci çalıştırmada haberi kaybederdi.
+  const [gorunur, setGorunur] = useState(geriGetirildiMi);
+
+  useEffect(() => {
+    geriGetirmeNotunuSil();
+  }, []);
+
+  if (!gorunur) {
+    return null;
+  }
+
+  return (
+    <div
+      role="status"
+      className="mb-6 flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-800/60 dark:bg-green-950/40 dark:text-green-200"
+    >
+      <p className="flex-1">
+        <strong className="font-semibold">Hesabın geri getirildi.</strong> Silme
+        işlemi iptal edildi; aboneliklerin ve geçmişin olduğu gibi duruyor.
+      </p>
+      <button
+        type="button"
+        onClick={() => setGorunur(false)}
+        aria-label="Kapat"
+        className="rounded px-1.5 text-green-700 hover:bg-green-100 dark:text-green-300 dark:hover:bg-green-900/40"
+      >
+        ✕
+      </button>
     </div>
   );
 }

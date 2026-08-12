@@ -56,13 +56,36 @@ export function useOturum() {
   };
 }
 
+/**
+ * "Hesabın geri geldi" haberinin giriş ekranından uygulamaya taşınma yolu.
+ *
+ * Haber giriş yanıtında geliyor ama gösterileceği yer uygulamanın içi:
+ * giriş başarılı olur olmaz giriş ekranı sökülüyor. React durumu o sökülmede
+ * kayboluyor, bu yüzden not `sessionStorage`'a bırakılıyor — sekme
+ * kapanınca kendiliğinden siliniyor ve kalıcı bir iz bırakmıyor.
+ */
+const GERI_GETIRILDI = 'hesap-geri-getirildi';
+
+export function geriGetirildiMi(): boolean {
+  return sessionStorage.getItem(GERI_GETIRILDI) !== null;
+}
+
+export function geriGetirmeNotunuSil(): void {
+  sessionStorage.removeItem(GERI_GETIRILDI);
+}
+
 export function useGiris() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (girdi: { email: string; password: string }) =>
-      api.post<{ token: string }>('/auth/login', girdi),
-    onSuccess: async () => {
+      api.post<{ token: string; restored: boolean }>('/auth/login', girdi),
+    onSuccess: async (yanit) => {
+      if (yanit.restored) {
+        // Kullanıcı hesabını silmişti ve bu giriş silmeyi geri aldı.
+        // Sessizce olup bitmesi doğru olmazdı.
+        sessionStorage.setItem(GERI_GETIRILDI, '1');
+      }
       // Girişten sonra her şey yeniden okunuyor: önceki kullanıcının
       // önbellekteki verisi ekranda kalmasın.
       await queryClient.invalidateQueries();

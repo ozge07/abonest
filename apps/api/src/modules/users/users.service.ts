@@ -2,16 +2,11 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { PasswordService } from '../auth/password.service.js';
 import { AuditService } from '../../infra/audit/audit.service.js';
+import { PURGE_AFTER_DAYS } from './purge.js';
 
-/** Hesap silme kararının geri alınabileceği süre. */
-/**
- * Silinmiş hesabın kalıcı temizlenmesine kadar geçen süre.
- *
- * Dışa açık: günlük temizlik işi aynı değeri kullanıyor. İki yerde ayrı
- * sabit tutmak, kullanıcıya söylenen süre ile gerçekte beklenen sürenin
- * sessizce ayrışması demek olurdu.
- */
-export const PURGE_AFTER_DAYS = 30;
+// Sabit `purge.ts` içinde: giriş ucu da aynı süreyi kullanıyor ve bu
+// servise bağlanmadan okuyabilmeli.
+export { PURGE_AFTER_DAYS } from './purge.js';
 
 @Injectable()
 export class UsersService {
