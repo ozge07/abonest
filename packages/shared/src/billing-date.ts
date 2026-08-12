@@ -169,6 +169,38 @@ export function nextOccurrence(
 }
 
 /**
+ * `today` tarihinden **önceki** son ödeme; hiç yoksa `null`.
+ *
+ * Kullanıcı geçmiş bir başlangıç tarihi girdiğinde ekranda yalnızca
+ * "sonraki ödeme" görünüyordu. 11 Temmuz'da başlayan aylık bir abonelikte
+ * 12 Ağustos'ta "sonraki: 11 Eylül" yazıyor ve **dün geçen 11 Ağustos
+ * ödemesi hiçbir yerde görünmüyordu** — kullanıcıya hesap yanlışmış gibi
+ * geliyor.
+ *
+ * Bugün ödeme günüyse burası `null` dönüyor: o ödeme geçmiş değil, bugünün
+ * ödemesi ve `nextOccurrence` onu zaten veriyor.
+ */
+export function previousOccurrence(
+  startDate: CalendarDate,
+  spec: CycleSpec,
+  today: CalendarDate,
+): CalendarDate | null {
+  const anchor = toCalendarDate(startDate);
+  const gun = toCalendarDate(today);
+
+  if (anchor.getTime() >= gun.getTime()) {
+    return null;
+  }
+
+  // Bugünden önceki ilk tarihi bulmak için sıradaki tarihten geri gidiyoruz.
+  let n = 0;
+  while (occurrenceDate(anchor, spec, n + 1).getTime() < gun.getTime()) {
+    n += 1;
+  }
+  return occurrenceDate(anchor, spec, n);
+}
+
+/**
  * `from` ile `until` arasındaki bütün ödeme tarihleri.
  *
  * Hatırlatma işi bunu kullanıyor: her aktif abonelik için ufuk boyunca

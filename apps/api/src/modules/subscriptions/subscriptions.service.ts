@@ -4,6 +4,7 @@ import {
   monthlyEquivalentMinor,
   nextOccurrence,
   occurrencesBetween,
+  previousOccurrence,
   toCalendarDate,
   toISODate,
   type BillingCycle,
@@ -304,6 +305,14 @@ function toDto(row: Row) {
     startDate: toISODate(row.startDate),
     nextPaymentDate:
       row.nextPaymentDate !== null ? toISODate(row.nextPaymentDate) : null,
+    /*
+     * Bugünden önceki son ödeme.
+     *
+     * Kullanıcı geçmiş bir başlangıç tarihi girdiğinde ekranda yalnızca
+     * "sonraki ödeme" görünüyordu ve dün geçen ödeme hiçbir yerde yoktu —
+     * hesap yanlışmış gibi geliyordu. Türetilmiş bir değer, saklanmıyor.
+     */
+    lastPaymentDate: sonOdeme(row),
     endDate: row.endDate !== null ? toISODate(row.endDate) : null,
     trialEndsAt: row.trialEndsAt !== null ? toISODate(row.trialEndsAt) : null,
     lastUsedAt: row.lastUsedAt !== null ? toISODate(row.lastUsedAt) : null,
@@ -323,6 +332,33 @@ function toDto(row: Row) {
         : null,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+/**
+ * Aboneliğin bugünden önceki son ödemesi.
+ *
+ * İptal ve duraklatmada ödemeler durduğu için o tarihten sonrasına
+ * bakılmıyor; yoksa iptal edilmiş bir abonelik dün ödeme yapmış gibi
+ * görünürdü.
+ */
+function sonOdeme(row: Row): string | null {
+  const sinir =
+    row.status === 'CANCELLED' && row.cancelledAt !== null
+      ? toCalendarDate(row.cancelledAt)
+      : row.status === 'PAUSED' && row.pausedAt !== null
+        ? toCalendarDate(row.pausedAt)
+        : today();
+
+  const onceki = previousOccurrence(
+    row.startDate,
+    {
+      cycle: row.billingCycle as BillingCycle,
+      customIntervalDays: row.customIntervalDays ?? undefined,
+    },
+    sinir,
+  );
+
+  return onceki === null ? null : toISODate(onceki);
 }
 
 function buildWhere(query: ListQuery) {

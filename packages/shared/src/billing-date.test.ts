@@ -5,6 +5,7 @@ import {
   nextOccurrence,
   occurrenceDate,
   occurrencesBetween,
+  previousOccurrence,
   toISODate,
 } from './billing-date.js';
 
@@ -175,5 +176,43 @@ describe('occurrencesBetween', () => {
     expect(tarihler).toHaveLength(8);
     expect(iso(tarihler[0]!)).toBe('2026-08-17');
     expect(iso(tarihler.at(-1)!)).toBe('2026-10-05');
+  });
+});
+
+describe('previousOccurrence — geçmiş ödeme', () => {
+  const spec = { cycle: 'MONTHLY' as const };
+
+  it('dün geçen ödemeyi buluyor', () => {
+    // Kullanıcının bildirdiği durum: 11 Temmuz'da başlayan abonelik,
+    // bugün 12 Ağustos. 11 Ağustos ödemesi dün geçti.
+    expect(iso(previousOccurrence(d(2026, 7, 11), spec, d(2026, 8, 12))!)).toBe(
+      '2026-08-11',
+    );
+  });
+
+  it('başlangıç gelecekteyse null dönüyor', () => {
+    expect(previousOccurrence(d(2026, 9, 1), spec, d(2026, 8, 12))).toBeNull();
+  });
+
+  it('bugün ödeme günüyse null dönüyor', () => {
+    // Bugünkü ödeme geçmiş değil; nextOccurrence onu zaten veriyor.
+    expect(previousOccurrence(d(2026, 8, 12), spec, d(2026, 8, 12))).toBeNull();
+  });
+
+  it('ilk ödeme henüz geçmediyse null dönüyor', () => {
+    expect(previousOccurrence(d(2026, 8, 20), spec, d(2026, 8, 12))).toBeNull();
+  });
+
+  it('uzun geçmişte doğru tarihi buluyor', () => {
+    expect(
+      iso(previousOccurrence(d(2015, 6, 20), { cycle: 'YEARLY' }, d(2026, 8, 12))!),
+    ).toBe('2026-06-20');
+  });
+
+  it('ay sonu kırpmasında doğru çalışıyor', () => {
+    // 31 Ocak'ta başlayan abonelikte 28 Şubat ödemesi.
+    expect(iso(previousOccurrence(d(2026, 1, 31), spec, d(2026, 3, 1))!)).toBe(
+      '2026-02-28',
+    );
   });
 });

@@ -55,6 +55,8 @@ export interface Abonelik {
   yearlyMinor: number;
   startDate: string;
   nextPaymentDate: string | null;
+  /** Bugünden önceki son ödeme; türetilmiş değer. */
+  lastPaymentDate: string | null;
   endDate: string | null;
   trialEndsAt: string | null;
   lastUsedAt: string | null;

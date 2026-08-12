@@ -3,9 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AbonelikFormu } from '../components/AbonelikFormu';
 import { Dugme } from '../components/form';
 import { MarkaKarosu } from '../components/MarkaKarosu';
+import { OnayKutusu } from '../components/OnayKutusu';
 import { api } from '../lib/api';
 import { tryKarsiligi, useKurlar, type Kurlar } from '../lib/kur';
-import { donguYaz, gunSayisiYaz, paraYaz, tarihYaz } from '../lib/money';
+import {
+  donguYaz,
+  gunSayisiYaz,
+  paraYaz,
+  tarihKisaYaz,
+  tarihYaz,
+} from '../lib/money';
 import type { Abonelik, Sayfa } from '../lib/types';
 
 /**
@@ -26,6 +33,8 @@ import type { Abonelik, Sayfa } from '../lib/types';
  */
 export function AbonelikSayfasi() {
   const [formAcik, setFormAcik] = useState(false);
+  /** Silinmesi onaylanacak abonelik; kutu bununla açılıyor. */
+  const [silinecek, setSilinecek] = useState<Abonelik | null>(null);
   const queryClient = useQueryClient();
 
   const sorgu = useQuery({
@@ -40,6 +49,16 @@ export function AbonelikSayfasi() {
       api.post<Abonelik>(`/subscriptions/${id}/${eylem}`),
     onSuccess: async () => {
       // Özet ve analiz de değişiyor: iptal edilen abonelik toplamdan düşmeli.
+      await queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    },
+  });
+
+  const sil = useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/subscriptions/${id}`),
+    onSuccess: async () => {
+      setSilinecek(null);
       await queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       await queryClient.invalidateQueries({ queryKey: ['analytics'] });
@@ -87,6 +106,7 @@ export function AbonelikSayfasi() {
           abonelikler={aktifler}
           kurlar={kurlar.data}
           onEylem={(id, eylem) => durumDegistir.mutate({ id, eylem })}
+          onSil={setSilinecek}
         />
       )}
 
@@ -100,8 +120,18 @@ export function AbonelikSayfasi() {
             kurlar={kurlar.data}
             soluk
             onEylem={(id, eylem) => durumDegistir.mutate({ id, eylem })}
+            onSil={setSilinecek}
           />
         </section>
+      )}
+      {silinecek !== null && (
+        <OnayKutusu
+          baslik={`${silinecek.name} silinsin mi?`}
+          aciklama="Bu abonelik ve geçmiş ödeme kayıtları kalıcı olarak siliniyor; geri alınamaz. Yalnızca ödemeyi durdurmak istiyorsan 'İptal' daha doğru — geçmişin korunuyor."
+          bekliyor={sil.isPending}
+          onOnayla={() => sil.mutate(silinecek.id)}
+          onVazgec={() => setSilinecek(null)}
+        />
       )}
     </div>
   );
@@ -187,11 +217,13 @@ function Liste({
   kurlar,
   soluk = false,
   onEylem,
+  onSil,
 }: {
   abonelikler: Abonelik[];
   kurlar: Kurlar | undefined;
   soluk?: boolean;
   onEylem: (id: string, eylem: string) => void;
+  onSil: (abonelik: Abonelik) => void;
 }) {
   return (
     <ul
@@ -206,6 +238,7 @@ function Liste({
           abonelik={abonelik}
           kurlar={kurlar}
           onEylem={onEylem}
+          onSil={onSil}
         />
       ))}
     </ul>
@@ -216,10 +249,12 @@ function Satir({
   abonelik,
   kurlar,
   onEylem,
+  onSil,
 }: {
   abonelik: Abonelik;
   kurlar: Kurlar | undefined;
   onEylem: (id: string, eylem: string) => void;
+  onSil: (abonelik: Abonelik) => void;
 }) {
   const kalanGun =
     abonelik.nextPaymentDate === null
@@ -262,7 +297,7 @@ function Satir({
         * karşılaştırıyor.
         */}
       <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
-        <SonrakiOdeme tarih={abonelik.nextPaymentDate} />
+          <OdemeDurumu abonelik={abonelik} />
 
           <div className="text-right sm:w-36">
           <p className="font-semibold tabular-nums">
@@ -313,6 +348,9 @@ function Satir({
             Devam ettir
           </Eylem>
         )}
+        <Eylem tehlikeli onClick={() => onSil(abonelik)}>
+          Sil
+        </Eylem>
       </div>
     </li>
   );
@@ -366,20 +404,35 @@ function ArtiSimgesi() {
 }
 
 /**
- * Sonraki ödeme — listedeki en karar verdirici bilgi.
+ * Ödeme durumu — listedeki en karar verdirici bilgi.
  *
- * Üç gün ve altı vurgulu: kullanıcı iptal edecekse son şansı orada.
+ * İki tarih birden gösteriliyor:
+ *
+ * - **Sonraki ödeme**, üç gün ve altındaysa vurgulu (iptal edecekse son şans).
+ * - **Yeni geçmiş ödeme**, varsa altında soluk bir satır olarak.
+ *
+ * İkincisi bir kullanıcı şikâyetinden doğdu: 11 Temmuz'da başlayan aylık bir
+ * abonelikte 12 Ağustos'ta yalnızca "sonraki: 11 Eylül" yazıyordu. Hesap
+ * doğruydu ama **dün geçen 11 Ağustos ödemesi hiçbir yerde görünmüyordu** ve
+ * uygulama tarihi yanlış hesaplıyormuş gibi duruyordu.
  */
-function SonrakiOdeme({ tarih }: { tarih: string | null }) {
-  if (tarih === null) {
+function OdemeDurumu({ abonelik }: { abonelik: Abonelik }) {
+  const gecmis = abonelik.lastPaymentDate;
+  // Yalnızca yakın geçmiş gösteriliyor; iki ay önceki ödeme kimseye bir şey
+  // söylemiyor ve satırı kalabalıklaştırıyor.
+  const gecmisGun = gecmis === null ? null : -gunFarki(gecmis);
+  const gecmisYakin = gecmisGun !== null && gecmisGun <= 7;
+
+  if (abonelik.nextPaymentDate === null) {
     return (
-      <div className="text-sm text-slate-400 sm:w-36 dark:text-slate-500">
-        ödeme yok
+      <div className="sm:w-36">
+        <p className="text-sm text-slate-400 dark:text-slate-500">ödeme yok</p>
+        {gecmisYakin && <GecmisOdeme tarih={gecmis!} gun={gecmisGun} />}
       </div>
     );
   }
 
-  const gun = gunFarki(tarih);
+  const gun = gunFarki(abonelik.nextPaymentDate);
   const yakin = gun <= 3;
 
   return (
@@ -395,9 +448,45 @@ function SonrakiOdeme({ tarih }: { tarih: string | null }) {
         {gunSayisiYaz(gun)}
       </p>
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        {tarihYaz(tarih)}
+        {tarihYaz(abonelik.nextPaymentDate)}
       </p>
+      {gecmisYakin && <GecmisOdeme tarih={gecmis!} gun={gecmisGun} />}
     </div>
+  );
+}
+
+/**
+ * Yeni geçmiş ödeme.
+ *
+ * Üstü çizili ve soluk: geride kalmış bir olay olduğu tek bakışta belli
+ * olsun, sıradaki ödemeyle karışmasın.
+ */
+function GecmisOdeme({ tarih, gun }: { tarih: string; gun: number }) {
+  return (
+    <p className="mt-1 flex items-center gap-1 text-xs whitespace-nowrap text-slate-400 dark:text-slate-500">
+      <GecmisSimgesi />
+      <span className="line-through">{tarihKisaYaz(tarih)}</span>
+      <span>· {gun === 0 ? 'bugün' : `${gun} gün önce`}</span>
+    </p>
+  );
+}
+
+function GecmisSimgesi() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
   );
 }
 
@@ -422,15 +511,26 @@ function DurumRozeti({ durum }: { durum: Abonelik['status'] }) {
 function Eylem({
   children,
   onClick,
+  tehlikeli = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  tehlikeli?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-md px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-marka-500/40 focus-visible:outline-none group-hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100 dark:group-hover:text-slate-300"
+      className={[
+        'rounded-md px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors',
+        'focus-visible:ring-2 focus-visible:ring-marka-500/40 focus-visible:outline-none',
+        'dark:text-slate-400',
+        tehlikeli
+          ? // Silme geri alınamaz; üzerine gelince kırmızıya dönerek
+            // diğerlerinden ayrılıyor.
+            'hover:bg-red-100 hover:text-red-700 group-hover:text-slate-700 dark:hover:bg-red-500/15 dark:hover:text-red-300 dark:group-hover:text-slate-300'
+          : 'hover:bg-slate-200 hover:text-slate-900 group-hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-100 dark:group-hover:text-slate-300',
+      ].join(' ')}
     >
       {children}
     </button>

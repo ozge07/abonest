@@ -78,6 +78,20 @@ export function tarihYaz(iso: string): string {
   }).format(new Date(`${iso}T00:00:00Z`));
 }
 
+/**
+ * Kısa tarih: "5 Ağu".
+ *
+ * Dar sütunlarda tam tarih ("5 Ağustos 2026") satıra sığmayıp kırılıyor.
+ * Yıl atlanıyor çünkü bu biçim yalnızca yakın geçmiş/gelecek için
+ * kullanılıyor; belirsizlik doğurmuyor.
+ */
+export function tarihKisaYaz(iso: string): string {
+  return new Intl.DateTimeFormat('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${iso}T00:00:00Z`));
+}
+
 /** "3 gün sonra", "yarın", "bugün" — sayı yerine insan dili. */
 export function gunSayisiYaz(gun: number): string {
   if (gun <= 0) return 'bugün';

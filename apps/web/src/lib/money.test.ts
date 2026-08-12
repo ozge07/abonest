@@ -12,6 +12,7 @@ import {
   gunSayisiYaz,
   kurusuMetneCevir,
   paraYaz,
+  tarihKisaYaz,
   tarihYaz,
   tutariKurusaCevir,
 } from './money';
@@ -153,5 +154,17 @@ describe('gunSayisiYaz', () => {
   it('geçmiş günü bugün sayıyor', () => {
     // Negatif gün "-3 gün sonra" diye yazılmamalı.
     expect(gunSayisiYaz(-3)).toBe('bugün');
+  });
+});
+
+describe('tarihKisaYaz', () => {
+  it('kısa ay adıyla yazıyor', () => {
+    // Dar sütunlarda tam tarih satıra sığmıyordu.
+    expect(tarihKisaYaz('2026-08-05')).toBe('5 Ağu');
+  });
+
+  it('ayın ilk ve son günü kaymıyor', () => {
+    expect(tarihKisaYaz('2026-01-01')).toBe('1 Oca');
+    expect(tarihKisaYaz('2026-12-31')).toBe('31 Ara');
   });
 });
