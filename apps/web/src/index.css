@@ -68,25 +68,26 @@ html {
    Arka plan teması
    ==========================================================================
 
-   Üç katman:
+   Dört katman, dıştan içe:
 
-   1. Zemin — düz bir taban rengi.
-   2. Işık lekeleri — büyük, yumuşak radyal gradyanlar; çok yavaş süzülüyor.
-   3. Izgara — hafif bir çizgi dokusu, kenarlara doğru sönüyor.
+   1. Zemin — düz taban rengi.
+   2. Işık lekeleri — büyük yumuşak gradyanlar, çok yavaş süzülüyor.
+   3. Kart siluetleri — konuyla bağ kuran şekil katmanı.
+   4. Nokta dokusu — kenarlara doğru sönen ince bir ızgara.
 
-   ## Neden bu kadar sessiz
+   ## Neden kart siluetleri
 
-   Bu bir para uygulaması: ekranın asıl işi sayıları okutmak. Hareketli bir
-   arka plan dikkati kolayca çalıyor, o yüzden lekeler ekranın kenarlarında
-   duruyor, döngüler 30 saniyenin üzerinde ve renkler zeminden yalnızca bir
-   ton ayrılıyor. Fark ediliyor ama rahatsız etmiyor.
+   Düz bir renk geçişi "arka plan" olduğunu belli ediyor ama hiçbir şey
+   anlatmıyor. Buradaki şekiller uygulamanın konusundan geliyor: üst üste
+   duran abonelik kartları. Yalnızca dış hatları çiziliyor ve çok soluklar;
+   içeriğin arkasında değil, geniş ekranda boş kalan kenarlarda duruyorlar.
 
    ## Neden `filter: blur()` yok
 
    Büyük bir öğeye blur uygulamak her karede yeniden çiziliyor ve zayıf
-   makinelerde kaydırmayı takıyor. Radyal gradyanın kendisi zaten yumuşak;
-   aynı görüntüyü bedelsiz veriyor. Hareket de yalnızca `transform` ile,
-   yani düzen yeniden hesaplanmıyor.
+   makinelerde kaydırmayı takıyor. Radyal gradyan aynı yumuşaklığı bedelsiz
+   veriyor. Hareket de yalnızca `transform` ve `opacity` ile — ikisi de
+   düzeni yeniden hesaplatmıyor.
    ========================================================================== */
 
 .tema-arkaplan {
@@ -99,52 +100,38 @@ html {
   background-color: var(--tema-zemin);
 }
 
+/* --- Işık lekeleri --- */
+
 .tema-leke {
   position: absolute;
-  width: 60rem;
-  height: 60rem;
+  width: 52rem;
+  height: 52rem;
   border-radius: 50%;
   opacity: var(--tema-leke-guc);
   will-change: transform;
 }
 
 .tema-leke-1 {
-  top: -22rem;
-  left: -18rem;
+  top: -20rem;
+  left: -16rem;
   background: radial-gradient(circle, var(--tema-leke-a) 0%, transparent 62%);
   animation: suzul-a 38s ease-in-out infinite alternate;
 }
 
 .tema-leke-2 {
-  top: -10rem;
-  right: -24rem;
+  top: -8rem;
+  right: -20rem;
   background: radial-gradient(circle, var(--tema-leke-b) 0%, transparent 62%);
   animation: suzul-b 46s ease-in-out infinite alternate;
 }
 
 .tema-leke-3 {
-  bottom: -30rem;
-  left: 30%;
+  bottom: -26rem;
+  left: 28%;
   background: radial-gradient(circle, var(--tema-leke-c) 0%, transparent 62%);
   animation: suzul-c 52s ease-in-out infinite alternate;
 }
 
-/*
- * Izgara, düzene sessiz bir yapı veriyor. Maske olmadan ekranın her yerinde
- * eşit görünüyor ve duvar kağıdı gibi duruyordu; üstte belirgin, aşağı
- * doğru sönerek içeriğe yol veriyor.
- */
-.tema-izgara {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--tema-cizgi) 1px, transparent 1px),
-    linear-gradient(90deg, var(--tema-cizgi) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, #000 10%, transparent 75%);
-}
-
-/* Süzülme yolları farklı: aynı anda aynı yöne gitmeleri mekanik duruyordu. */
 @keyframes suzul-a {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(6rem, 4rem, 0) scale(1.12); }
@@ -160,48 +147,147 @@ html {
   to { transform: translate3d(-5rem, -6rem, 0) scale(1.15); }
 }
 
+/* --- Kart siluetleri --- */
+
+.tema-kart {
+  position: absolute;
+  border: 1.5px solid var(--tema-kart-cizgi);
+  border-radius: 1.25rem;
+  background: var(--tema-kart-dolgu);
+  will-change: transform;
+}
+
 /*
- * Renk seçimi iki turda oturdu.
- *
- * Önce üçüncü leke mordu ve baskındı — üç ayrı renk ekranı dağıtıyor,
- * markanın mavisiyle yarışıyordu. Komşu tonlara çekildi.
- *
- * Sonra hepsi maviye çok yakın kalınca ekran tek renge boğuldu ve gözü
- * yormaya başladı. Şimdiki palet **doygunluğu düşük**: bir leke hafif
- * mavi, biri nötr sıcak gri, biri soluk yeşilimsi. Aralarındaki fark
- * derinlik veriyor ama hiçbiri renk olarak öne çıkmıyor. Marka mavisi
- * yalnızca düğmelerde ve kartın kendisinde kalıyor — ayırt edici olması
- * gereken yerde.
+ * Her kartın kendi süresi ve yönü var. Aynı anda aynı yöne giden şekiller
+ * mekanik duruyor; farklı süreler asla tekrar etmeyen bir düzen üretiyor.
+ */
+.tema-kart-1 {
+  top: 12%;
+  left: -6rem;
+  width: 17rem;
+  height: 10rem;
+  animation: yuz-1 34s ease-in-out infinite alternate;
+}
+
+.tema-kart-2 {
+  top: 26%;
+  left: -2rem;
+  width: 13rem;
+  height: 8rem;
+  animation: yuz-2 44s ease-in-out infinite alternate;
+}
+
+.tema-kart-3 {
+  top: 8%;
+  right: -5rem;
+  width: 19rem;
+  height: 11rem;
+  animation: yuz-3 40s ease-in-out infinite alternate;
+}
+
+.tema-kart-4 {
+  bottom: 14%;
+  right: -3rem;
+  width: 15rem;
+  height: 9rem;
+  animation: yuz-4 50s ease-in-out infinite alternate;
+}
+
+.tema-kart-5 {
+  bottom: 6%;
+  left: 8%;
+  width: 12rem;
+  height: 7.5rem;
+  animation: yuz-5 56s ease-in-out infinite alternate;
+}
+
+@keyframes yuz-1 {
+  from { transform: translate3d(0, 0, 0) rotate(-9deg); }
+  to { transform: translate3d(3rem, -2.5rem, 0) rotate(-3deg); }
+}
+
+@keyframes yuz-2 {
+  from { transform: translate3d(0, 0, 0) rotate(7deg); }
+  to { transform: translate3d(2rem, 3rem, 0) rotate(13deg); }
+}
+
+@keyframes yuz-3 {
+  from { transform: translate3d(0, 0, 0) rotate(11deg); }
+  to { transform: translate3d(-3.5rem, 3rem, 0) rotate(4deg); }
+}
+
+@keyframes yuz-4 {
+  from { transform: translate3d(0, 0, 0) rotate(-6deg); }
+  to { transform: translate3d(-2.5rem, -3rem, 0) rotate(-14deg); }
+}
+
+@keyframes yuz-5 {
+  from { transform: translate3d(0, 0, 0) rotate(4deg); }
+  to { transform: translate3d(3rem, -2rem, 0) rotate(-5deg); }
+}
+
+/* --- Nokta dokusu --- */
+
+/*
+ * Çizgi ızgarası defter kâğıdı gibi duruyordu; noktalar daha hafif ve
+ * şekillerle çakışmıyor. Maske üstte belirgin, aşağı doğru sönerek
+ * içeriğe yol veriyor.
+ */
+.tema-izgara {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--tema-nokta) 1.2px, transparent 1.2px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 110% 70% at 50% 0%, #000 5%, transparent 72%);
+}
+
+/* --- Palet --- */
+
+/*
+ * Doygunluk bilerek düşük: bir leke hafif mavi, biri nötr sıcak gri, biri
+ * soluk yeşilimsi. Hepsi maviye yakın olduğunda ekran tek renge boğulup
+ * gözü yoruyordu; tamamen nötr olduğunda ise düz ve cansız kaldı. Derinlik
+ * renkten değil, katmanların birbirine göre farkından geliyor.
  */
 
 /* Açık tema */
 :root {
-  --tema-zemin: #fafbfc;
-  --tema-leke-guc: 0.32;
-  --tema-leke-a: #dbe3ee;
-  --tema-leke-b: #ece8e3;
-  --tema-leke-c: #e0e8e6;
-  --tema-cizgi: rgb(15 23 42 / 0.035);
+  --tema-zemin: #f7f9fb;
+  --tema-leke-guc: 0.4;
+  --tema-leke-a: #cfdcec;
+  --tema-leke-b: #ece6df;
+  --tema-leke-c: #d8e6e2;
+  --tema-nokta: rgb(15 23 42 / 0.075);
+  --tema-kart-cizgi: rgb(15 23 42 / 0.07);
+  --tema-kart-dolgu: rgb(255 255 255 / 0.4);
 }
 
 /* Koyu tema */
 @media (prefers-color-scheme: dark) {
   :root {
-    --tema-zemin: #0a0d13;
-    --tema-leke-guc: 0.22;
-    --tema-leke-a: #1e293b;
-    --tema-leke-b: #262433;
-    --tema-leke-c: #1a2b2c;
-    --tema-cizgi: rgb(148 163 184 / 0.045);
+    --tema-zemin: #080b12;
+    /*
+     * Koyu zemin ince çizgileri yutuyor: açık temadaki değerler burada
+     * neredeyse görünmez kalıyordu. Kart kenarları ve lekeler bir tık
+     * güçlü.
+     */
+    --tema-leke-guc: 0.38;
+    --tema-leke-a: #1e3a5f;
+    --tema-leke-b: #2a2740;
+    --tema-leke-c: #17343a;
+    --tema-nokta: rgb(148 163 184 / 0.1);
+    --tema-kart-cizgi: rgb(148 163 184 / 0.14);
+    --tema-kart-dolgu: rgb(148 163 184 / 0.025);
   }
 }
 
 /*
- * Hareketi azaltılmış tercihte lekeler duruyor ama kayboluyor değil: tema
- * yerinde kalıyor, yalnızca hareket bitiyor.
+ * Hareketi azaltılmış tercihte her şey duruyor ama kaybolmuyor: tema ve
+ * şekiller yerinde kalıyor, yalnızca hareket bitiyor.
  */
 @media (prefers-reduced-motion: reduce) {
-  .tema-leke {
+  .tema-leke,
+  .tema-kart {
     animation: none;
   }
 }
