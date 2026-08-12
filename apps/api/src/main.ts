@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -33,6 +35,10 @@ async function bootstrap(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger(config);
 
+  // Arayüz derlenmişse aynı origin'den sunuluyor. Geliştirmede Vite kendi
+  // sunucusunda çalıştığı için bu klasör yok ve API salt API kalıyor.
+  const webRoot = bulWebRoot();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -53,8 +59,11 @@ async function bootstrap(): Promise<void> {
   );
 
   await configureApp(app, logger, {
-    corsOrigin: config.WEB_ORIGIN,
+    // Arayüz aynı origin'den sunuluyorsa CORS'a hiç gerek yok; ayrı
+    // barındırılıyorsa `WEB_ORIGIN` devreye giriyor.
+    ...(webRoot === undefined ? { corsOrigin: config.WEB_ORIGIN } : {}),
     production: config.NODE_ENV === 'production',
+    ...(webRoot !== undefined ? { webRoot } : {}),
   });
 
   // Kapanma sinyalinde açık istekler tamamlanıyor, bağlantılar kapanıyor.
@@ -73,3 +82,17 @@ bootstrap().catch((error: unknown) => {
   console.error('API başlatılamadı:', error);
   process.exit(1);
 });
+
+/**
+ * Derlenmiş arayüzün klasörünü bulur; yoksa `undefined`.
+ *
+ * Varlığına bakıyoruz, ortam değişkenine değil: "arayüz derlendi mi"
+ * sorusunun cevabı dosya sisteminde zaten var ve ikinci bir bayrak
+ * tutmak, ikisinin ayrışabileceği bir yer daha demek olurdu.
+ */
+function bulWebRoot(): string | undefined {
+  // Derleme çıktısı CommonJS; `import.meta` kullanılamıyor.
+  // `dist/` içinden iki üst klasör depo kökündeki `apps/` oluyor.
+  const aday = join(__dirname, '../../web/dist');
+  return existsSync(aday) ? aday : undefined;
+}

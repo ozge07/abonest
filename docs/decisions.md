@@ -378,3 +378,34 @@ dokunan ama hiçbir şey iddia etmeyen testler.
 `notifications.service` %97 kapsamdayken, "çakışmada oluşturdum de" mutasyonu
 128 testin hiçbirini düşürmedi. Kapsam çalışan satırı sayıyor, iddia edileni
 değil. Boşluk kapatıldı; ayrıntı `docs/testing.md`.
+
+---
+
+## ADR-0022 · Arayüz API ile aynı origin'den sunuluyor
+
+**Bağlam.** Arayüz `/api/v1`'i göreli çağırıyordu; yerelde Vite vekili bunu
+gizliyordu. Yayında iki ayrı alan adı olsaydı ne olurdu diye bakınca sorun
+çıktı.
+
+**Sorun.** Oturum bir cookie'de ve `SameSite=Lax`. Arayüz ayrı bir alan
+adında dursaydı o cookie yazma isteklerinde **gönderilmezdi**. Çalıştırmak
+için `SameSite=None` gerekirdi — yani CSRF'e karşı ilk savunma hattını
+kaldırmak. Üstüne CORS'u kimlik bilgisi taşıyan çapraz-origin isteklere
+açmak gerekirdi.
+
+**Karar.** API, derlenmiş arayüzü kendi origin'inden sunuyor. Bilinmeyen
+sayfa yolları `index.html`'e düşüyor; API yolları düşmüyor.
+
+**Sonuç.** CORS devreye hiç girmiyor, cookie kendiliğinden gidiyor, tek
+dağıtım hedefi var. Bedeli API sürecinin statik dosya da servis etmesi — bu
+ölçekte ölçülebilir değil. Trafik büyürse varlıklar bir CDN'in arkasına
+alınabilir; o zaman da HTML aynı origin'den gelmeye devam eder.
+
+**Uygulama ayrıntısı.** SPA geri dönüşü `ProblemFilter` içinde, ayrı bir
+`setNotFoundHandler`'da değil: Nest kendi 404 işleyicisini `init()` sırasında
+kuruyor ve Fastify ikincisini kabul etmiyor. Filtre yönlendiriciden sonra
+çalıştığı için gerçek uçlar etkilenmiyor.
+
+**Yan sonuç: iki ayrı CSP.** API yanıtları `default-src 'none'` ile kalıyor;
+HTML yanıtları kendi kaynaklarını yükleyebilen bir politika alıyor. Tek
+politika kullanılsaydı ya arayüz açılmazdı ya API gereksiz yere gevşerdi.

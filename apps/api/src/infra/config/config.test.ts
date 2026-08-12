@@ -61,3 +61,69 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...gecerli, PORT: 'abc' })).toThrow(/PORT/);
   });
 });
+
+describe('üretim yapılandırması', () => {
+  /**
+   * Bu blokta sınananların hepsi "çalışır ama güvensiz" kategorisinde:
+   * uygulama ayağa kalkar, testler geçer, sorun ancak birileri istismar
+   * edince görünür. Açılışta çökmek tek güvenilir savunma.
+   */
+  const uretim = {
+    NODE_ENV: 'production',
+    DATABASE_URL: 'postgresql://a:b@localhost:5432/c',
+    WEB_ORIGIN: 'https://abonelik.example',
+    SESSION_SECRET: 'x'.repeat(40),
+    CRON_SECRET: 'z'.repeat(40),
+  } as NodeJS.ProcessEnv;
+
+  it('sağlam yapılandırmayı kabul ediyor', () => {
+    expect(() => loadConfig(uretim)).not.toThrow();
+  });
+
+  it('.env.example\'daki örnek sırlarla açılmıyor', () => {
+    // Bu değerler depoda açıkta duruyor; kopyala-yapıştırla üretime
+    // taşınırsa oturum imzası herkesin bildiği bir değer olur.
+    expect(() =>
+      loadConfig({
+        ...uretim,
+        SESSION_SECRET: 'degistir-en-az-32-karakter-olmali-1234',
+      }),
+    ).toThrow(/örnek değer/);
+
+    expect(() =>
+      loadConfig({
+        ...uretim,
+        CRON_SECRET: 'degistir-en-az-32-karakter-olmali-5678',
+      }),
+    ).toThrow(/örnek değer/);
+  });
+
+  it('iki sır aynıysa açılmıyor', () => {
+    // Aynı olmaları, birinin sızmasının diğerini de vermesi demek.
+    const ayni = 'q'.repeat(40);
+    expect(() =>
+      loadConfig({ ...uretim, SESSION_SECRET: ayni, CRON_SECRET: ayni }),
+    ).toThrow(/ayrı olmalı/);
+  });
+
+  it('WEB_ORIGIN https değilse açılmıyor', () => {
+    // Cookie üretimde `Secure` bayrağıyla gönderiliyor; http origin'de
+    // tarayıcı onu hiç göndermez ve giriş sessizce çalışmaz.
+    expect(() =>
+      loadConfig({ ...uretim, WEB_ORIGIN: 'http://abonelik.example' }),
+    ).toThrow(/https/);
+  });
+
+  it('geliştirmede bu kurallar uygulanmıyor', () => {
+    // Yerelde http ve basit sırlar normal; kuralı oraya taşımak
+    // geliştirmeyi zorlaştırırdı, güvenliği artırmazdı.
+    expect(() =>
+      loadConfig({
+        ...uretim,
+        NODE_ENV: 'development',
+        WEB_ORIGIN: 'http://localhost:5173',
+        SESSION_SECRET: 'degistir-en-az-32-karakter-olmali-1234',
+      }),
+    ).not.toThrow();
+  });
+});

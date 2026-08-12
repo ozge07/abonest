@@ -4,10 +4,11 @@ Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 
-> **Durum: Phase 9 tamamlandı.** Çalışan API (kimlik, abonelik CRUD, katalog,
+> **Durum: Phase 10 tamamlandı — tüm fazlar bitti.** Çalışan API (kimlik, abonelik CRUD, katalog,
 > ana ekran özeti, hatırlatma ve bildirimler, harcama analizi), günlük iş,
 > denetim kaydı ve React arayüzü var. Güvenlik gözden geçirmesi yapıldı —
-> bkz. [`docs/security.md`](docs/security.md). Sırada yayına hazırlık var.
+> bkz. [`docs/security.md`](docs/security.md). Yayına çıkarma adımları
+> [`docs/deployment.md`](docs/deployment.md) içinde.
 
 ## Ne çözüyor
 
@@ -25,6 +26,7 @@ soruyu cevaplıyor: **ne kadar gidiyor, sırada ne var, neyi kullanmıyorum.**
 | [`docs/decisions.md`](docs/decisions.md) | Mimari kararlar ve gerekçeleri (ADR) |
 | [`docs/security.md`](docs/security.md) | Neyin yoklandığı, ne bulunduğu, neye bakılmadığı |
 | [`docs/testing.md`](docs/testing.md) | Test yaklaşımı, kapsam ve mutasyon denemesi |
+| [`docs/deployment.md`](docs/deployment.md) | Yayına çıkarma, ortam değişkenleri, izleme |
 
 ## Teknoloji
 
@@ -87,11 +89,16 @@ Arayüz `http://localhost:5173` adresinde. Vite, `/api` isteklerini API'ye
 yönlendiriyor; tarayıcı her şeyi tek origin'den gördüğü için cookie'ler
 sorunsuz çalışıyor.
 
+Yayında Vite sunucusu yok: arayüz derleniyor ve **API onu aynı origin'den
+sunuyor** (ADR-0022). Bunu yerelde denemek için `npm run build --workspaces`
+sonrası `npm start -w @abonelik/api` yeterli — uygulama `:3000` adresinde
+tek başına çalışır.
+
 **E-posta doğrulama kodu** geliştirmede gönderilmiyor, API loguna yazılıyor —
 kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
 
 ```bash
-npm test --workspaces      # 182 test
+npm test --workspaces      # 197 test
 npm run typecheck          # bütün paketler
 npm run test:coverage -w @abonelik/api   # kapsam raporu ve eşikler
 ```

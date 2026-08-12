@@ -35,13 +35,30 @@ export class ValidationProblem extends HttpException {
 
 @Catch()
 export class ProblemFilter implements ExceptionFilter {
-  constructor(private readonly logger: Logger) {}
+  /**
+   * @param webRoot Derlenmiş arayüz sunuluyorsa dolu. Eşleşmeyen sayfa
+   *   istekleri `index.html`'e düşüyor (SPA geri dönüşü).
+   */
+  constructor(
+    private readonly logger: Logger,
+    private readonly webRoot?: string | undefined,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<FastifyRequest>();
     const reply = ctx.getResponse<FastifyReply>();
     const requestId = request.id;
+
+    if (this.webRoot !== undefined && sayfaIstegi(request, exception)) {
+      // Arayüz istemci tarafında yönlendiriyor: `/abonelikler` sunucuda bir
+      // dosyaya karşılık gelmiyor. Bu geri dönüş Nest'in yönlendiricisinden
+      // sonra devreye giriyor, yani gerçek bir uç varsa buraya hiç gelmiyor.
+      void (reply as FastifyReply & { sendFile: (d: string) => unknown }).sendFile(
+        'index.html',
+      );
+      return;
+    }
 
     const problem = this.toProblem(exception, request.url, requestId);
 
@@ -102,6 +119,33 @@ export class ProblemFilter implements ExceptionFilter {
       requestId,
     };
   }
+}
+
+/**
+ * Bu istek arayüz sayfası mı?
+ *
+ * Üç koşul birlikte: 404 olmalı, tarayıcı gezintisi olmalı (GET + HTML
+ * kabul eden) ve API yolu **olmamalı**. Sonuncusu şart — yoksa hatalı bir
+ * API çağrısı JSON yerine HTML alır ve istemci anlaşılmaz bir hata verir.
+ */
+function sayfaIstegi(request: FastifyRequest, exception: unknown): boolean {
+  if (request.method !== 'GET') {
+    return false;
+  }
+
+  const durum =
+    exception instanceof HttpException ? exception.getStatus() : 500;
+  if (durum !== HttpStatus.NOT_FOUND) {
+    return false;
+  }
+
+  const yol = request.url.split('?')[0] ?? '';
+  if (yol.startsWith('/api') || yol === '/health' || yol === '/ready') {
+    return false;
+  }
+
+  const kabul = request.headers.accept ?? '';
+  return kabul.includes('text/html') || kabul === '' || kabul.includes('*/*');
 }
 
 function slug(status: number): string {

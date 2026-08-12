@@ -52,6 +52,18 @@ const schema = z.object({
 
 export type AppConfig = z.infer<typeof schema>;
 
+/**
+ * `.env.example` içindeki yer tutucu sırlar.
+ *
+ * Bunlar depoda açıkta duruyor. Üretime kopyala-yapıştırla taşınırsa oturum
+ * imzası ve cron sırrı herkesin bildiği bir değer olur — ve bu, hiç kimsenin
+ * fark etmeyeceği türden bir hata. Açılışta çökmek tek güvenilir savunma.
+ */
+const ORNEK_SIRLAR = [
+  'degistir-en-az-32-karakter-olmali-1234',
+  'degistir-en-az-32-karakter-olmali-5678',
+];
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const result = schema.safeParse(env);
 
@@ -67,5 +79,45 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
 
-  return result.data;
+  const config = result.data;
+  if (config.NODE_ENV === 'production') {
+    assertUretimeHazir(config);
+  }
+  return config;
+}
+
+/**
+ * Üretimde sessizce yanlış olabilecek şeyleri açılışta yakalıyor.
+ *
+ * Hepsi "çalışır ama güvensiz" kategorisinde: uygulama ayağa kalkar, testler
+ * geçer, sorun ancak birileri istismar edince görünür.
+ */
+function assertUretimeHazir(config: AppConfig): void {
+  const sorunlar: string[] = [];
+
+  for (const [ad, deger] of [
+    ['SESSION_SECRET', config.SESSION_SECRET],
+    ['CRON_SECRET', config.CRON_SECRET],
+  ] as const) {
+    if (ORNEK_SIRLAR.includes(deger)) {
+      sorunlar.push(`${ad}: .env.example'daki örnek değer kullanılıyor`);
+    }
+  }
+
+  if (config.SESSION_SECRET === config.CRON_SECRET) {
+    sorunlar.push('SESSION_SECRET ve CRON_SECRET aynı; ayrı olmalılar');
+  }
+
+  if (config.WEB_ORIGIN.startsWith('http://')) {
+    sorunlar.push(
+      'WEB_ORIGIN https değil; oturum cookie\'si Secure bayrağıyla gönderiliyor',
+    );
+  }
+
+  if (sorunlar.length > 0) {
+    throw new Error(
+      `Üretim yapılandırması güvenli değil. Uygulama başlatılmıyor:\n` +
+        sorunlar.map((s) => `  ${s}`).join('\n'),
+    );
+  }
 }
