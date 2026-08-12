@@ -6,13 +6,15 @@
  * kararlılık, Türkçe büyütme ve metin okunabilirliği.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MarkaKarosu } from './MarkaKarosu';
 
 /** Karo `aria-hidden`; anlamı yanındaki ad taşıyor. */
-function karo(ad: string, renk?: string | null) {
-  const { container } = render(<MarkaKarosu ad={ad} renk={renk} />);
+function karo(ad: string, renk?: string | null, logo?: string | null) {
+  const { container } = render(
+    <MarkaKarosu ad={ad} renk={renk} logo={logo} />,
+  );
   return container.firstElementChild as HTMLElement;
 }
 
@@ -74,6 +76,39 @@ describe('metin okunabilirliği', () => {
   it('türetilmiş renkte beyaz yazı', () => {
     // Türetilen tonlar sabit parlaklıkta ve koyu.
     expect(karo('Spor Salonu').style.color).toBe('rgb(255, 255, 255)');
+  });
+});
+
+describe('logo', () => {
+  it('logo varsa görseli gösteriyor', () => {
+    const kok = karo('Claude Pro', '#D97757', '/logolar/claude-pro.png');
+    const gorsel = kok.querySelector('img');
+
+    expect(gorsel).not.toBeNull();
+    expect(gorsel).toHaveAttribute('src', '/logolar/claude-pro.png');
+    // Harfler görünmüyor: logo zaten markayı söylüyor.
+    expect(kok.textContent).toBe('');
+  });
+
+  it('logo yoksa harf karosuna düşüyor', () => {
+    // Kullanıcı katalogda olmayan bir ad yazabiliyor ("Spor Salonu").
+    expect(karo('Spor Salonu').querySelector('img')).toBeNull();
+    expect(karo('Spor Salonu').textContent).toBe('SS');
+  });
+
+  it('görsel yüklenemezse harf karosuna düşüyor', () => {
+    // Kırık resim simgesi hiçbir zaman görünmemeli.
+    const kok = karo('Netflix', '#E50914', '/logolar/olmayan.png');
+    const gorsel = kok.querySelector('img')!;
+
+    fireEvent.error(gorsel);
+
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(document.body.textContent).toContain('N');
+  });
+
+  it('logo boş metinse harf karosu çiziliyor', () => {
+    expect(karo('Netflix', '#E50914', '').querySelector('img')).toBeNull();
   });
 });
 

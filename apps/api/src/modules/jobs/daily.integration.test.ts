@@ -241,6 +241,55 @@ describe('günlük iş — hatırlatmalar', () => {
     ).toBe(0);
   });
 
+  it('son günlerde her gün e-posta gidiyor', async () => {
+    /*
+     * Ödemeye üç gün kala tek bir posta atıp susmak, o postayı kaçıran
+     * kullanıcı için hiç atmamakla aynı. Hatırlatma penceresindeki her gün
+     * bir posta gidiyor: 3, 2, 1 ve ödeme günü.
+     */
+    const kullanici = await kullaniciOlustur();
+    await abonelikYaz(kullanici.id, {
+      startDate: gun(2026, 9, 10),
+      reminderDaysBefore: 3,
+    });
+
+    for (const bugunler of [7, 8, 9, 10, 11]) {
+      await daily.run(gun(2026, 9, bugunler));
+    }
+
+    const gidenPostalar = gidenler.filter((m) => m.to === kullanici.email);
+    // 7 Eylül pencere dışında (4 gün var), 11 Eylül ödeme geçmiş.
+    expect(gidenPostalar).toHaveLength(4);
+    expect(gidenPostalar[0]?.subject).toContain('3 gün sonra');
+    expect(gidenPostalar[1]?.subject).toContain('2 gün sonra');
+    expect(gidenPostalar[2]?.subject).toContain('yarın');
+    expect(gidenPostalar[3]?.subject).toContain('bugün');
+  });
+
+  it('aynı gün iki kez koşarsa ikinci posta gitmiyor', async () => {
+    // Günde bir; iş elle tekrar tetiklenirse kullanıcı iki posta almamalı.
+    const kullanici = await kullaniciOlustur();
+    await abonelikYaz(kullanici.id, { startDate: gun(2026, 9, 10) });
+
+    await daily.run(gun(2026, 9, 8));
+    await daily.run(gun(2026, 9, 8));
+
+    expect(gidenler.filter((m) => m.to === kullanici.email)).toHaveLength(1);
+  });
+
+  it('pencere dışındaki günlerde posta gitmiyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    await abonelikYaz(kullanici.id, {
+      startDate: gun(2026, 9, 10),
+      reminderDaysBefore: 3,
+    });
+
+    await daily.run(gun(2026, 9, 5));
+    await daily.run(gun(2026, 9, 6));
+
+    expect(gidenler.filter((m) => m.to === kullanici.email)).toHaveLength(0);
+  });
+
   it('e-posta gönderilemezse ertesi gün tekrar deniyor', async () => {
     const kullanici = await kullaniciOlustur();
     await abonelikYaz(kullanici.id, {

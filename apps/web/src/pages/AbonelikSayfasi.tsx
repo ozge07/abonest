@@ -162,7 +162,11 @@ function Satir({
 }) {
   return (
     <li className="group flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
-      <MarkaKarosu ad={abonelik.name} renk={abonelik.provider?.color} />
+      <MarkaKarosu
+        ad={abonelik.name}
+        renk={abonelik.provider?.color}
+        logo={abonelik.provider?.logoUrl}
+      />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">

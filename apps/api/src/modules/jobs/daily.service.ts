@@ -242,11 +242,24 @@ export class DailyJobService {
         yeniBildirim += 1;
       }
 
-      // E-posta ayrı izleniyor: uygulama içi bildirim yazıldı ama e-posta
-      // gönderilemedi durumunda yarın tekrar denenmeli. `reminderSentAt`
-      // yalnızca gönderim başarılıysa doluyor, yani tekrar denemenin koşulu
-      // bildirimin varlığından bağımsız.
-      if (odeme.reminderSentAt !== null) {
+      /*
+       * E-posta **her gün** gidiyor; uygulama içi bildirim bir kez.
+       *
+       * Ödemeye üç gün kala tek bir posta atıp susmak, o postayı kaçıran
+       * kullanıcı için hiç atmamakla aynı. Bildirim zilini de her gün yeni
+       * bir satırla doldurmak ise gürültü olurdu — aynı ödeme için dört
+       * satır kimseye bir şey söylemiyor.
+       *
+       * `reminderSentAt` "en son hangi gün gönderildi" bilgisini taşıyor.
+       * Bugün gönderilmişse geçiyoruz; dünkü ya da boşsa gönderiyoruz. Bu
+       * aynı zamanda gönderim hatasını da çözüyor: başarısız olursa alan
+       * boş kalıyor ve bir sonraki tur tekrar deniyor.
+       */
+      const bugunGonderildi =
+        odeme.reminderSentAt !== null &&
+        toCalendarDate(odeme.reminderSentAt).getTime() >= bugun.getTime();
+
+      if (bugunGonderildi) {
         continue;
       }
 
@@ -258,7 +271,16 @@ export class DailyJobService {
         });
         await this.prisma.subscriptionOccurrence.update({
           where: { id: odeme.id },
-          data: { reminderSentAt: new Date() },
+          /*
+           * İşin **günü** yazılıyor, duvar saati değil.
+           *
+           * Alanın tek işi "bugün gönderdik mi" sorusunu cevaplamak ve o
+           * karşılaştırma `bugun` ile yapılıyor. Gerçek saati yazmak, işin
+           * günü parametreyle verildiğinde (testlerde ve geçmişe dönük
+           * çalıştırmalarda) iki değerin farklı takvimlerden gelmesi
+           * demekti — kontrol sessizce hep "gönderilmemiş" diyordu.
+           */
+          data: { reminderSentAt: bugun },
         });
         gonderilen += 1;
       } catch (hata) {

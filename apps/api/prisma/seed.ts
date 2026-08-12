@@ -10,6 +10,8 @@
  * yazılıyor; kullanıcının kendi kategorileri ayrı satırlar.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { type BillingCycle, PrismaClient } from '@prisma/client';
 import 'dotenv/config';
@@ -20,6 +22,26 @@ if (connectionString === undefined) {
 }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+
+/**
+ * İndirilmiş logoların künyesi (`tool/logo-indir.sh` üretiyor).
+ *
+ * Burada slug → yol eşlemesi var; dosyalar arayüzün kendi origin'inden
+ * sunuluyor. Künye yoksa tohumlama yine çalışıyor, yalnızca logolar boş
+ * kalıyor ve arayüz harf karosuna düşüyor — logo, uygulamanın çalışması için
+ * gerekli bir veri değil.
+ */
+function logoKunyesi(): Record<string, string> {
+  try {
+    const ham = readFileSync(join(import.meta.dirname, 'logolar.json'), 'utf8');
+    return JSON.parse(ham) as Record<string, string>;
+  } catch {
+    console.warn('logolar.json okunamadı; logolar boş bırakılıyor.');
+    return {};
+  }
+}
+
+const LOGOLAR = logoKunyesi();
 
 interface KategoriTohumu {
   slug: string;
@@ -176,6 +198,7 @@ async function tohumlaSaglayicilar(
       name: saglayici.name,
       website: saglayici.website,
       color: saglayici.color ?? null,
+      logoUrl: LOGOLAR[saglayici.slug] ?? null,
       defaultCategoryId: kategoriId,
       defaultCurrency: saglayici.currency ?? null,
       defaultBillingCycle: saglayici.cycle ?? null,
