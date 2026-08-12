@@ -103,10 +103,23 @@ export class AuthController {
   @Post('resend-verification')
   @HttpCode(202)
   @Throttle({ limit: 3, windowMs: 60 * 60 * 1000 })
-  async resendVerification(@Req() request: AuthenticatedRequest): Promise<void> {
+  async resendVerification(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<{ deliveredToInbox: boolean }> {
     if (request.user !== undefined) {
       await this.auth.resendVerification(request.user.id);
     }
+
+    /*
+     * Geliştirmede e-posta gerçekten gönderilmiyor, sunucu günlüğüne
+     * yazılıyor. Arayüz bunu bilmeden "gelen kutunu kontrol et" diyor ve
+     * kullanıcı olmayan bir postayı bekliyor.
+     *
+     * **Kodun kendisi dönmüyor** — yalnızca teslim edilip edilmediği.
+     * Kodu yanıta koymak, yanlış bir `NODE_ENV` ile yayına çıkabilecek bir
+     * sızıntı yolu açardı; nerede arayacağını söylemek bunu yapmıyor.
+     */
+    return { deliveredToInbox: process.env['NODE_ENV'] === 'production' };
   }
 
   @Public()

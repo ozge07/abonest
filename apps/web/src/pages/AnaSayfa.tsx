@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Navigate } from 'react-router';
 import { api } from '../lib/api';
 import { gunSayisiYaz, paraYaz, tarihYaz } from '../lib/money';
 import type { Ozet } from '../lib/types';
@@ -31,8 +31,16 @@ export function AnaSayfa() {
 
   const ozet = sorgu.data;
 
+  /*
+   * Aboneliği olmayan kullanıcıya özet gösterilmiyor.
+   *
+   * Boş bir "aylık giderin ₺0" ekranı kimseye bir şey söylemiyor; o
+   * kullanıcının yapması gereken tek şey ilk aboneliğini eklemek ve o iş
+   * abonelikler sayfasında. Yeni kayıt olan herkesin ilk gördüğü ekran
+   * burası olduğu için fark ediliyor.
+   */
   if (ozet.activeCount === 0) {
-    return <BosDurum />;
+    return <Navigate to="/abonelikler" replace />;
   }
 
   return (
@@ -204,24 +212,6 @@ function Kart({
       ].join(' ')}
     >
       {children}
-    </div>
-  );
-}
-
-function BosDurum() {
-  return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
-      <h2 className="text-base font-semibold">Henüz aboneliğin yok</h2>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600 dark:text-slate-400">
-        İlkini ekle; ayda ne kadar gittiğini ve sırada hangi ödemenin olduğunu
-        burada göreceksin.
-      </p>
-      <Link
-        to="/abonelikler"
-        className="mt-5 inline-block rounded-md bg-marka-600 px-4 py-2 text-sm font-medium text-white hover:bg-marka-700"
-      >
-        Abonelik ekle
-      </Link>
     </div>
   );
 }

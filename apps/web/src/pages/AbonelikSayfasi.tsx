@@ -45,10 +45,23 @@ export function AbonelikSayfasi() {
         <p className="text-sm text-slate-500 dark:text-slate-400">Yükleniyor…</p>
       )}
 
+      {/*
+        * İlk kez giren kullanıcı buraya düşüyor (özet boşken oraya
+        * yönlendiriliyor). Boş bir liste yerine ne yapması gerektiğini
+        * söyleyen bir ekran görüyor.
+        */}
       {!sorgu.isPending && abonelikler.length === 0 && !formAcik && (
-        <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
-          Henüz abonelik eklemedin.
-        </p>
+        <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center dark:border-slate-700">
+          <h2 className="text-base font-semibold">İlk aboneliğini ekle</h2>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600 dark:text-slate-400">
+            Netflix, spor salonu, internet — ne ödüyorsan ekle. Ayda ne kadar
+            gittiğini ve sırada hangi ödemenin olduğunu buradan takip
+            edeceksin.
+          </p>
+          <div className="mt-5">
+            <Dugme onClick={() => setFormAcik(true)}>Abonelik ekle</Dugme>
+          </div>
+        </div>
       )}
 
       <ul className="flex flex-col gap-3">

@@ -3,12 +3,13 @@ import { Kabuk } from './components/Kabuk';
 import { useOturum } from './lib/oturum';
 import { AnaSayfa } from './pages/AnaSayfa';
 import { AnalizSayfasi } from './pages/AnalizSayfasi';
+import { DogrulamaSayfasi } from './pages/DogrulamaSayfasi';
 import { AbonelikSayfasi } from './pages/AbonelikSayfasi';
 import { GirisSayfasi } from './pages/GirisSayfasi';
 import { KayitSayfasi } from './pages/KayitSayfasi';
 
 export function App() {
-  const { girisYapilmis, yukleniyor } = useOturum();
+  const { kullanici, girisYapilmis, yukleniyor } = useOturum();
 
   if (yukleniyor) {
     // Oturum bilinmeden yönlendirme yapılmıyor: aksi hâlde giriş yapmış
@@ -24,6 +25,17 @@ export function App() {
         <Route path="*" element={<Navigate to="/giris" replace />} />
       </Routes>
     );
+  }
+
+  /*
+   * Doğrulanmamış kullanıcı uygulamayı göremiyor.
+   *
+   * Bütün veri uçları ona `403` dönüyor; içeri alıp her ekranda hata
+   * göstermek "bozuk" hissi veriyor ve ne yapması gerektiğini söylemiyor.
+   * Tek ekran, tek iş: kodu gir.
+   */
+  if (kullanici !== null && kullanici.emailVerifiedAt === null) {
+    return <DogrulamaSayfasi />;
   }
 
   return (
