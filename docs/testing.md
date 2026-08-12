@@ -27,9 +27,9 @@ katmanı testin dışında bırakırdı.
 ## Sayılar
 
 ```
-packages/shared    33 test
-apps/api          128 test    kapsam: %94 satır, %70 dal
-apps/web           21 test
+packages/shared    48 test
+apps/api          175 test    kapsam: %92 satır, %72 dal
+apps/web          121 test
 ```
 
 Kapsam eşikleri (`apps/api/vitest.config.ts`) mevcut seviyenin **altında**:
@@ -75,7 +75,14 @@ sayacı artmıyor") ve aynı mutasyon tekrar denendiğinde test düştü.
   on, `forgot-password` saatte üç istekle sınırlı. Bu yüzden testler oturumu
   ve sıfırlama kodunu çoğunlukla servis üzerinden alıyor; **ucun kendisi**
   konu olduğunda uçtan geçiyorlar.
-- **Arayüz testleri saf mantıkla sınırlı.** Bileşen çizimi ve tıklama
-  akışları otomatik test edilmiyor; ekranlar tarayıcıda elle doğrulandı.
-  Bu bilinçli bir sınır, eksiklik değil diye geçiştirilmemeli — bir bileşen
-  testi katmanı ileride eklenebilir.
+- **Arayüzde ölçülmeyen şey görünüm.** Bileşen çizimi ve tıklama akışları
+  artık Testing Library ile sınanıyor (giriş, çıkış, hesap ekranı, onay
+  kutusu, doğrulama). Otomatik sınanmayan şey **düzen**: hangi öğe nerede
+  duruyor, dar ekranda ne oluyor. Bunlar tarayıcıda ekran görüntüsüyle
+  doğrulanıyor.
+
+  Bu ayrımın bedeli ölçüldü: onay kutusu, `backdrop-filter` taşıyan bir
+  kartın içinden açıldığında ekranın çok aşağısında kalıyordu. Bileşen
+  testleri geçiyordu, çünkü jsdom düzen hesaplamıyor. Hatayı kullanıcı
+  buldu; şimdi kutunun DOM'da kartın dışına çıktığı sınanıyor — düzenin
+  kendisi değil, düzeni bozan sebep.

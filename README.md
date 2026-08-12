@@ -98,7 +98,7 @@ tek başına çalışır.
 kayıt olduktan sonra terminalde `bu kodu kullan:` satırını ara.
 
 ```bash
-npm test --workspaces      # 197 test
+npm test --workspaces      # 344 test (48 shared + 175 api + 121 web)
 npm run typecheck          # bütün paketler
 npm run test:coverage -w @abonelik/api   # kapsam raporu ve eşikler
 ```
@@ -167,12 +167,23 @@ alır. Tekillik uygulama kodunda değil veritabanı kısıtında (bkz. ADR-0015)
 | Phase | İçerik | Durum |
 |---|---|---|
 | 1 | Mimari, şema, API sözleşmesi | ✅ |
-| 2 | Proje iskeleti, yapılandırma, loglama, hata yönetimi | ⏳ |
-| 3 | Kimlik doğrulama | |
-| 4 | Abonelik CRUD, kategori, katalog, döngü motoru | |
-| 5 | Dashboard | |
-| 6 | Hatırlatma ve bildirimler | |
-| 7 | Analytics | |
-| 8 | Güvenlik gözden geçirme | |
-| 9 | Test tamamlama | |
-| 10 | CI/CD, izleme, yayın | |
+| 2 | Proje iskeleti, yapılandırma, loglama, hata yönetimi | ✅ |
+| 3 | Kimlik doğrulama | ✅ |
+| 4 | Abonelik CRUD, kategori, katalog, döngü motoru | ✅ |
+| 5 | Dashboard | ✅ |
+| 6 | Hatırlatma ve bildirimler | ✅ |
+| 7 | Analytics | ✅ |
+| 8 | Güvenlik gözden geçirme | ✅ |
+| 9 | Test tamamlama | ✅ |
+| 10 | CI/CD, izleme, yayın | ✅ |
+
+Fazlar bittikten sonra eklenenler — hepsi kullanımdan doğdu, plandan
+değil:
+
+| Ne | Neden |
+|---|---|
+| Hesabım ekranı (profil, şifre, oturumlar, hesap silme) | Altı uç sunucuda hazırdı ama hiçbirinin arayüzü yoktu; kullanıcı hesabını silemiyordu |
+| Silinmiş hesabın giriş yaparak geri gelmesi | Hesabını silen kullanıcının tek çıkışı operatöre ulaşmaktı (ADR-0024) |
+| Silmenin geri alınabilir olması + destek aracı | Kazayla silinen aboneliğin dönüşü yoktu (ADR-0023) |
+| TCMB kuruyla TRY karşılığı | Farklı para birimlerindeki abonelikler karşılaştırılamıyordu |
+| Testlerin ayrı veritabanında koşması | Testler geliştirme verisine yazıyor, gerçek kullanıcıya sahte bildirim üretiyordu |
