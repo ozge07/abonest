@@ -66,7 +66,7 @@ export function AnaSayfa() {
 
         <section className="lg:col-span-2">
           <BolumBasligi>Nereye gidiyor</BolumBasligi>
-          <KategoriDagilimi ozet={ozet} />
+          <KategoriDagilimi ozet={ozet} kurlar={kurlar.data} />
         </section>
       </div>
 
@@ -130,7 +130,8 @@ function ToplamKarti({
               {ozet.totals
                 .map((t) => paraYaz(t.monthlyMinor, t.currency))
                 .join(' + ')}
-              {kurlar?.date != null && ` · ${kurlar.date} TCMB kuru`}
+              {kurlar?.date != null &&
+                ` · ${tarihYaz(kurlar.date)} TCMB kuru`}
             </p>
           )}
         </div>
@@ -235,38 +236,70 @@ function YaklasanOdemeler({
   );
 }
 
+interface DagilimSatiri {
+  categoryId: string;
+  name: string;
+  color: string | null;
+  tutar: number;
+  currency: string;
+  pay: number;
+}
+
 /**
  * Kategori dağılımı — halka grafik ve liste.
  *
- * Grafik **tek para birimi** için çiziliyor: farklı para birimlerini aynı
- * halkada göstermek, kurları hesaba katmadan yanlış oran üretirdi. En büyük
- * toplamı olan birim grafiğe giriyor, diğerleri altta listeleniyor.
+ * ## Bütün kategoriler tek halkada
+ *
+ * Önce grafik yalnızca **tek** para birimini çiziyordu: dolarla ödenen
+ * abonelikleri olan bir kullanıcı halkada sadece TL'lileri görüyordu.
+ * Üstelik "ana birim" ham sayıları karşılaştırarak seçiliyordu — 52.800 cent
+ * ile 120.000 kuruşu kıyaslamak anlamsız.
+ *
+ * Artık TCMB kuru elimizde olduğu için hepsi TL'ye çevrilip birleştiriliyor;
+ * aynı kategori farklı para birimlerinde de olsa tek dilim oluyor. Kur
+ * bilinmiyorsa eski davranışa dönülüyor — uydurma bir oran göstermektense
+ * eksik göstermek doğru.
  */
-function KategoriDagilimi({ ozet }: { ozet: Ozet }) {
-  const anaBirim = ozet.totals[0]?.currency ?? 'TRY';
-  const dilimler = ozet.byCategory.filter((k) => k.currency === anaBirim);
-  const digerleri = ozet.byCategory.filter((k) => k.currency !== anaBirim);
+function KategoriDagilimi({
+  ozet,
+  kurlar,
+}: {
+  ozet: Ozet;
+  kurlar: Kurlar | undefined;
+}) {
+  const hepsiCevrilebilir = ozet.byCategory.every(
+    (k) => k.currency === 'TRY' || tryKarsiligi(1, k.currency, kurlar) !== null,
+  );
 
-  const grafikDilimleri: HalkaDilimi[] = dilimler.map((kategori, sira) => ({
-    anahtar: kategori.categoryId,
-    etiket: kategori.name,
-    deger: kategori.monthlyMinor,
-    renk: kategori.color ?? YEDEK_RENKLER[sira % YEDEK_RENKLER.length]!,
-  }));
+  const satirlar = hepsiCevrilebilir
+    ? tlyeBirlestir(ozet.byCategory, kurlar)
+    : tekBirim(ozet);
 
-  const toplam = dilimler.reduce((t, k) => t + k.monthlyMinor, 0);
+  if (satirlar.length === 0) {
+    return null;
+  }
+
+  const toplam = satirlar.reduce((t, k) => t + k.tutar, 0);
+  const paraBirimi = satirlar[0]!.currency;
 
   return (
     <Kart>
       <div className="flex flex-col items-center gap-5 p-4">
         <HalkaGrafik
-          dilimler={grafikDilimleri}
-          ortaUst={paraYaz(toplam, anaBirim)}
+          dilimler={satirlar.map(
+            (kategori, sira): HalkaDilimi => ({
+              anahtar: kategori.categoryId,
+              etiket: kategori.name,
+              deger: kategori.tutar,
+              renk: kategori.color ?? YEDEK_RENKLER[sira % YEDEK_RENKLER.length]!,
+            }),
+          )}
+          ortaUst={paraYaz(toplam, paraBirimi)}
           ortaAlt="aylık"
         />
 
         <ul className="w-full space-y-2">
-          {dilimler.map((kategori, sira) => (
+          {satirlar.map((kategori, sira) => (
             <li
               key={kategori.categoryId}
               className="flex items-center gap-2.5 text-sm"
@@ -281,38 +314,87 @@ function KategoriDagilimi({ ozet }: { ozet: Ozet }) {
               />
               <span className="min-w-0 flex-1 truncate">{kategori.name}</span>
               <span className="tabular-nums">
-                {paraYaz(kategori.monthlyMinor, kategori.currency)}
+                {paraYaz(kategori.tutar, kategori.currency)}
               </span>
               <span className="w-10 text-right text-xs text-slate-500 tabular-nums dark:text-slate-400">
-                %{Math.round(kategori.share * 100)}
+                %{Math.round(kategori.pay * 100)}
               </span>
             </li>
           ))}
         </ul>
 
-        {digerleri.length > 0 && (
-          <div className="w-full border-t border-slate-200 pt-3 dark:border-slate-800">
-            <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-              Diğer para birimleri
-            </p>
-            <ul className="space-y-1.5">
-              {digerleri.map((kategori) => (
-                <li
-                  key={`${kategori.currency}-${kategori.categoryId}`}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="min-w-0 truncate">{kategori.name}</span>
-                  <span className="tabular-nums">
-                    {paraYaz(kategori.monthlyMinor, kategori.currency)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {hepsiCevrilebilir && kurlar?.date != null && ozet.totals.length > 1 && (
+          <p className="w-full text-xs text-slate-500 dark:text-slate-400">
+            Yabancı para birimleri {tarihYaz(kurlar.date)} TCMB kuruyla
+            TL'ye çevrildi.
+          </p>
         )}
       </div>
     </Kart>
   );
+}
+
+/**
+ * Bütün kategorileri TL'ye çevirip aynı kategorileri birleştiriyor.
+ *
+ * "Yazılım ve Araçlar" hem dolarla hem lirayla ödeniyorsa tek dilim olmalı;
+ * ayrı göstermek aynı kategoriyi iki kez listeler ve pay hesabını bozar.
+ */
+function tlyeBirlestir(
+  kategoriler: Ozet['byCategory'],
+  kurlar: Kurlar | undefined,
+): DagilimSatiri[] {
+  const birlesik = new Map<string, DagilimSatiri>();
+
+  for (const kategori of kategoriler) {
+    const tutar =
+      kategori.currency === 'TRY'
+        ? kategori.monthlyMinor
+        : (tryKarsiligi(kategori.monthlyMinor, kategori.currency, kurlar) ?? 0);
+
+    const mevcut = birlesik.get(kategori.categoryId);
+    if (mevcut === undefined) {
+      birlesik.set(kategori.categoryId, {
+        categoryId: kategori.categoryId,
+        name: kategori.name,
+        color: kategori.color,
+        tutar,
+        currency: 'TRY',
+        pay: 0,
+      });
+    } else {
+      mevcut.tutar += tutar;
+    }
+  }
+
+  const satirlar = [...birlesik.values()].sort((a, b) => b.tutar - a.tutar);
+  const toplam = satirlar.reduce((t, k) => t + k.tutar, 0);
+
+  for (const satir of satirlar) {
+    satir.pay = toplam === 0 ? 0 : satir.tutar / toplam;
+  }
+  return satirlar;
+}
+
+/** Kur yoksa eski davranış: en çok aboneliği olan para birimi. */
+function tekBirim(ozet: Ozet): DagilimSatiri[] {
+  const sayim = new Map<string, number>();
+  for (const kategori of ozet.byCategory) {
+    sayim.set(kategori.currency, (sayim.get(kategori.currency) ?? 0) + 1);
+  }
+  const anaBirim =
+    [...sayim.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'TRY';
+
+  return ozet.byCategory
+    .filter((k) => k.currency === anaBirim)
+    .map((kategori) => ({
+      categoryId: kategori.categoryId,
+      name: kategori.name,
+      color: kategori.color,
+      tutar: kategori.monthlyMinor,
+      currency: kategori.currency,
+      pay: kategori.share,
+    }));
 }
 
 /** Kategorinin kendi rengi yoksa kullanılacak sıra. */
