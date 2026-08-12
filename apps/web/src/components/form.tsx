@@ -24,6 +24,7 @@ export function Alan({ etiket, hata, ipucu, id, ...rest }: AlanProps) {
   const alanId = id ?? rest.name ?? etiket;
   const hataId = `${alanId}-hata`;
 
+
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={alanId} className="text-sm font-medium">

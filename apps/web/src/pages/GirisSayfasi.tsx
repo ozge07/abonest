@@ -1,25 +1,45 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { z } from 'zod';
+import { epostaAlani } from '@abonelik/shared';
 import { Alan, Dugme, HataKutusu } from '../components/form';
 import { ApiError } from '../lib/api';
+import { useAlan } from '../lib/alan';
 import { useGiris } from '../lib/oturum';
+
+/**
+ * Girişte şifre kuralı **yok**.
+ *
+ * Kayıtta alt sınır var ama girişte olmamalı: kurallar sonradan sıkılaşırsa
+ * eski şifreli kullanıcılar kendi hesaplarına giremez hâle gelirdi. Sunucu
+ * da aynı şekilde davranıyor.
+ */
+const girisSifresi = z.string().min(1, 'Şifre boş olamaz');
 
 export function GirisSayfasi() {
   const giris = useGiris();
-  const [email, setEmail] = useState('');
-  const [sifre, setSifre] = useState('');
 
   const hata = giris.error;
-  const alanHatalari = hata instanceof ApiError ? hata.alanHatalari : {};
+  const sunucuHatalari = hata instanceof ApiError ? hata.alanHatalari : {};
+
+  const eposta = useAlan(epostaAlani, sunucuHatalari['email']);
+  const sifre = useAlan(girisSifresi, sunucuHatalari['password']);
 
   function gonder(olay: FormEvent) {
     olay.preventDefault();
-    giris.mutate({ email, password: sifre });
+    eposta.gonderildi();
+    sifre.gonderildi();
+
+    if (!eposta.gecerli || !sifre.gecerli) {
+      return;
+    }
+
+    giris.mutate({ email: eposta.deger, password: sifre.deger });
   }
 
   return (
     <KimlikDuzeni baslik="Giriş yap" altBaslik="Aboneliklerini görmek için giriş yap.">
-      <form onSubmit={gonder} className="flex flex-col gap-4">
+      <form onSubmit={gonder} noValidate className="flex flex-col gap-4">
         {hata instanceof ApiError && hata.problem.errors === undefined && (
           <HataKutusu mesaj={hata.problem.title} />
         )}
@@ -30,9 +50,8 @@ export function GirisSayfasi() {
           type="email"
           autoComplete="email"
           required
-          value={email}
-          onChange={(o) => setEmail(o.target.value)}
-          hata={alanHatalari['email']}
+          hata={eposta.hata}
+          {...eposta.bagla}
         />
 
         <Alan
@@ -41,9 +60,8 @@ export function GirisSayfasi() {
           type="password"
           autoComplete="current-password"
           required
-          value={sifre}
-          onChange={(o) => setSifre(o.target.value)}
-          hata={alanHatalari['password']}
+          hata={sifre.hata}
+          {...sifre.bagla}
         />
 
         <Dugme type="submit" bekliyor={giris.isPending}>
@@ -68,7 +86,7 @@ export function KimlikDuzeni({
 }: {
   baslik: string;
   altBaslik: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-slate-50 px-4 dark:bg-slate-950">

@@ -200,6 +200,14 @@ describe('profil', () => {
     expect((govde as { email: string }).email).toBe(kullanici.email);
   });
 
+  it('üç harften kısa adı reddediyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    expect((await istek('PATCH', '/me', jeton, { name: 'Al' })).kod).toBe(422);
+    expect((await istek('PATCH', '/me', jeton, { name: 'Ali' })).kod).toBe(200);
+  });
+
   it('geçersiz para birimini reddediyor', async () => {
     const kullanici = await kullaniciOlustur();
     const jeton = await girisYap(kullanici.email);
@@ -296,6 +304,31 @@ describe('şifre değiştirme', () => {
       newPassword: 'YepyeniGuclu!Parola789',
     });
     expect(yanit.kod).toBe(401);
+  });
+
+  it('altı karakterlik şifreyi kabul ediyor', async () => {
+    // Alt sınır ürün kararıyla 12'den 6'ya indirildi; kuralın gerçekten
+    // gevşediğini eski testler göstermiyordu çünkü hepsi uzun şifre
+    // kullanıyor.
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    const yanit = await istek('PATCH', '/me/password', jeton, {
+      currentPassword: SIFRE,
+      newPassword: 'abc123',
+    });
+    expect(yanit.kod).toBe(204);
+  });
+
+  it('beş karakterlik şifreyi reddediyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    const yanit = await istek('PATCH', '/me/password', jeton, {
+      currentPassword: SIFRE,
+      newPassword: 'abc12',
+    });
+    expect(yanit.kod).toBe(422);
   });
 
   it('zayıf yeni şifreyi reddediyor', async () => {
