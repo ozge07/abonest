@@ -67,6 +67,16 @@ jobs:
         working-directory: apps/api
         run: npm run seed
 
+      # Ortak paket önce derleniyor: `@abonelik/shared` derlenmiş `dist`
+      # üzerinden çözülüyor (package.json `exports`). Derlenmemiş bir
+      # kopyada hem tip denetimi hem test "modül bulunamadı" diyor.
+      #
+      # Yerelde bu adım gerekmiyordu çünkü `dist/` eski bir derlemeden
+      # duruyor — tam da temiz bir kopyada kırılan türden bir varsayım.
+      # CI'ın ilk koşusu bunu yakaladı.
+      - name: Ortak paketi derle
+        run: npm run build -w @abonelik/shared
+
       - name: Tip denetimi
         run: npm run typecheck
 
