@@ -77,6 +77,34 @@ describe('onay kutusu', () => {
     expect(screen.getByRole('button', { name: /siliniyor/i })).toBeDisabled();
   });
 
+  it('buzlu cam bir kartın içinden açılsa da body altına çıkıyor', async () => {
+    /*
+     * Şikâyet: "hesabı silinsin dediğimde popup çok aşağıda kalıyor".
+     * Sebep CSS: `backdrop-filter` taşıyan bir ata eleman, içindeki
+     * `position: fixed` kutunun referansını ekran olmaktan çıkarıp kendisi
+     * yapıyor. Kutu ekranın değil, kartın ortasına yerleşiyordu.
+     *
+     * Bu yüzden kutunun DOM'da kartın **dışında** olduğunu doğruluyoruz;
+     * "ortada mı" sorusu jsdom'da düzen hesaplanmadığı için sınanamıyor.
+     */
+    const { container } = render(
+      <div className="backdrop-blur-xl" data-testid="kart">
+        <OnayKutusu
+          baslik="Hesabın silinsin mi?"
+          aciklama="Geri alınabilir."
+          onOnayla={vi.fn()}
+          onVazgec={vi.fn()}
+        />
+      </div>,
+    );
+
+    const kutu = await screen.findByRole('alertdialog');
+    expect(container.querySelector('[data-testid="kart"]')).not.toContainElement(
+      kutu,
+    );
+    expect(document.body).toContainElement(kutu);
+  });
+
   it('ekran okuyucuya karar anı olduğunu söylüyor', () => {
     ciz();
     const kutu = screen.getByRole('alertdialog');

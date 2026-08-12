@@ -35,10 +35,24 @@ export function useOturum() {
     staleTime: 60_000,
   });
 
+  /*
+   * 401, önbellekteki veriden daha güncel bir gerçek.
+   *
+   * Sorgu hata aldığında TanStack Query **eski veriyi tutuyor**: `/me` 401
+   * dönse bile `sorgu.data` son bilinen kullanıcıyı taşımaya devam ediyor.
+   * Sadece `data`ya bakan bir kural, çıkış yapmış kullanıcıyı hâlâ girişte
+   * sanıyordu — çıkışa basınca ekran aynı sayfada kalıyordu, oturum
+   * sunucuda silinmiş olmasına rağmen.
+   *
+   * Aynı durum oturumun süresi dolduğunda da geçerli: sunucu "sen kimsin
+   * bilmiyorum" diyorsa, elimizdeki eski kayıt bunu değiştirmiyor.
+   */
+  const yetkisiz = sorgu.error instanceof ApiError && sorgu.error.yetkisiz;
+
   return {
-    kullanici: sorgu.data ?? null,
+    kullanici: yetkisiz ? null : (sorgu.data ?? null),
     yukleniyor: sorgu.isPending,
-    girisYapilmis: sorgu.data !== undefined,
+    girisYapilmis: !yetkisiz && sorgu.data !== undefined,
   };
 }
 
@@ -68,9 +82,22 @@ export function useCikis() {
 
   return useMutation({
     mutationFn: () => api.post<void>('/auth/logout'),
-    onSuccess: () => {
-      // Sadece geçersiz kılmak yetmez: önbellekteki veri bir sonraki
-      // kullanıcıya görünebilirdi.
+    onSuccess: async () => {
+      /*
+       * Sıra önemli.
+       *
+       * Önce yalnızca `clear()` çağrılıyordu ve ekran çıkıştan sonra aynı
+       * yerde kalıyordu: sunucudaki oturum gerçekten siliniyor, ama
+       * `clear()` **bağlı gözlemcilere haber vermiyor**. Kimse yeniden
+       * çizilmediği için `useOturum()` eski kullanıcıyı döndürmeye devam
+       * ediyor, uygulama da hâlâ giriş yapılmış sanıyordu.
+       *
+       * `invalidateQueries` haber veriyor: `/me` yeniden okunuyor, 401
+       * geliyor, uygulama giriş ekranına düşüyor. `clear()` ondan sonra
+       * kalan veriyi siliyor — bir sonraki kullanıcı öncekinin
+       * aboneliklerini görmesin.
+       */
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.clear();
     },
   });

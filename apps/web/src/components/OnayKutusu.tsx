@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Geri alınamaz işlemler için onay kutusu.
@@ -15,6 +16,18 @@ import { useEffect, useRef } from 'react';
  * kullanıcı silmiş olmasın. Escape kapatıyor, arka plana tıklamak da.
  * `role="alertdialog"` ekran okuyucuya bunun bir karar anı olduğunu
  * söylüyor.
+ *
+ * ## Neden `document.body`'ye taşınıyor
+ *
+ * Kutu `position: fixed` ile ekranın ortasına yerleşiyor — ama bir ata
+ * elemanda `backdrop-filter`/`filter`/`transform` varsa CSS kuralı gereği
+ * `fixed`in referansı ekran olmaktan çıkıp **o ata eleman** oluyor. Bizim
+ * kartlarımız buzlu cam (`backdrop-blur`) kullandığı için kutu sayfanın
+ * ortasında değil, kendisini açan kartın ortasında çıkıyordu; sayfanın
+ * altındaki bir düğmeye basınca ekranın çok aşağısında kalıyordu.
+ *
+ * Portal bunu kökten çözüyor: kutu DOM'da `body`nin altına çıkıyor, React
+ * ağacında ise yerinde kalıyor (olaylar ve odak yönetimi değişmiyor).
  */
 export function OnayKutusu({
   baslik,
@@ -47,7 +60,7 @@ export function OnayKutusu({
     return () => document.removeEventListener('keydown', tusaBasildi);
   }, [onVazgec]);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm"
       onMouseDown={(olay) => {
@@ -100,6 +113,7 @@ export function OnayKutusu({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

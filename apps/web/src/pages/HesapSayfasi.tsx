@@ -380,10 +380,17 @@ function TehlikeliBolum() {
   if (silindi !== null) {
     return (
       <Bolum baslik="Hesabın silindi" tehlikeli>
+        {/*
+          "Destekle iletişime geç" yazmıyor: bu uygulamada bir destek masası
+          yok, yazılsaydı olmayan bir kapıyı işaret ederdi. Cümle yalnızca
+          doğru olanı söylüyor — kayıt duruyor ve o tarihe kadar geri
+          getirilebilir. Geri getirme işini uygulamayı çalıştıran kişi
+          `destek` aracıyla yapıyor (bkz. README, "Destek aracı").
+        */}
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Verilerin {tarihYaz(silindi.slice(0, 10))} tarihinde kalıcı olarak
-          silinecek. O tarihe kadar fikrini değiştirirsen destekle iletişime
-          geç; hesabın geri getirilebilir.
+          Verilerin {tarihYaz(silindi.slice(0, 10))} tarihine kadar duruyor, o
+          gün kalıcı olarak siliniyor. Fikrini değiştirirsen bu süre içinde
+          hesabın geri getirilebilir.
         </p>
         <div className="mt-4">
           <Dugme
