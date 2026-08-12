@@ -193,9 +193,11 @@ async function serveWeb(
      * `index.html` önbelleklenemez: adı sabit ve içindeki varlık adlarını
      * o taşıyor. Önbelleğe alınsaydı yeni sürüm kullanıcıya hiç ulaşmazdı.
      */
+    // v10'da geri çağırım ham `ServerResponse` yerine `FastifyReply`
+    // alıyor; başlık `setHeader` ile değil `header` ile yazılıyor.
     setHeaders: (yanit, yol) => {
       const surekli = yol.includes(`${sep}assets${sep}`);
-      yanit.setHeader(
+      void yanit.header(
         'cache-control',
         surekli ? 'public, max-age=31536000, immutable' : 'no-cache',
       );
