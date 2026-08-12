@@ -228,7 +228,7 @@ function Liste({
   return (
     <ul
       className={[
-        'divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900',
+        'divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900/70',
         soluk ? 'opacity-70' : '',
       ].join(' ')}
     >

@@ -10,8 +10,13 @@ export function Kabuk({ children }: { children: ReactNode }) {
   const cikis = useCikis();
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="min-h-dvh text-slate-900 dark:text-slate-100">
+      {/*
+        * Buzlu cam: tema arka planı başlığın altından geçiyor ve sayfa
+        * kaydırıldıkça hafifçe değişiyor. Opak bir şerit temayı ikiye
+        * bölüyordu.
+        */}
+      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/70">
         <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
           <NavLink to="/" className="flex shrink-0 items-center gap-2">
             <img

@@ -419,7 +419,7 @@ function BolumBasligi({ children }: { children: React.ReactNode }) {
 
 function Kart({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
       {children}
     </div>
   );

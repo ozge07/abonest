@@ -55,7 +55,7 @@ export function DogrulamaSayfasi() {
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-slate-50 px-4 dark:bg-slate-950">
+    <div className="grid min-h-dvh place-items-center px-4">
       <div className="w-full max-w-md">
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -68,7 +68,7 @@ export function DogrulamaSayfasi() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-6 dark:border-slate-800 dark:bg-slate-900/70">
           <form onSubmit={gonder} noValidate className="flex flex-col gap-4">
             {hata instanceof ApiError && hata.problem.errors === undefined && (
               <HataKutusu mesaj={hata.problem.title} />

@@ -99,7 +99,7 @@ function ToplamKartlari({
       {toplamlar.map((toplam) => (
         <div
           key={toplam.currency}
-          className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70"
         >
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {toplam.currency} · toplam
@@ -158,7 +158,7 @@ function HarcamaGrafigi({
                 {currency}
               </p>
             )}
-            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70">
               <ul className="flex flex-col gap-2.5">
                 {kendi.map((kova) => (
                   <li
@@ -246,7 +246,7 @@ function KullanilmayanlarBolumu() {
           {abonelikler.map((abonelik) => (
             <li
               key={abonelik.id}
-              className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+              className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{abonelik.name}</p>

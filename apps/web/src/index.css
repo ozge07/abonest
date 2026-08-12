@@ -63,3 +63,138 @@ html {
     box-shadow: 0 0 0 3px rgb(245 158 11 / 0.6);
   }
 }
+
+/* ==========================================================================
+   Arka plan teması
+   ==========================================================================
+
+   Üç katman:
+
+   1. Zemin — düz bir taban rengi.
+   2. Işık lekeleri — büyük, yumuşak radyal gradyanlar; çok yavaş süzülüyor.
+   3. Izgara — hafif bir çizgi dokusu, kenarlara doğru sönüyor.
+
+   ## Neden bu kadar sessiz
+
+   Bu bir para uygulaması: ekranın asıl işi sayıları okutmak. Hareketli bir
+   arka plan dikkati kolayca çalıyor, o yüzden lekeler ekranın kenarlarında
+   duruyor, döngüler 30 saniyenin üzerinde ve renkler zeminden yalnızca bir
+   ton ayrılıyor. Fark ediliyor ama rahatsız etmiyor.
+
+   ## Neden `filter: blur()` yok
+
+   Büyük bir öğeye blur uygulamak her karede yeniden çiziliyor ve zayıf
+   makinelerde kaydırmayı takıyor. Radyal gradyanın kendisi zaten yumuşak;
+   aynı görüntüyü bedelsiz veriyor. Hareket de yalnızca `transform` ile,
+   yani düzen yeniden hesaplanmıyor.
+   ========================================================================== */
+
+.tema-arkaplan {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  /* Tıklamaları geçiriyor: arka plan hiçbir zaman etkileşimi engellemesin. */
+  pointer-events: none;
+  background-color: var(--tema-zemin);
+}
+
+.tema-leke {
+  position: absolute;
+  width: 60rem;
+  height: 60rem;
+  border-radius: 50%;
+  opacity: var(--tema-leke-guc);
+  will-change: transform;
+}
+
+.tema-leke-1 {
+  top: -22rem;
+  left: -18rem;
+  background: radial-gradient(circle, var(--tema-leke-a) 0%, transparent 62%);
+  animation: suzul-a 38s ease-in-out infinite alternate;
+}
+
+.tema-leke-2 {
+  top: -10rem;
+  right: -24rem;
+  background: radial-gradient(circle, var(--tema-leke-b) 0%, transparent 62%);
+  animation: suzul-b 46s ease-in-out infinite alternate;
+}
+
+.tema-leke-3 {
+  bottom: -30rem;
+  left: 30%;
+  background: radial-gradient(circle, var(--tema-leke-c) 0%, transparent 62%);
+  animation: suzul-c 52s ease-in-out infinite alternate;
+}
+
+/*
+ * Izgara, düzene sessiz bir yapı veriyor. Maske olmadan ekranın her yerinde
+ * eşit görünüyor ve duvar kağıdı gibi duruyordu; üstte belirgin, aşağı
+ * doğru sönerek içeriğe yol veriyor.
+ */
+.tema-izgara {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--tema-cizgi) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tema-cizgi) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, #000 10%, transparent 75%);
+}
+
+/* Süzülme yolları farklı: aynı anda aynı yöne gitmeleri mekanik duruyordu. */
+@keyframes suzul-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(6rem, 4rem, 0) scale(1.12); }
+}
+
+@keyframes suzul-b {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to { transform: translate3d(-7rem, 5rem, 0) scale(1); }
+}
+
+@keyframes suzul-c {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-5rem, -6rem, 0) scale(1.15); }
+}
+
+/*
+ * Renkler birbirine yakın tonlardan seçildi: mavi → çivit → deniz mavisi.
+ * İlk denemede üçüncü leke mor ve baskındı; üç ayrı renk ekranı dağıtıyor
+ * ve markanın mavisiyle yarışıyordu. Komşu tonlar tek bir atmosfer
+ * kuruyor, dikkat çekmiyor.
+ */
+
+/* Açık tema */
+:root {
+  --tema-zemin: #f6f8fc;
+  --tema-leke-guc: 0.45;
+  --tema-leke-a: #bcd7f8;
+  --tema-leke-b: #cbd8f7;
+  --tema-leke-c: #c3e4ef;
+  --tema-cizgi: rgb(15 23 42 / 0.04);
+}
+
+/* Koyu tema */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tema-zemin: #070c17;
+    --tema-leke-guc: 0.3;
+    --tema-leke-a: #1d4ed8;
+    --tema-leke-b: #3730a3;
+    --tema-leke-c: #0e7490;
+    --tema-cizgi: rgb(148 163 184 / 0.055);
+  }
+}
+
+/*
+ * Hareketi azaltılmış tercihte lekeler duruyor ama kayboluyor değil: tema
+ * yerinde kalıyor, yalnızca hareket bitiyor.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .tema-leke {
+    animation: none;
+  }
+}

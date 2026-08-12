@@ -90,7 +90,7 @@ export function BildirimZili() {
       </button>
 
       {acik && (
-        <div className="absolute right-0 z-10 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+        <div className="absolute right-0 z-10 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl shadow-lg dark:border-slate-800 dark:bg-slate-900/70">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
             <span className="text-sm font-medium">Bildirimler</span>
             {okunmamis > 0 && (

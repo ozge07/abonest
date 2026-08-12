@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { Kabuk } from './components/Kabuk';
+import { TemaArkaplani } from './components/TemaArkaplani';
 import { useOturum } from './lib/oturum';
 import { AnaSayfa } from './pages/AnaSayfa';
 import { AnalizSayfasi } from './pages/AnalizSayfasi';
@@ -15,19 +16,27 @@ export function App() {
   if (yukleniyor) {
     // Oturum bilinmeden yönlendirme yapılmıyor: aksi hâlde giriş yapmış
     // kullanıcı bir an giriş ekranını görüp sonra atlıyor.
-    return <TamEkranYukleniyor />;
+    return (
+      <>
+        <TemaArkaplani />
+        <TamEkranYukleniyor />
+      </>
+    );
   }
 
   if (!girisYapilmis) {
     return (
-      <Routes>
+      <>
+        <TemaArkaplani />
+        <Routes>
         <Route path="/giris" element={<GirisSayfasi />} />
         <Route path="/kayit" element={<KayitSayfasi />} />
         {/* E-postadaki bağlantı oturum istemiyor: kullanıcı postayı başka
             bir cihazda açmış olabilir. */}
         <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
-        <Route path="*" element={<Navigate to="/giris" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/giris" replace />} />
+        </Routes>
+      </>
     );
   }
 
@@ -40,29 +49,35 @@ export function App() {
    */
   if (kullanici !== null && kullanici.emailVerifiedAt === null) {
     return (
-      <Routes>
-        {/* Girişteyken bağlantıya tıklarsa da çalışsın. */}
-        <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
-        <Route path="*" element={<DogrulamaSayfasi />} />
-      </Routes>
+      <>
+        <TemaArkaplani />
+        <Routes>
+          {/* Girişteyken bağlantıya tıklarsa da çalışsın. */}
+          <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
+          <Route path="*" element={<DogrulamaSayfasi />} />
+        </Routes>
+      </>
     );
   }
 
   return (
-    <Kabuk>
+    <>
+      <TemaArkaplani />
+      <Kabuk>
       <Routes>
         <Route path="/" element={<AnaSayfa />} />
         <Route path="/abonelikler" element={<AbonelikSayfasi />} />
         <Route path="/analiz" element={<AnalizSayfasi />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Kabuk>
+        </Routes>
+      </Kabuk>
+    </>
   );
 }
 
 function TamEkranYukleniyor() {
   return (
-    <div className="grid min-h-dvh place-items-center bg-slate-50 dark:bg-slate-950">
+    <div className="grid min-h-dvh place-items-center">
       <p className="text-sm text-slate-500 dark:text-slate-400">Yükleniyor…</p>
     </div>
   );
