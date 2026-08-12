@@ -173,7 +173,9 @@ export class AuthService {
       to: user.email,
       subject: 'Şifre sıfırlama',
       text:
-        `Şifreni sıfırlamak için bu kodu kullan: ${token}\n\n` +
+        'Şifreni sıfırlamak için bu bağlantıya tıkla:\n\n' +
+        `${this.sifirlamaBaglantisi(token)}\n\n` +
+        `Bağlantı çalışmazsa şu kodu kullanabilirsin:\n\n${token}\n\n` +
         `Kod ${RESET_TTL_MINUTES} dakika geçerli. ` +
         'Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin.',
     });
@@ -245,6 +247,21 @@ export class AuthService {
     await this.sendVerification(user.id, user.email);
   }
 
+  /**
+   * Doğrulama bağlantısı.
+   *
+   * Adres yapılandırmadan geliyor; sabit yazmak, geliştirme ile yayında
+   * farklı adreslerin olduğu her durumda kırılırdı. Token sorgu dizesinde
+   * URL kodlaması yapılarak taşınıyor.
+   */
+  private dogrulamaBaglantisi(token: string): string {
+    return `${webOrigin()}/dogrula?token=${encodeURIComponent(token)}`;
+  }
+
+  private sifirlamaBaglantisi(token: string): string {
+    return `${webOrigin()}/sifre-sifirla?token=${encodeURIComponent(token)}`;
+  }
+
   async sendVerification(userId: string, email: string): Promise<void> {
     const { token, hash } = this.tokens.generate();
 
@@ -261,9 +278,33 @@ export class AuthService {
     await this.email.send({
       to: email,
       subject: 'E-posta adresini doğrula',
+      /*
+       * Hem bağlantı hem kod.
+       *
+       * Bağlantı asıl yol: kullanıcı tıklar, hesabı açılır. Kod yedek —
+       * bazı e-posta istemcileri bağlantıları bozuyor ya da kullanıcı
+       * postayı telefonda açıp uygulamaya bilgisayardan giriyor.
+       */
       text:
-        `Hesabını etkinleştirmek için bu kodu kullan: ${token}\n\n` +
+        'Abonelik Takip hesabını etkinleştirmek için bu bağlantıya tıkla:\n\n' +
+        `${this.dogrulamaBaglantisi(token)}\n\n` +
+        'Bağlantı çalışmazsa uygulamadaki doğrulama ekranına bu kodu ' +
+        `yapıştırabilirsin:\n\n${token}\n\n` +
         `Kod ${VERIFICATION_TTL_HOURS} saat geçerli.`,
     });
   }
+}
+
+/**
+ * Arayüzün adresi.
+ *
+ * `loadConfig()` her çağrıda şemayı yeniden okuyor; burada tek bir alan
+ * gerektiği için doğrudan ortamdan alıyoruz. Varsayılan, yapılandırma
+ * şemasındakiyle aynı — ikisi ayrışırsa e-postadaki bağlantı sessizce
+ * yanlış yere gider.
+ */
+function webOrigin(): string {
+  return (
+    process.env['WEB_ORIGIN']?.replace(/\/+$/, '') ?? 'http://localhost:5173'
+  );
 }

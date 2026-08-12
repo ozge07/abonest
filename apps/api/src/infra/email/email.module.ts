@@ -1,16 +1,17 @@
 import { Global, Module } from '@nestjs/common';
+import type { Logger } from 'pino';
+import { loadConfig } from '../config/config.js';
 import { LOGGER } from '../logger/logger.token.js';
 import { ConsoleEmailSender } from './console-email-sender.js';
 import { EmailSender } from './email-sender.js';
+import { SmtpEmailSender } from './smtp-email-sender.js';
 
 /**
  * E-posta gönderimi — altyapı, iş modülü değil.
  *
- * Önce `AuthModule` içindeydi; oraya konmasının tek sebebi ilk kullanıcısının
- * kimlik akışları olmasıydı. Günlük iş de hatırlatma göndermeye başlayınca
- * bağımlılık ters yöne dönüyordu: işler modülü kimlik modülünü içe aktarmak
- * zorunda kalırdı. Altyapı, onu kullanan modüllerden birinin içinde
- * yaşamamalı.
+ * Hangi göndericinin kullanılacağı **yapılandırmadan** belliy: `SMTP_HOST`
+ * doluysa gerçek gönderim, boşsa günlüğe yazma. Ayrı bir "mod" bayrağı
+ * tutmuyoruz; iki ayarın ayrışabileceği bir yer daha olurdu.
  *
  * `@Global()` çünkü tek bir gönderici örneği var ve her modülün onu ayrıca
  * içe aktarması tören olurdu.
@@ -20,7 +21,38 @@ import { EmailSender } from './email-sender.js';
   providers: [
     {
       provide: EmailSender,
-      useFactory: (logger) => new ConsoleEmailSender(logger),
+      useFactory: (logger: Logger): EmailSender => {
+        const config = loadConfig();
+
+        if (
+          config.SMTP_HOST === undefined ||
+          config.SMTP_USER === undefined ||
+          config.SMTP_PASS === undefined
+        ) {
+          logger.warn(
+            'SMTP yapılandırılmadı; e-postalar gönderilmeyip günlüğe yazılacak',
+          );
+          return new ConsoleEmailSender(logger);
+        }
+
+        const sender = new SmtpEmailSender(
+          {
+            host: config.SMTP_HOST,
+            port: config.SMTP_PORT,
+            user: config.SMTP_USER,
+            pass: config.SMTP_PASS,
+            // Gönderen belirtilmemişse kullanıcı adı çoğu sağlayıcıda
+            // adresin kendisi oluyor.
+            from: config.MAIL_FROM ?? config.SMTP_USER,
+          },
+          logger,
+        );
+
+        // Açılışta sınanıyor ama çökertmiyor: e-posta dışındaki her şey
+        // çalışmaya devam etmeli.
+        void sender.dogrulaBaglanti();
+        return sender;
+      },
       inject: [LOGGER],
     },
   ],

@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import type { FastifyReply } from 'fastify';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe.js';
 import { Throttle } from '../../common/rate-limit.guard.js';
+import { EmailSender } from '../../infra/email/email-sender.js';
 import { AuthService } from './auth.service.js';
 import { Public } from './auth.decorators.js';
 import {
@@ -34,6 +35,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
+    private readonly email: EmailSender,
   ) {}
 
   @Public()
@@ -111,15 +113,18 @@ export class AuthController {
     }
 
     /*
-     * Geliştirmede e-posta gerçekten gönderilmiyor, sunucu günlüğüne
-     * yazılıyor. Arayüz bunu bilmeden "gelen kutunu kontrol et" diyor ve
-     * kullanıcı olmayan bir postayı bekliyor.
+     * Arayüz kullanıcıya doğru şeyi söyleyebilsin diye: e-posta gerçekten
+     * gönderildi mi, yoksa günlüğe mi yazıldı?
      *
-     * **Kodun kendisi dönmüyor** — yalnızca teslim edilip edilmediği.
-     * Kodu yanıta koymak, yanlış bir `NODE_ENV` ile yayına çıkabilecek bir
+     * Cevap **göndericinin kendisinden** geliyor, `NODE_ENV`'den değil.
+     * Ortam değişkenine bakmak, SMTP'si yapılandırılmış bir geliştirme
+     * sunucusunda yanlış cevap verirdi.
+     *
+     * **Kodun kendisi dönmüyor** — yalnızca teslim edilip edilmediği. Kodu
+     * yanıta koymak, yanlış bir yapılandırmayla yayına çıkabilecek bir
      * sızıntı yolu açardı; nerede arayacağını söylemek bunu yapmıyor.
      */
-    return { deliveredToInbox: process.env['NODE_ENV'] === 'production' };
+    return { deliveredToInbox: this.email.deliversToInbox };
   }
 
   @Public()

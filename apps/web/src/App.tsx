@@ -3,6 +3,7 @@ import { Kabuk } from './components/Kabuk';
 import { useOturum } from './lib/oturum';
 import { AnaSayfa } from './pages/AnaSayfa';
 import { AnalizSayfasi } from './pages/AnalizSayfasi';
+import { BaglantiylaDogrulama } from './pages/BaglantiylaDogrulama';
 import { DogrulamaSayfasi } from './pages/DogrulamaSayfasi';
 import { AbonelikSayfasi } from './pages/AbonelikSayfasi';
 import { GirisSayfasi } from './pages/GirisSayfasi';
@@ -22,6 +23,9 @@ export function App() {
       <Routes>
         <Route path="/giris" element={<GirisSayfasi />} />
         <Route path="/kayit" element={<KayitSayfasi />} />
+        {/* E-postadaki bağlantı oturum istemiyor: kullanıcı postayı başka
+            bir cihazda açmış olabilir. */}
+        <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
         <Route path="*" element={<Navigate to="/giris" replace />} />
       </Routes>
     );
@@ -35,7 +39,13 @@ export function App() {
    * Tek ekran, tek iş: kodu gir.
    */
   if (kullanici !== null && kullanici.emailVerifiedAt === null) {
-    return <DogrulamaSayfasi />;
+    return (
+      <Routes>
+        {/* Girişteyken bağlantıya tıklarsa da çalışsın. */}
+        <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
+        <Route path="*" element={<DogrulamaSayfasi />} />
+      </Routes>
+    );
   }
 
   return (

@@ -17,6 +17,21 @@ export function useOturum() {
     // 401 beklenen bir cevap, hata değil: tekrar denemenin anlamı yok.
     retry: (deneme, hata) =>
       hata instanceof ApiError && hata.yetkisiz ? false : deneme < 2,
+    /*
+     * Yeni bir bileşen bu kancayı kullanmaya başladığında **tekrar
+     * denenmiyor**.
+     *
+     * Varsayılan davranış sonsuz döngü üretiyordu: sorgu 401 ile
+     * başarısızken ikinci bir bileşen `useOturum()` çağırıyor, TanStack
+     * yeniden deniyor, sorgu "beklemede"ye dönüyor, uygulama tam ekran
+     * yükleme gösterip o bileşeni söküyor — ve sökülen bileşen tekrar
+     * bağlandığında aynı şey baştan başlıyor. Ölçtük: saniyede binlerce
+     * istek.
+     *
+     * Oturum durumu zaten paylaşılan tek bir sorgu; ikinci bir okuyucunun
+     * yeni bir istek tetiklemesi için sebep yok.
+     */
+    retryOnMount: false,
     staleTime: 60_000,
   });
 

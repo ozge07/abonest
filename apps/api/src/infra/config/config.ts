@@ -45,6 +45,20 @@ const schema = z.object({
     .default('false')
     .transform((deger) => (deger === 'false' ? false : deger)),
 
+  /*
+   * SMTP ayarları — hepsi isteğe bağlı.
+   *
+   * `SMTP_HOST` boşsa e-posta gönderilmiyor, sunucu günlüğüne yazılıyor.
+   * Geliştirmede istenen davranış bu; yayında eksik bırakılırsa kullanıcılar
+   * hesaplarını doğrulayamaz, o yüzden üretim kontrolü aşağıda uyarıyor.
+   */
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().max(65535).default(587),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  /** Gönderen adresi; çoğu sağlayıcı bunun doğrulanmış olmasını istiyor. */
+  MAIL_FROM: z.string().min(1).optional(),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
@@ -106,6 +120,12 @@ function assertUretimeHazir(config: AppConfig): void {
 
   if (config.SESSION_SECRET === config.CRON_SECRET) {
     sorunlar.push('SESSION_SECRET ve CRON_SECRET aynı; ayrı olmalılar');
+  }
+
+  if (config.SMTP_HOST === undefined) {
+    sorunlar.push(
+      'SMTP_HOST tanımlı değil; kullanıcılar doğrulama e-postası alamaz',
+    );
   }
 
   if (config.WEB_ORIGIN.startsWith('http://')) {

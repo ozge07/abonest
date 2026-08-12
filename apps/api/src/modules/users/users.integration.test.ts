@@ -121,10 +121,16 @@ async function sifirlamaKoduIste(email: string): Promise<string> {
   return sonKod(email);
 }
 
-/** Gönderilen e-postadaki kodu ayıklıyor. */
+/**
+ * Gönderilen e-postadaki kodu ayıklıyor.
+ *
+ * Metne değil **biçime** bakıyor: token 32 baytlık base64url, yani en az 43
+ * karakter. Cümleye göre eşleştiren bir desen, e-posta metni her
+ * değiştiğinde kırılıyordu — bir kez kırıldı da.
+ */
 function sonKod(alici: string): string {
   const mesaj = [...gidenler].reverse().find((m) => m.to === alici);
-  const eslesme = mesaj?.text.match(/kodu kullan: ([A-Za-z0-9_-]+)/);
+  const eslesme = mesaj?.text.match(/(?:^|[\s\n])([A-Za-z0-9_-]{43})(?=[\s\n]|$)/);
   if (eslesme?.[1] === undefined) {
     throw new Error(`${alici} için kod bulunamadı`);
   }

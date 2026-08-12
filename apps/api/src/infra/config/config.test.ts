@@ -74,6 +74,9 @@ describe('üretim yapılandırması', () => {
     WEB_ORIGIN: 'https://abonelik.example',
     SESSION_SECRET: 'x'.repeat(40),
     CRON_SECRET: 'z'.repeat(40),
+    SMTP_HOST: 'smtp.example.com',
+    SMTP_USER: 'gonderen@example.com',
+    SMTP_PASS: 'sir',
   } as NodeJS.ProcessEnv;
 
   it('sağlam yapılandırmayı kabul ediyor', () => {
@@ -112,6 +115,13 @@ describe('üretim yapılandırması', () => {
     expect(() =>
       loadConfig({ ...uretim, WEB_ORIGIN: 'http://abonelik.example' }),
     ).toThrow(/https/);
+  });
+
+  it('SMTP yapılandırılmamışsa açılmıyor', () => {
+    // E-posta gönderemeyen bir yayın, kullanıcıların hesaplarını hiç
+    // doğrulayamaması demek — sessizce yarım çalışan bir sistem.
+    const { SMTP_HOST: _atlanan, ...smtpsiz } = uretim as Record<string, string>;
+    expect(() => loadConfig(smtpsiz as NodeJS.ProcessEnv)).toThrow(/SMTP_HOST/);
   });
 
   it('geliştirmede bu kurallar uygulanmıyor', () => {

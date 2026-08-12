@@ -11,6 +11,11 @@ import { EmailSender, type EmailMessage } from './email-sender.js';
  */
 @Injectable()
 export class ConsoleEmailSender extends EmailSender {
+  /** Hiçbir yere gitmiyor; günlüğe yazılıyor. */
+  override get deliversToInbox(): boolean {
+    return false;
+  }
+
   constructor(private readonly logger: Logger) {
     super();
   }
