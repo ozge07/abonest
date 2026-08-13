@@ -147,92 +147,79 @@ html {
   to { transform: translate3d(-5rem, -6rem, 0) scale(1.15); }
 }
 
-/* --- Kart siluetleri --- */
+/* --- Tekrar halkaları --- */
 
-.tema-kart {
+/*
+ * Kart siluetlerinin yerini aldılar.
+ *
+ * Kartlar 34-56 saniyede 2-3 rem ötelenirdi ve **hareket ettikleri
+ * görülmüyordu**: göz, yavaş ötelemeyi hareket olarak okumuyor. Dönme
+ * farklı — açı sürekli değiştiği için yavaşken bile fark ediliyor, üstelik
+ * kenarları ekranın dışına taşan büyük bir halkada etki daha da belirgin.
+ *
+ * Motif markanın kendisi: logo, tekrar eden aboneliği anlatan kesikli bir
+ * halka. Arka plan onu büyütüp yavaşça döndürüyor — dekoratif ama keyfi
+ * değil, uygulamanın konusunu anlatıyor.
+ *
+ * Yalnızca `transform` canlandırılıyor: `filter` ya da `box-shadow`
+ * canlandırmak her karede yeniden çizim demek, dizüstünde fanı çalıştırır.
+ */
+.tema-halka {
   position: absolute;
-  border: 1.5px solid var(--tema-kart-cizgi);
-  border-radius: 1.25rem;
-  background: var(--tema-kart-dolgu);
+  border-radius: 50%;
+  border: 2px dashed var(--tema-halka-cizgi);
   will-change: transform;
 }
 
-/*
- * Her kartın kendi süresi ve yönü var. Aynı anda aynı yöne giden şekiller
- * mekanik duruyor; farklı süreler asla tekrar etmeyen bir düzen üretiyor.
- */
-.tema-kart-1 {
-  top: 12%;
-  left: -6rem;
-  width: 17rem;
-  height: 10rem;
-  animation: yuz-1 34s ease-in-out infinite alternate;
+/* İçteki dolu kenarlık, kesikli halkayla birlikte katman hissi veriyor. */
+.tema-halka::after {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 1.5px solid var(--tema-halka-ic);
 }
-
-.tema-kart-2 {
-  top: 26%;
-  left: -2rem;
-  width: 13rem;
-  height: 8rem;
-  animation: yuz-2 44s ease-in-out infinite alternate;
-}
-
-.tema-kart-3 {
-  top: 8%;
-  right: -5rem;
-  width: 19rem;
-  height: 11rem;
-  animation: yuz-3 40s ease-in-out infinite alternate;
-}
-
-.tema-kart-4 {
-  bottom: 14%;
-  right: -3rem;
-  width: 15rem;
-  height: 9rem;
-  animation: yuz-4 50s ease-in-out infinite alternate;
-}
-
-.tema-kart-5 {
-  bottom: 6%;
-  left: 8%;
-  width: 12rem;
-  height: 7.5rem;
-  animation: yuz-5 56s ease-in-out infinite alternate;
-}
-
-@keyframes yuz-1 {
-  from { transform: translate3d(0, 0, 0) rotate(-9deg); }
-  to { transform: translate3d(3rem, -2.5rem, 0) rotate(-3deg); }
-}
-
-@keyframes yuz-2 {
-  from { transform: translate3d(0, 0, 0) rotate(7deg); }
-  to { transform: translate3d(2rem, 3rem, 0) rotate(13deg); }
-}
-
-@keyframes yuz-3 {
-  from { transform: translate3d(0, 0, 0) rotate(11deg); }
-  to { transform: translate3d(-3.5rem, 3rem, 0) rotate(4deg); }
-}
-
-@keyframes yuz-4 {
-  from { transform: translate3d(0, 0, 0) rotate(-6deg); }
-  to { transform: translate3d(-2.5rem, -3rem, 0) rotate(-14deg); }
-}
-
-@keyframes yuz-5 {
-  from { transform: translate3d(0, 0, 0) rotate(4deg); }
-  to { transform: translate3d(3rem, -2rem, 0) rotate(-5deg); }
-}
-
-/* --- Nokta dokusu --- */
 
 /*
- * Çizgi ızgarası defter kâğıdı gibi duruyordu; noktalar daha hafif ve
- * şekillerle çakışmıyor. Maske üstte belirgin, aşağı doğru sönerek
- * içeriğe yol veriyor.
+ * Her halkanın kendi süresi ve **yönü** var. Aynı yöne dönen şekiller
+ * mekanik duruyor; zıt yönler birbirinin üstünden geçerken sürekli
+ * değişen bir örüntü çıkarıyor.
  */
+.tema-halka-1 {
+  top: -14rem;
+  right: -12rem;
+  width: 42rem;
+  height: 42rem;
+  animation: don-saga 90s linear infinite;
+}
+
+.tema-halka-2 {
+  bottom: -18rem;
+  left: -14rem;
+  width: 48rem;
+  height: 48rem;
+  animation: don-sola 120s linear infinite;
+}
+
+.tema-halka-3 {
+  top: 30%;
+  left: 55%;
+  width: 26rem;
+  height: 26rem;
+  opacity: 0.6;
+  animation: don-saga 70s linear infinite;
+}
+
+@keyframes don-saga {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes don-sola {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
 .tema-izgara {
   position: absolute;
   inset: 0;
@@ -258,8 +245,8 @@ html {
   --tema-leke-b: #ece6df;
   --tema-leke-c: #d8e6e2;
   --tema-nokta: rgb(15 23 42 / 0.075);
-  --tema-kart-cizgi: rgb(15 23 42 / 0.07);
-  --tema-kart-dolgu: rgb(255 255 255 / 0.4);
+  --tema-halka-cizgi: rgb(15 23 42 / 0.11);
+  --tema-halka-ic: rgb(15 23 42 / 0.05);
 }
 
 /* Koyu tema */
@@ -276,8 +263,8 @@ html {
     --tema-leke-b: #2a2740;
     --tema-leke-c: #17343a;
     --tema-nokta: rgb(148 163 184 / 0.1);
-    --tema-kart-cizgi: rgb(148 163 184 / 0.14);
-    --tema-kart-dolgu: rgb(148 163 184 / 0.025);
+    --tema-halka-cizgi: rgb(148 163 184 / 0.22);
+    --tema-halka-ic: rgb(148 163 184 / 0.09);
   }
 }
 
@@ -287,7 +274,7 @@ html {
  */
 @media (prefers-reduced-motion: reduce) {
   .tema-leke,
-  .tema-kart {
+  .tema-halka {
     animation: none;
   }
 }

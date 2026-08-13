@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink } from 'react-router';
 import { UYGULAMA_ADI } from '../lib/marka';
 import {
@@ -7,12 +8,31 @@ import {
   useCikis,
   useOturum,
 } from '../lib/oturum';
+import { api } from '../lib/api';
+import type { Ozet } from '../lib/types';
 import { BildirimZili } from './BildirimZili';
 
 /** Giriş yapmış kullanıcının gördüğü çerçeve: başlık, gezinme, içerik. */
 export function Kabuk({ children }: { children: ReactNode }) {
   const { kullanici } = useOturum();
   const cikis = useCikis();
+
+  /*
+   * Özet sekmesi, gösterecek bir şey olmadan görünmüyor.
+   *
+   * Aboneliği olmayan kullanıcı zaten Özet'e girse abonelikler ekranına
+   * yönlendiriliyordu — yani sekme tıklanabilir ama hiçbir yere
+   * götürmüyordu. Görünen ama işe yaramayan bir sekme, kullanıcıya
+   * "burada bir şey var" deyip yalan söylüyor.
+   *
+   * Sorgu ana ekranınkiyle aynı anahtarı kullanıyor: iki ayrı istek
+   * atmıyoruz, TanStack aynı veriyi paylaşıyor.
+   */
+  const ozet = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api.get<Ozet>('/dashboard'),
+  });
+  const abonelikVar = (ozet.data?.activeCount ?? 0) > 0;
 
   return (
     <div className="min-h-dvh text-slate-900 dark:text-slate-100">
@@ -52,7 +72,7 @@ export function Kabuk({ children }: { children: ReactNode }) {
           </NavLink>
 
           <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            <Baglanti to="/">Özet</Baglanti>
+            {abonelikVar && <Baglanti to="/">Özet</Baglanti>}
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
             <Baglanti to="/analiz">Analiz</Baglanti>
             {/*
