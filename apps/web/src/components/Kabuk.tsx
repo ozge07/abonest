@@ -22,7 +22,22 @@ export function Kabuk({ children }: { children: ReactNode }) {
         * bölüyordu.
         */}
       <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/70">
-        <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+        {/*
+          * Dar ekranda taşmayan başlık.
+          *
+          * Önce tek bir esnemez satırdı: dört bağlantı, marka adı ve sağdaki
+          * düğmeler 390 pikselde sığmıyor, satır sayfayı kendinden geniş
+          * yapıyordu. Sonuç yalnızca başlığın kesilmesi değildi — bütün
+          * sayfa yana kayıyor ve listedeki tutarlar sağdan kırpılıyordu.
+          * Telefonda ölçüldü.
+          *
+          * Üç kural birlikte çözüyor: marka adı dar ekranda gizleniyor
+          * (logo kalıyor), gezinme kalan yeri alıp gerektiğinde **yatay
+          * kayıyor**, sağdaki düğmeler küçülmüyor. Kaydırmayı sarma
+          * (`flex-wrap`) yerine seçtik: sarma başlığı iki satıra çıkarıp
+          * içeriği aşağı itiyordu.
+        */}
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:gap-6">
           <NavLink to="/" className="flex shrink-0 items-center gap-2">
             <img
               src="/logo.svg"
@@ -31,10 +46,12 @@ export function Kabuk({ children }: { children: ReactNode }) {
               height={28}
               className="rounded-lg"
             />
-            <span className="text-base font-semibold">{UYGULAMA_ADI}</span>
+            <span className="hidden text-base font-semibold sm:inline">
+              {UYGULAMA_ADI}
+            </span>
           </NavLink>
 
-          <nav className="flex gap-1">
+          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
             <Baglanti to="/">Özet</Baglanti>
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
             <Baglanti to="/analiz">Analiz</Baglanti>
@@ -46,7 +63,7 @@ export function Kabuk({ children }: { children: ReactNode }) {
             <Baglanti to="/hesap">Hesabım</Baglanti>
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <BildirimZili />
             <span className="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">
               {kullanici?.name}
@@ -121,7 +138,7 @@ function Baglanti({ to, children }: { to: string; children: ReactNode }) {
       end={to === '/'}
       className={({ isActive }) =>
         [
-          'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+          'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
           isActive
             ? 'bg-marka-100 text-marka-700 dark:bg-marka-700/20 dark:text-marka-100'
             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',

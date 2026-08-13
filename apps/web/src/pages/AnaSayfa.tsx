@@ -58,13 +58,20 @@ export function AnaSayfa() {
     <div className="flex flex-col gap-6">
       <ToplamKarti ozet={ozet} kurlar={kurlar.data} />
 
+      {/*
+        `min-w-0`: grid öğeleri varsayılan olarak içeriklerinden dar
+        olamıyor (`min-width: auto`). Bu yüzden dar ekranda satırlar
+        kolonu 420 piksele zorluyor, kolon da sayfayı — telefonda sağdaki
+        tutarlar ekranın dışında kalıyordu. Ölçüldü: 390 piksellik
+        ekranda sayfa 436 çıkıyordu.
+      */}
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="lg:col-span-3">
+        <section className="min-w-0 lg:col-span-3">
           <BolumBasligi>Sırada ne var</BolumBasligi>
           <YaklasanOdemeler odemeler={ozet.upcoming} kurlar={kurlar.data} />
         </section>
 
-        <section className="lg:col-span-2">
+        <section className="min-w-0 lg:col-span-2">
           <BolumBasligi>Nereye gidiyor</BolumBasligi>
           <KategoriDagilimi ozet={ozet} kurlar={kurlar.data} />
         </section>
@@ -202,7 +209,12 @@ function YaklasanOdemeler({
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{odeme.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                {/*
+                  `whitespace-nowrap`: dar ekranda blok daraldığında tarih
+                  "22 / Ağustos / 2026" diye üç satıra bölünüyor ve satır
+                  yüksekliği iki katına çıkıyordu.
+                */}
+                <p className="truncate text-xs whitespace-nowrap text-slate-500 dark:text-slate-400">
                   {tarihYaz(odeme.dueDate)}
                 </p>
               </div>
@@ -218,7 +230,7 @@ function YaklasanOdemeler({
                 {gunSayisiYaz(odeme.daysUntil)}
               </span>
 
-              <div className="w-24 text-right">
+              <div className="w-20 shrink-0 text-right sm:w-24">
                 <p className="text-sm font-medium tabular-nums">
                   {paraYaz(odeme.amountMinor, odeme.currency)}
                 </p>

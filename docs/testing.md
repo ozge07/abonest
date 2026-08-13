@@ -78,8 +78,20 @@ sayacı artmıyor") ve aynı mutasyon tekrar denendiğinde test düştü.
 - **Arayüzde ölçülmeyen şey görünüm.** Bileşen çizimi ve tıklama akışları
   artık Testing Library ile sınanıyor (giriş, çıkış, hesap ekranı, onay
   kutusu, doğrulama). Otomatik sınanmayan şey **düzen**: hangi öğe nerede
-  duruyor, dar ekranda ne oluyor. Bunlar tarayıcıda ekran görüntüsüyle
-  doğrulanıyor.
+  duruyor. Bunlar tarayıcıda ekran görüntüsüyle doğrulanıyor.
+
+  **Dar ekran artık doğrulandı** (390 piksel, telefon genişliği): bütün
+  ekranlarda `document.scrollWidth === window.innerWidth`, yani yatay taşma
+  yok. Uzun süre "doğrulanmadı" diye duran bu madde iki gerçek hata
+  saklıyormuş — başlık çubuğu sığmayıp sayfayı geniş yapıyor, grid öğeleri
+  de `min-width: auto` yüzünden içeriklerinden dar olamıyordu. Sonuç:
+  telefonda tutarların sağı ekran dışında kalıyordu.
+
+  Ölçüm yönteminin kendisi de bir tuzak çıkardı: `mobile: true` ile
+  emülasyonda düzen 436, ekran görüntüsü 390 piksel oluyor ve **CSS'te
+  olmayan bir kırpılma görünüyordu**. Doğru okuma `innerWidth` ile
+  `scrollWidth` karşılaştırması; ekran görüntüsüne bakarak karar vermek
+  yanıltıyor.
 
   Bu ayrımın bedeli ölçüldü: onay kutusu, `backdrop-filter` taşıyan bir
   kartın içinden açıldığında ekranın çok aşağısında kalıyordu. Bileşen

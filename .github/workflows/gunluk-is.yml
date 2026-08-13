@@ -23,6 +23,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Uygulama henüz bir yere kurulmadıysa sessizce çıkıyoruz.
+          #
+          # Aksi hâlde iş her sabah kırmızı yanar ve her gün "başarısız"
+          # bildirimi gelirdi. Sürekli kırmızı yanan bir zamanlayıcı,
+          # gerçekten bozulduğunda kimsenin bakmadığı bir zamanlayıcı olur.
+          if [ -z "${API_URL:-}" ]; then
+            echo "::notice::API_URL sırrı tanımlı değil; uygulama daha kurulmamış. Atlanıyor."
+            exit 0
+          fi
+
           # Ücretsiz barındırma uykudaysa ilk istek yavaş yanıtlıyor;
           # --max-time buna göre geniş tutuldu.
           kod=$(curl -sS --max-time 300 \
