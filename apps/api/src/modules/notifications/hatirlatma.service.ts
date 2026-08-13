@@ -167,7 +167,7 @@ function hatirlatmaMetni(
   odeme: { amountMinor: bigint; currency: string; dueDate: Date },
 ): { baslik: string; govde: string } {
   const tutar = paraMetni(Number(odeme.amountMinor), odeme.currency);
-  const tarih = toISODate(toCalendarDate(odeme.dueDate));
+  const tarih = tarihMetni(toCalendarDate(odeme.dueDate));
 
   if (kalanGun === 0) {
     return {
@@ -181,6 +181,21 @@ function hatirlatmaMetni(
     baslik: `${ad} ödemesi ${ne}`,
     govde: `${ad} aboneliğinin ${tutar} tutarındaki ödemesi ${ne} (${tarih}) alınacak.`,
   };
+}
+
+/**
+ * Sunucu tarafı tarih metni — `14/08/2026`.
+ *
+ * `2026-08-14` yazıyordu; makine biçimi, kullanıcıya gösterilecek bir şey
+ * değil. Arayüzdeki `Intl` biçimlendiricisi burada kullanılamıyor: bu
+ * metin e-postaya gidiyor ve **okuyan istemcinin yerelini biz
+ * seçmiyoruz** — sunucunun `Intl` verisi eksikse sessizce İngilizce bir
+ * tarih çıkardı. Elle biçimlendirmek bu belirsizliği kaldırıyor.
+ */
+function tarihMetni(tarih: Date): string {
+  const gun = String(tarih.getUTCDate()).padStart(2, '0');
+  const ay = String(tarih.getUTCMonth() + 1).padStart(2, '0');
+  return `${gun}/${ay}/${tarih.getUTCFullYear()}`;
 }
 
 /**

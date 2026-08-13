@@ -444,6 +444,20 @@ describe('tetikleyici ucu', () => {
   });
 });
 
+describe('e-posta metni', () => {
+  it('tarihi Türkçe biçimde yazıyor', async () => {
+    // `2026-09-10` makine biçimi; kullanıcıya gösterilecek bir şey değil.
+    const kullanici = await kullaniciOlustur();
+    await abonelikYaz(kullanici.id, { startDate: gun(2026, 9, 10) });
+
+    await daily.run(gun(2026, 9, 8));
+
+    const posta = gidenler.find((m) => m.to === kullanici.email);
+    expect(posta?.text).toContain('10/09/2026');
+    expect(posta?.text).not.toContain('2026-09-10');
+  });
+});
+
 describe('abonelik eklendiği anda hatırlatma', () => {
   it('ödemesi yarın olan abonelik eklenince posta hemen gidiyor', async () => {
     /*

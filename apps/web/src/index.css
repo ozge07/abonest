@@ -108,28 +108,52 @@ html {
   height: 52rem;
   border-radius: 50%;
   opacity: var(--tema-leke-guc);
-  will-change: transform;
+  /*
+   * `opacity` de canlandırılıyor, sadece `transform` değil.
+   *
+   * Sebep: üç leke aynı anda aynı güçte durunca palet sabit kalıyor ve
+   * "renksiz, hareketsiz" görünüyordu. Farklı ritimlerde soluklaşıp
+   * belirginleşince baskın renk sürekli değişiyor — hareket, şekiller
+   * yer değiştirmeden de fark ediliyor.
+   *
+   * İkisi de bileşik katmanda çalışıyor: yeniden düzen (layout) ya da
+   * yeniden boyama (paint) tetiklemiyorlar. `filter: blur()` tetiklerdi,
+   * o yüzden yumuşaklık radyal gradyandan geliyor.
+   */
+  will-change: transform, opacity;
 }
 
 .tema-leke-1 {
   top: -20rem;
   left: -16rem;
   background: radial-gradient(circle, var(--tema-leke-a) 0%, transparent 62%);
-  animation: suzul-a 38s ease-in-out infinite alternate;
+  animation:
+    suzul-a 38s ease-in-out infinite alternate,
+    nefes 19s ease-in-out infinite alternate;
 }
 
 .tema-leke-2 {
   top: -8rem;
   right: -20rem;
   background: radial-gradient(circle, var(--tema-leke-b) 0%, transparent 62%);
-  animation: suzul-b 46s ease-in-out infinite alternate;
+  animation:
+    suzul-b 46s ease-in-out infinite alternate,
+    nefes 26s ease-in-out infinite alternate -8s;
 }
 
 .tema-leke-3 {
   bottom: -26rem;
   left: 28%;
   background: radial-gradient(circle, var(--tema-leke-c) 0%, transparent 62%);
-  animation: suzul-c 52s ease-in-out infinite alternate;
+  animation:
+    suzul-c 52s ease-in-out infinite alternate,
+    nefes 31s ease-in-out infinite alternate -15s;
+}
+
+/* Lekenin gücü; 1 = değişkendeki tam değer. */
+@keyframes nefes {
+  from { opacity: calc(var(--tema-leke-guc) * 0.45); }
+  to { opacity: var(--tema-leke-guc); }
 }
 
 @keyframes suzul-a {
@@ -240,10 +264,10 @@ html {
 /* Açık tema */
 :root {
   --tema-zemin: #f7f9fb;
-  --tema-leke-guc: 0.4;
-  --tema-leke-a: #cfdcec;
-  --tema-leke-b: #ece6df;
-  --tema-leke-c: #d8e6e2;
+  --tema-leke-guc: 0.55;
+  --tema-leke-a: #93b4e8;
+  --tema-leke-b: #c9b8e8;
+  --tema-leke-c: #8fd4cc;
   --tema-nokta: rgb(15 23 42 / 0.075);
   --tema-halka-cizgi: rgb(15 23 42 / 0.11);
   --tema-halka-ic: rgb(15 23 42 / 0.05);
@@ -258,10 +282,10 @@ html {
      * neredeyse görünmez kalıyordu. Kart kenarları ve lekeler bir tık
      * güçlü.
      */
-    --tema-leke-guc: 0.38;
-    --tema-leke-a: #1e3a5f;
-    --tema-leke-b: #2a2740;
-    --tema-leke-c: #17343a;
+    --tema-leke-guc: 0.62;
+    --tema-leke-a: #1d4ed8;
+    --tema-leke-b: #6d28d9;
+    --tema-leke-c: #0e7490;
     --tema-nokta: rgb(148 163 184 / 0.1);
     --tema-halka-cizgi: rgb(148 163 184 / 0.22);
     --tema-halka-ic: rgb(148 163 184 / 0.09);
