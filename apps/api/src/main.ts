@@ -39,6 +39,26 @@ async function bootstrap(): Promise<void> {
   // sunucusunda çalıştığı için bu klasör yok ve API salt API kalıyor.
   const webRoot = bulWebRoot();
 
+  /*
+   * Üretimde arayüz olmadan açılmıyoruz.
+   *
+   * Bu tam olarak yaşandı: derleme yarım kaldı, arayüz klasörü hiç
+   * oluşmadı, uygulama sorunsuz ayağa kalktı ve **API olarak** çalışmaya
+   * devam etti. Sağlık kontrolü yeşil, veritabanı bağlı, ama siteyi açan
+   * herkes 404 görüyordu. Yayında sessizce yarım çalışmaktansa hiç
+   * açılmamak daha iyi: biri fark edene kadar geçen süre, hatanın kendisi
+   * kadar zarar veriyor.
+   *
+   * Geliştirmede geçerli değil — orada arayüzü Vite sunuyor ve bu klasör
+   * bilerek yok.
+   */
+  if (config.NODE_ENV === 'production' && webRoot === undefined) {
+    throw new Error(
+      'Arayüz derlemesi bulunamadı (apps/web/dist). Derleme yarım kalmış ' +
+        'olabilir; `npm run build -w @abonelik/web` çıktısını kontrol et.',
+    );
+  }
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({

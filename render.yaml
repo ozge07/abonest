@@ -41,11 +41,28 @@ services:
     # diyerek düşüyor. Ölçüldü; bu komut dizisi Neon'a karşı birebir
     # çalıştırılıp doğrulandı.
     buildCommand: |
+      set -euo pipefail
+
       npm ci
       npm run build -w @abonelik/shared
       npm run prisma:generate -w @abonelik/api
       npm run build -w @abonelik/api
       npm run build -w @abonelik/web
+
+      # Derleme çıktıları gerçekten üretildi mi.
+      #
+      # İlk dağıtımda arayüz sunulmadı: API ayakta, veritabanı bağlı, ama
+      # `/` ve bütün varlıklar 404. Sebep `set -e` olmamasıydı — ara bir
+      # komut düşse bile betik devam ediyor ve çıkış kodu **son** komuta
+      # bakıyordu. Son komut tohumlamaydı, o da başarılı olunca Render
+      # "deploy live" dedi. Yani derleme sessizce yarım kaldı.
+      #
+      # Artık iki koruma var: `set -e` ilk hatada durduruyor, bu kontroller
+      # de "geçti ama dosya yok" durumunu imkânsız kılıyor.
+      test -f apps/api/dist/main.js
+      test -f apps/web/dist/index.html
+      test -d apps/web/dist/assets
+
       cd apps/api
       npx prisma migrate deploy
       node --experimental-strip-types prisma/seed.ts
