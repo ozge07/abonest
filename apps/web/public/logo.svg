@@ -1,15 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Abonest">
   <!--
-    Abonest'in simgesi: tekrar halkasının içinde bir A.
+    Abonest'in simgesi: tekrar halkasının içinde bir yumurta.
 
-    İki katman iki iş yapıyor. Dıştaki kesik halka aboneliğin tekrar eden
-    doğasını anlatıyor; içteki A markanın harfi. Halka bilerek soluk —
-    dikkati harften çalmıyor ve favicon boyutunda gözden kaybolup geriye
-    okunaklı bir A bırakıyor. Küçüldükçe bozulmak yerine sadeleşiyor.
+    Ad "abone" ile "nest"i (yuva) birleştiriyor. Halka aboneliğin tekrar
+    eden doğasını, yumurta da yuvada saklanan şeyi anlatıyor — dağınık
+    abonelikler tek yerde.
 
-    Kalın çizgi ve tek renk: 16 pikselde ince ayrıntı bulanık bir lekeye
-    dönüşüyor. Harfin kolları halkanın içinde kalıyor; taşsaydı küçük
-    boyutta ikisi birbirine karışırdı.
+    ## Denenip elenenler
+
+    Simge önce **yuva + üç yumurta** olarak çizildi: 16 pikselde (arama
+    çubuğundaki favicon boyutu) örgü çizgileri ve yumurtalar tek bir
+    lekeye dönüştü. Küçültülüp bakıldı, okunmuyordu.
+
+    Sonra **kâse + tek yumurta** denendi: bu sefer 512 pikselde beyaz oval
+    + geniş kâse, evrensel **profil/avatar** ikonuna benzedi. Marka
+    simgesinin başka bir şeye benzemesi, okunmamasından daha kötü.
+
+    Kalan çözüm ikisinin ortası: yumurta kapalı bir kâsede değil, açık bir
+    halkanın içinde. Halka çevrelediği için avatar okuması oluşmuyor;
+    tek büyük şekil olduğu için de küçülünce dağılmıyor.
+
+    ## Neden iki katman
+
+    Halka soluk (0.45) ve arkada, yumurta solid ve önde. Aynı beyazla
+    çizilselerdi küçük boyutta birleşirlerdi. Halka favicon boyutunda
+    silikleşip geriye okunaklı bir yumurta bırakıyor — küçüldükçe bozulmak
+    yerine sadeleşiyor.
   -->
   <defs>
     <linearGradient id="zemin" x1="0" y1="0" x2="1" y2="1">
@@ -28,19 +44,11 @@
     transform="rotate(-105 32 32)"
   />
 
-  <!-- Markanın harfi: iki bacak tek çizgide, tepe yuvarlatılmış. -->
+  <!-- Yumurta: tepesi dar, tabanı geniş. Simetrik bir oval "nokta" gibi
+       duruyordu; asimetri onu bir şeye benzetiyor. -->
   <path
-    d="M24 42.5 32 22.5 40 42.5"
-    fill="none" stroke="#FFFFFF" stroke-width="6"
-    stroke-linecap="round" stroke-linejoin="round"
-  />
-  <!--
-    Orta çizgi alçakta ve ince: yukarıda ya da kalın olsaydı harfin
-    içindeki üçgen boşluk 16 pikselde dolar, A bir lekeye dönerdi.
-  -->
-  <path
-    d="M27.6 37.5h8.8"
-    fill="none" stroke="#FFFFFF" stroke-width="4.4"
-    stroke-linecap="round"
+    d="M32 21 C38.5 21 41.5 28 41.5 33.2 C41.5 39.2 37.2 43 32 43
+       C26.8 43 22.5 39.2 22.5 33.2 C22.5 28 25.5 21 32 21 Z"
+    fill="#FFFFFF"
   />
 </svg>
