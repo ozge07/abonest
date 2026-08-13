@@ -7,6 +7,7 @@ const UC = 'https://api.brevo.com/v3/smtp/email';
 export interface BrevoAyarlari {
   apiKey: string;
   from: string;
+  replyTo?: string | undefined;
 }
 
 /**
@@ -50,6 +51,9 @@ export class BrevoApiEmailSender extends EmailSender {
       },
       body: JSON.stringify({
         sender: gonderen,
+        ...(this.ayarlar.replyTo !== undefined
+          ? { replyTo: ayrisGonderen(this.ayarlar.replyTo) }
+          : {}),
         to: [{ email: message.to }],
         subject: message.subject,
         textContent: message.text,

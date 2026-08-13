@@ -270,7 +270,16 @@ model AuditLog {
 model EmailVerificationToken {
   id        String    @id @default(uuid(7)) @db.Uuid
   userId    String    @db.Uuid
+  // Bağlantıdaki uzun jeton. Oturum gerektirmiyor: kullanıcı postayı başka
+  // bir cihazda açabiliyor, o yüzden tahmin edilemez olmak zorunda.
   tokenHash String    @unique
+  // Elle girilen 6 haneli kod. Tek başına 10^6 ihtimal, yani tahmin
+  // edilebilir; bu yüzden **yalnızca oturum sahibi kendi kodunu**
+  // deneyebiliyor ve deneme sayısı sınırlı (bkz. attempts).
+  codeHash  String?
+  // Yanlış deneme sayacı. Sınıra dayanınca kod yakılıyor: kaba kuvvetin
+  // 10^6'yı taramasına izin vermiyoruz.
+  attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())

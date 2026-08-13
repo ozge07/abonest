@@ -9,6 +9,7 @@ export interface SmtpAyarlari {
   user: string;
   pass: string;
   from: string;
+  replyTo?: string | undefined;
 }
 
 /**
@@ -48,6 +49,9 @@ export class SmtpEmailSender extends EmailSender {
   async send(message: EmailMessage): Promise<void> {
     const sonuc = await this.transporter.sendMail({
       from: this.ayarlar.from,
+      ...(this.ayarlar.replyTo !== undefined
+        ? { replyTo: this.ayarlar.replyTo }
+        : {}),
       to: message.to,
       subject: message.subject,
       text: message.text,

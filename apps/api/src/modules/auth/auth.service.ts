@@ -14,6 +14,15 @@ import { UYGULAMA_ADI } from '../../infra/marka.js';
 import { geriGetirmeSuresiDoldu } from '../users/purge.js';
 
 const VERIFICATION_TTL_HOURS = 24;
+
+/**
+ * 6 haneli kodda kaç yanlış denemeye izin veriliyor.
+ *
+ * Kod 10^6 ihtimal taşıyor; sınırsız deneme onu anlamsız kılardı. Beş,
+ * elle yazarken hata yapan kullanıcıyı zorlamayacak kadar geniş, kaba
+ * kuvveti işe yaramaz kılacak kadar dar.
+ */
+const MAX_CODE_ATTEMPTS = 5;
 const RESET_TTL_MINUTES = 30;
 
 export interface RequestContext {
@@ -144,6 +153,70 @@ export class AuthService {
     });
 
     return { ...(await this.sessions.create(user.id, context)), restored };
+  }
+
+  /**
+   * 6 haneli kodla doğrulama — **oturum sahibi kendi kodunu deniyor**.
+   *
+   * Bağlantıdaki jetondan farklı olarak bu kod tahmin edilebilir (10^6).
+   * İki şey onu güvenli kılıyor:
+   *
+   * 1. **Kod kullanıcıya bağlı.** Kayıt yalnızca `userId` ile aranıyor;
+   *    rastgele kod deneyen biri, denediği kodun *başka* bir kullanıcıya
+   *    ait olmasından faydalanamıyor. Kodun tek başına arandığı bir
+   *    tasarımda 10^6 içinde herhangi bir eşleşme işe yarardı.
+   * 2. **Deneme sayısı sınırlı.** Sınıra dayanınca kod yakılıyor;
+   *    kullanıcı yenisini istemek zorunda. Bu olmadan kaba kuvvet
+   *    10^6'yı rahatça tarardı.
+   */
+  async verifyEmailWithCode(userId: string, code: string): Promise<void> {
+    const kayit = await this.prisma.emailVerificationToken.findFirst({
+      where: { userId, usedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (
+      kayit === null ||
+      kayit.codeHash === null ||
+      kayit.expiresAt.getTime() <= Date.now()
+    ) {
+      throw new GoneException('Doğrulama kodu geçersiz ya da süresi dolmuş');
+    }
+
+    if (kayit.attempts >= MAX_CODE_ATTEMPTS) {
+      // Yakılmış kod: yenisini istemek zorunda.
+      await this.prisma.emailVerificationToken.update({
+        where: { id: kayit.id },
+        data: { usedAt: new Date() },
+      });
+      throw new GoneException(
+        'Çok fazla yanlış deneme; yeni kod iste',
+      );
+    }
+
+    if (!this.tokens.safeEqual(kayit.codeHash, this.tokens.hash(code))) {
+      await this.prisma.emailVerificationToken.update({
+        where: { id: kayit.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new GoneException('Doğrulama kodu geçersiz ya da süresi dolmuş');
+    }
+
+    await this.audit.record({
+      action: 'auth.email_verified',
+      userId: kayit.userId,
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: kayit.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: kayit.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
   }
 
   async verifyEmail(token: string): Promise<void> {
@@ -302,11 +375,13 @@ export class AuthService {
 
   async sendVerification(userId: string, email: string): Promise<void> {
     const { token, hash } = this.tokens.generate();
+    const { code, hash: codeHash } = this.tokens.generateCode();
 
     await this.prisma.emailVerificationToken.create({
       data: {
         userId,
         tokenHash: hash,
+        codeHash,
         expiresAt: new Date(
           Date.now() + VERIFICATION_TTL_HOURS * 60 * 60 * 1000,
         ),
@@ -317,20 +392,22 @@ export class AuthService {
       to: email,
       subject: 'E-posta adresini doğrula',
       /*
-       * Hem bağlantı hem kod.
+       * Hem bağlantı hem kod — ama artık farklı şeyler.
        *
-       * Bağlantı asıl yol: kullanıcı tıklar, hesabı açılır. Kod yedek —
-       * bazı e-posta istemcileri bağlantıları bozuyor ya da kullanıcı
-       * postayı telefonda açıp uygulamaya bilgisayardan giriyor.
+       * Bağlantı asıl yol ve oturumsuz çalışıyor: kullanıcı postayı başka
+       * bir cihazda açabildiği için içindeki jeton uzun ve tahmin edilemez.
+       * Kod ise elle yazmak için: eskiden 43 karakterlik jetonun kendisi
+       * yazdırılıyordu, kimse onu telefondan bilgisayara aktaramıyordu.
        */
       text:
         `${UYGULAMA_ADI} hesabını etkinleştirmek için bu bağlantıya tıkla:\n\n` +
         `${this.dogrulamaBaglantisi(token)}\n\n` +
         'Bağlantı çalışmazsa uygulamadaki doğrulama ekranına bu kodu ' +
-        `yapıştırabilirsin:\n\n${token}\n\n` +
+        `yazabilirsin:\n\n${code}\n\n` +
         `Kod ${VERIFICATION_TTL_HOURS} saat geçerli.`,
     });
   }
+
 }
 
 /**

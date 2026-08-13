@@ -60,6 +60,14 @@ const schema = z.object({
   MAIL_FROM: z.string().min(1).optional(),
 
   /**
+   * Yanıt adresi.
+   *
+   * Verilmezse yanıtlar gönderen adrese gidiyor — yani uygulamayı
+   * çalıştıran kişinin özel kutusuna. Bunu ayırmak isteyen için var.
+   */
+  MAIL_REPLY_TO: z.string().min(1).optional(),
+
+  /**
    * Brevo HTTP API anahtarı (`xkeysib-…`).
    *
    * Doluysa e-posta SMTP yerine 443 üzerinden gidiyor. Barındırma

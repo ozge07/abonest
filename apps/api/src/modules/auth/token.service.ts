@@ -1,4 +1,9 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  randomBytes,
+  randomInt,
+  timingSafeEqual,
+} from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 
 /**
@@ -19,6 +24,25 @@ export class TokenService {
     // 32 bayt = 256 bit. Tahmin edilemez olması için gereken tek şey bu.
     const token = randomBytes(32).toString('base64url');
     return { token, hash: this.hash(token) };
+  }
+
+  /**
+   * Elle girilecek 6 haneli kod.
+   *
+   * Kullanıcı uzun jetonu telefondan bilgisayara elle yazamıyor; şikâyet
+   * buydu. Kısa kodun bedeli tahmin edilebilirlik: 10^6 ihtimal, kaba
+   * kuvvete açık. Bu yüzden kod **tek başına yeterli değil** — yalnızca
+   * oturum sahibi kendi kodunu deneyebiliyor ve deneme sayısı sınırlı.
+   * Bağlantıdaki jeton uzun kalmaya devam ediyor, çünkü o oturumsuz
+   * çalışıyor.
+   *
+   * `randomInt` kriptografik: `Math.random()` tahmin edilebilir bir dizi
+   * üretiyor ve doğrulama kodunda bu, kodun kendisini tahmin edilebilir
+   * yapardı.
+   */
+  generateCode(): { code: string; hash: string } {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    return { code, hash: this.hash(code) };
   }
 
   hash(token: string): string {

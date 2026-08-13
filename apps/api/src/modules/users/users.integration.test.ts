@@ -130,11 +130,13 @@ async function sifirlamaKoduIste(email: string): Promise<string> {
  */
 function sonKod(alici: string): string {
   const mesaj = [...gidenler].reverse().find((m) => m.to === alici);
-  const eslesme = mesaj?.text.match(/(?:^|[\s\n])([A-Za-z0-9_-]{43})(?=[\s\n]|$)/);
+  // Uzun jeton artık yalnızca bağlantının içinde: elle yazılacak değer
+  // 6 haneli koda döndü, jeton düz metinde geçmiyor.
+  const eslesme = mesaj?.text.match(/[?&]token=([A-Za-z0-9_%-]+)/);
   if (eslesme?.[1] === undefined) {
     throw new Error(`${alici} için kod bulunamadı`);
   }
-  return eslesme[1];
+  return decodeURIComponent(eslesme[1]);
 }
 
 beforeAll(async () => {
@@ -491,5 +493,85 @@ describe('e-posta doğrulama akışı', () => {
       token: kod,
     });
     expect(ikinci.kod).toBe(410);
+  });
+});
+
+describe('6 haneli doğrulama kodu', () => {
+  it('doğru kod hesabı doğruluyor', async () => {
+    const kullanici = await kullaniciOlustur(false);
+    const jeton = await girisYap(kullanici.email);
+    gidenler.length = 0;
+    await auth.sendVerification(kullanici.id, kullanici.email);
+
+    const kod = /\b(\d{6})\b/.exec(gidenler[0]?.text ?? '')?.[1];
+    expect(kod).toBeDefined();
+
+    const { kod: durum } = await istek('POST', '/auth/verify-email-code', jeton, {
+      code: kod,
+    });
+    expect(durum).toBe(204);
+
+    const profil = await istek('GET', '/me', jeton);
+    expect((profil.govde as { emailVerifiedAt: string }).emailVerifiedAt).not.toBeNull();
+  });
+
+  it('başkasının kodu işe yaramıyor', async () => {
+    /*
+     * En önemli iddia. Kod 10^6 ihtimal taşıyor; yalnızca koda bakan bir
+     * tasarımda rastgele deneyen biri **herhangi** bir kullanıcının kodunu
+     * tutturabilirdi. Arama `userId` ile sınırlı olduğu için tutmuyor.
+     */
+    const ayse = await kullaniciOlustur(false);
+    const bora = await kullaniciOlustur(false);
+    const boraninJeton = await girisYap(bora.email);
+
+    gidenler.length = 0;
+    await auth.sendVerification(ayse.id, ayse.email);
+    const ayseninKod = /\b(\d{6})\b/.exec(gidenler[0]?.text ?? '')?.[1];
+
+    const { kod: durum } = await istek(
+      'POST',
+      '/auth/verify-email-code',
+      boraninJeton,
+      { code: ayseninKod },
+    );
+    expect(durum).toBe(410);
+
+    // Ayşe'nin hesabı hâlâ doğrulanmamış.
+    const ayseninJeton = await girisYap(ayse.email);
+    const profil = await istek('GET', '/me', ayseninJeton);
+    expect((profil.govde as { emailVerifiedAt: string | null }).emailVerifiedAt).toBeNull();
+  });
+
+  it('beş yanlış denemeden sonra kod yakılıyor', async () => {
+    // Sınır olmadan kaba kuvvet 10^6'yı tarardı.
+    const kullanici = await kullaniciOlustur(false);
+    const jeton = await girisYap(kullanici.email);
+    gidenler.length = 0;
+    await auth.sendVerification(kullanici.id, kullanici.email);
+    const dogruKod = /\b(\d{6})\b/.exec(gidenler[0]?.text ?? '')?.[1] ?? '';
+
+    for (let i = 0; i < 5; i += 1) {
+      const yanlis = String((Number(dogruKod) + i + 1) % 1_000_000).padStart(6, '0');
+      await istek('POST', '/auth/verify-email-code', jeton, { code: yanlis });
+    }
+
+    // Doğru kod bile artık kabul edilmiyor.
+    const { kod: durum } = await istek('POST', '/auth/verify-email-code', jeton, {
+      code: dogruKod,
+    });
+    expect(durum).toBe(410);
+  });
+
+  it('altı haneden farklı girdi reddediliyor', async () => {
+    const kullanici = await kullaniciOlustur(false);
+    const jeton = await girisYap(kullanici.email);
+
+    for (const gecersiz of ['12345', '1234567', 'abcdef', '']) {
+      const { kod } = await istek('POST', '/auth/verify-email-code', jeton, {
+        code: gecersiz,
+      });
+      expect(kod).toBe(422);
+    }
   });
 });

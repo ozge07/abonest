@@ -87,6 +87,55 @@ describe('gönderim', () => {
     });
   });
 
+  it('yanıt adresi verilmişse gövdeye giriyor', async () => {
+    // Verilmezse yanıtlar gönderen adrese, yani uygulamayı çalıştıran
+    // kişinin özel kutusuna gidiyor.
+    const cagrilar: RequestInit[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, secenekler: RequestInit) => {
+        cagrilar.push(secenekler);
+        return new Response(JSON.stringify({ messageId: '<a>' }), {
+          status: 201,
+        });
+      }),
+    );
+
+    const gonderen = new BrevoApiEmailSender(
+      {
+        apiKey: 'k',
+        from: 'Abonest <posta@ornek.com>',
+        replyTo: 'Destek <destek@ornek.com>',
+      },
+      logger,
+    );
+    await gonderen.send({ to: 'a@b.com', subject: 'K', text: 'G' });
+
+    expect(JSON.parse(cagrilar[0]!.body as string).replyTo).toEqual({
+      name: 'Destek',
+      email: 'destek@ornek.com',
+    });
+  });
+
+  it('yanıt adresi yoksa alan hiç gönderilmiyor', async () => {
+    const cagrilar: RequestInit[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, secenekler: RequestInit) => {
+        cagrilar.push(secenekler);
+        return new Response(JSON.stringify({ messageId: '<a>' }), {
+          status: 201,
+        });
+      }),
+    );
+
+    await gonderici().send({ to: 'a@b.com', subject: 'K', text: 'G' });
+
+    expect(JSON.parse(cagrilar[0]!.body as string)).not.toHaveProperty(
+      'replyTo',
+    );
+  });
+
   it('reddedilen gönderimde sebebi hataya taşıyor', async () => {
     /*
      * Sessizce başarılı sayılamaz: çağıran taraf (kayıt akışı) hatayı

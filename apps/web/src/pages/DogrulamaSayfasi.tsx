@@ -20,7 +20,17 @@ import { useCikis, useOturum } from '../lib/oturum';
  * gerekiyor" yazısını gördü — nereden doğrulayacağına dair hiçbir yol
  * yokken. Emeği de boşa gitti.
  */
-const kodAlani = z.string().trim().min(1, 'Kodu yapıştır');
+/**
+ * 6 haneli kod.
+ *
+ * Eskiden 43 karakterlik jetonun kendisi yazdırılıyordu ve kimse onu
+ * telefondan bilgisayara elle aktaramıyordu. Kural sunucudakiyle aynı:
+ * tek savunma arayüz olamaz.
+ */
+const kodAlani = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, 'Kod 6 rakamdan oluşmalı');
 
 export function DogrulamaSayfasi() {
   const { kullanici } = useOturum();
@@ -28,8 +38,8 @@ export function DogrulamaSayfasi() {
   const queryClient = useQueryClient();
 
   const dogrula = useMutation({
-    mutationFn: (token: string) =>
-      api.post<void>('/auth/verify-email', { token }),
+    mutationFn: (code: string) =>
+      api.post<void>('/auth/verify-email-code', { code }),
     onSuccess: async () => {
       // `/me` yeniden okunuyor; `emailVerifiedAt` dolunca uygulama açılıyor.
       await queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -43,7 +53,7 @@ export function DogrulamaSayfasi() {
 
   const hata = dogrula.error;
   const sunucuHatalari = hata instanceof ApiError ? hata.alanHatalari : {};
-  const kod = useAlan(kodAlani, sunucuHatalari['token']);
+  const kod = useAlan(kodAlani, sunucuHatalari['code']);
 
   function gonder(olay: FormEvent) {
     olay.preventDefault();
@@ -63,8 +73,8 @@ export function DogrulamaSayfasi() {
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             <span className="font-medium">{kullanici?.email}</span> adresine bir
-            doğrulama kodu gönderdik. Aboneliklerini eklemeye başlamak için o
-            kodu buraya yapıştır.
+            6 haneli doğrulama kodu gönderdik. Aboneliklerini eklemeye
+            başlamak için o kodu buraya yaz.
           </p>
         </div>
 
@@ -76,8 +86,11 @@ export function DogrulamaSayfasi() {
 
             <Alan
               etiket="Doğrulama kodu"
-              name="token"
+              name="code"
+              inputMode="numeric"
               autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="123456"
               autoFocus
               required
               hata={kod.hata}

@@ -37,6 +37,7 @@ import { SmtpEmailSender } from './smtp-email-sender.js';
             {
               apiKey: config.BREVO_API_KEY,
               from: config.MAIL_FROM ?? config.SMTP_USER ?? '',
+              replyTo: config.MAIL_REPLY_TO,
             },
             logger,
           );
@@ -64,6 +65,7 @@ import { SmtpEmailSender } from './smtp-email-sender.js';
             // Gönderen belirtilmemişse kullanıcı adı çoğu sağlayıcıda
             // adresin kendisi oluyor.
             from: config.MAIL_FROM ?? config.SMTP_USER,
+            replyTo: config.MAIL_REPLY_TO,
           },
           logger,
         );

@@ -46,6 +46,19 @@ export const changePasswordSchema = z.object({
   newPassword: password,
 });
 
+/**
+ * Elle girilen 6 haneli kod.
+ *
+ * Sunucu tarafında da altı hane şartı var: kullanıcı boşluk ya da tire
+ * ekleyebiliyor, arayüz temizliyor ama tek savunma arayüz olamaz.
+ */
+export const verifyCodeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Kod 6 rakamdan oluşmalı'),
+});
+
 export const updateProfileSchema = z.object({
   name: adAlani.optional(),
   currency: z.enum(CURRENCIES).optional(),

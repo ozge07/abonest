@@ -117,7 +117,7 @@ describe('doğrulanmamış kullanıcı', () => {
             ? { ...DOGRULANMAMIS, emailVerifiedAt: '2026-08-12T00:00:00.000Z' }
             : DOGRULANMAMIS,
         ),
-      '/auth/verify-email': () => {
+      '/auth/verify-email-code': () => {
         dogrulandi = true;
         // 204 gövdesiz bir durum kodu; boş metin bile verilse `Response`
         // kurucusu hata fırlatıyor ve taklit sunucu sessizce çöküyor.
@@ -138,7 +138,7 @@ describe('doğrulanmamış kullanıcı', () => {
     ciz();
 
     await screen.findByRole('heading', { name: /e-posta adresini doğrula/i });
-    await kullanici.type(screen.getByLabelText(/doğrulama kodu/i), 'gecerli-kod');
+    await kullanici.type(screen.getByLabelText(/doğrulama kodu/i), '123456');
     await kullanici.click(screen.getByRole('button', { name: /^doğrula$/i }));
 
     // Doğrulama sonrası uygulama açılıyor; aboneliği olmadığı için
@@ -157,14 +157,14 @@ describe('doğrulanmamış kullanıcı', () => {
     await screen.findByRole('heading', { name: /e-posta adresini doğrula/i });
     await kullanici.click(screen.getByRole('button', { name: /^doğrula$/i }));
 
-    expect(cagrilar.some((c) => c.yol === '/auth/verify-email')).toBe(false);
-    expect(screen.getByText(/kodu yapıştır/i)).toBeInTheDocument();
+    expect(cagrilar.some((c) => c.yol === '/auth/verify-email-code')).toBe(false);
+    expect(screen.getByText(/6 rakamdan/i)).toBeInTheDocument();
   });
 
   it('geçersiz kodda sunucunun mesajını gösteriyor', async () => {
     sunucuKur({
       '/me': () => json(DOGRULANMAMIS),
-      '/auth/verify-email': () =>
+      '/auth/verify-email-code': () =>
         json(
           {
             title: 'Doğrulama bağlantısı geçersiz ya da süresi dolmuş',
@@ -178,7 +178,7 @@ describe('doğrulanmamış kullanıcı', () => {
     ciz();
 
     await screen.findByRole('heading', { name: /e-posta adresini doğrula/i });
-    await kullanici.type(screen.getByLabelText(/doğrulama kodu/i), 'eski-kod');
+    await kullanici.type(screen.getByLabelText(/doğrulama kodu/i), '654321');
     await kullanici.click(screen.getByRole('button', { name: /^doğrula$/i }));
 
     expect(

@@ -13,18 +13,19 @@ import { ZodValidationPipe } from '../../common/zod-validation.pipe.js';
 import { Throttle } from '../../common/rate-limit.guard.js';
 import { EmailSender } from '../../infra/email/email-sender.js';
 import { AuthService } from './auth.service.js';
-import { Public } from './auth.decorators.js';
+import { CurrentUser, Public } from './auth.decorators.js';
 import {
   type AuthenticatedRequest,
   CSRF_COOKIE,
   SESSION_COOKIE,
 } from './auth.guard.js';
-import { SessionService } from './session.service.js';
+import { SessionService, type SessionUser } from './session.service.js';
 import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  verifyCodeSchema,
   verifyEmailSchema,
   type LoginInput,
   type RegisterInput,
@@ -129,6 +130,31 @@ export class AuthController {
      * sızıntı yolu açardı; nerede arayacağını söylemek bunu yapmıyor.
      */
     return { deliveredToInbox: this.email.deliversToInbox };
+  }
+
+  /**
+   * 6 haneli kodla doğrulama — **oturum gerekiyor**.
+   *
+   * Bağlantıdaki jetonun aksine bu kod tahmin edilebilir (10^6). Oturum
+   * şartı, denemenin hangi kullanıcıya ait olduğunu sabitliyor: rastgele
+   * kod deneyen biri "10^6 içinde herhangi bir kullanıcıyı tuttur"
+   * oyununu oynayamıyor. Deneme sayısı serviste de sınırlı.
+   */
+  @Post('verify-email-code')
+  @HttpCode(204)
+  /*
+   * Saatte 30. Asıl koruma serviste: her kod en fazla beş yanlış deneme
+   * sonrası yakılıyor, yani 30 istek 10^6'yı taramaya yetmiyor. Buradaki
+   * sınır ikinci savunma; daha dar tutmak elle yazarken hata yapan
+   * kullanıcıyı cezalandırırdı.
+   */
+  @Throttle({ limit: 30, windowMs: 60 * 60 * 1000 })
+  @UsePipes(new ZodValidationPipe(verifyCodeSchema))
+  async verifyEmailCode(
+    @CurrentUser() user: SessionUser,
+    @Body() body: { code: string },
+  ): Promise<void> {
+    await this.auth.verifyEmailWithCode(user.id, body.code);
   }
 
   @Public()
