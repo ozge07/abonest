@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import type { Logger } from 'pino';
 import { loadConfig } from '../config/config.js';
 import { LOGGER } from '../logger/logger.token.js';
+import { BrevoApiEmailSender } from './brevo-api-email-sender.js';
 import { ConsoleEmailSender } from './console-email-sender.js';
 import { EmailSender } from './email-sender.js';
 import { SmtpEmailSender } from './smtp-email-sender.js';
@@ -23,6 +24,25 @@ import { SmtpEmailSender } from './smtp-email-sender.js';
       provide: EmailSender,
       useFactory: (logger: Logger): EmailSender => {
         const config = loadConfig();
+
+        /*
+         * Sıra: önce HTTP API, sonra SMTP.
+         *
+         * Yayında SMTP çalışmıyor — barındırma platformu giden portları
+         * kapatıyor ve bağlantı `ETIMEDOUT` ile düşüyor. HTTP anahtarı
+         * verilmişse onu tercih ediyoruz; geliştirmede SMTP kalabiliyor.
+         */
+        if (config.BREVO_API_KEY !== undefined) {
+          const sender = new BrevoApiEmailSender(
+            {
+              apiKey: config.BREVO_API_KEY,
+              from: config.MAIL_FROM ?? config.SMTP_USER ?? '',
+            },
+            logger,
+          );
+          void sender.dogrulaBaglanti();
+          return sender;
+        }
 
         if (
           config.SMTP_HOST === undefined ||

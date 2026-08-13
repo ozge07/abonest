@@ -59,6 +59,15 @@ const schema = z.object({
   /** Gönderen adresi; çoğu sağlayıcı bunun doğrulanmış olmasını istiyor. */
   MAIL_FROM: z.string().min(1).optional(),
 
+  /**
+   * Brevo HTTP API anahtarı (`xkeysib-…`).
+   *
+   * Doluysa e-posta SMTP yerine 443 üzerinden gidiyor. Barındırma
+   * platformlarının çoğu giden SMTP portlarını kapattığı için yayında
+   * gereken yol bu; SMTP ayarları geliştirmede kullanılmaya devam ediyor.
+   */
+  BREVO_API_KEY: z.string().min(1).optional(),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
@@ -122,9 +131,10 @@ function assertUretimeHazir(config: AppConfig): void {
     sorunlar.push('SESSION_SECRET ve CRON_SECRET aynı; ayrı olmalılar');
   }
 
-  if (config.SMTP_HOST === undefined) {
+  if (config.SMTP_HOST === undefined && config.BREVO_API_KEY === undefined) {
     sorunlar.push(
-      'SMTP_HOST tanımlı değil; kullanıcılar doğrulama e-postası alamaz',
+      'Ne BREVO_API_KEY ne SMTP_HOST tanımlı; kullanıcılar doğrulama ' +
+        'e-postası alamaz',
     );
   }
 

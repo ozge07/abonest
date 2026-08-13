@@ -39,9 +39,15 @@ Seçerken bakılacaklar:
 3. **Veritabanının ömrü.** Bazı ücretsiz Postgres katmanları belirli bir
    süre sonra siliniyor ya da duraklatılıyor. Silinmeden önce yedek almanın
    yolunu bil (aşağıda).
-4. **Giden e-posta.** Çoğu barındırma SMTP portlarını kapatıyor; e-posta
-   sağlayıcısının HTTP API'si olan biri gerekebilir. **Bu zorunlu bir
-   adım:** `SMTP_HOST` tanımsızsa uygulama üretimde açılmayı reddediyor.
+4. **Giden e-posta — burası ölçüldü.** Çoğu barındırma SMTP portlarını
+   kapatıyor. Bu projede yaşandı: aynı Brevo bilgileri geliştirme
+   makinesinde çalışıyor, yayında `ETIMEDOUT, command: CONN` veriyordu.
+   Kimlik sorunu değil, bağlantı hiç kurulamıyor.
+
+   Çözüm `BREVO_API_KEY`: e-posta 443 üzerinden HTTP ile gidiyor ve port
+   engeline takılmıyor. `SMTP_*` değişkenleri geliştirmede kullanılabilir.
+   **İkisinden biri zorunlu:** hiçbiri tanımsızsa uygulama üretimde
+   açılmayı reddediyor, çünkü kullanıcılar hesaplarını doğrulayamaz.
 
 **Sunucusuz (serverless) platformlar bu uygulamaya uymuyor.** Hız sınırı
 süreç belleğinde tutuluyor (ADR-0004: Redis yok); her isteğin ayrı bir

@@ -102,9 +102,15 @@ services:
         sync: false
       - key: WEB_ORIGIN
         sync: false
-      # SMTP zorunlu: tanımsızsa uygulama üretimde açılmayı reddediyor,
-      # çünkü kullanıcılar doğrulama e-postası alamadan hesaplarında
-      # kilitli kalır.
+      # E-posta HTTP üzerinden gidiyor.
+      #
+      # SMTP burada çalışmıyor: platform giden SMTP portlarını kapatıyor ve
+      # bağlantı `ETIMEDOUT, command: CONN` ile düşüyor — kimlik sorunu bile
+      # değil. Brevo'nun HTTP API'si 443 kullandığı için bu engele
+      # takılmıyor. SMTP değişkenleri geliştirmede kullanılmaya devam
+      # ediyor; ikisinden biri tanımsızsa uygulama üretimde açılmıyor.
+      - key: BREVO_API_KEY
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
