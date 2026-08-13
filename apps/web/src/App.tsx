@@ -10,6 +10,8 @@ import { AbonelikSayfasi } from './pages/AbonelikSayfasi';
 import { GirisSayfasi } from './pages/GirisSayfasi';
 import { HesapSayfasi } from './pages/HesapSayfasi';
 import { KayitSayfasi } from './pages/KayitSayfasi';
+import { SifreSifirlaSayfasi } from './pages/SifreSifirlaSayfasi';
+import { SifreUnuttumSayfasi } from './pages/SifreUnuttumSayfasi';
 
 export function App() {
   const { kullanici, girisYapilmis, yukleniyor } = useOturum();
@@ -35,6 +37,14 @@ export function App() {
         {/* E-postadaki bağlantı oturum istemiyor: kullanıcı postayı başka
             bir cihazda açmış olabilir. */}
         <Route path="/dogrula" element={<BaglantiylaDogrulama />} />
+        {/*
+          Şifre sıfırlama oturumsuz çalışmak zorunda: kullanıcı zaten
+          giremediği için buraya geliyor. Bu iki rota tanımlı olmadığı
+          sürece e-postadaki bağlantı bilinmeyen yol sayılıp giriş
+          ekranına düşüyordu — akış uçtan uca hiç çalışmıyordu.
+        */}
+        <Route path="/sifre-unuttum" element={<SifreUnuttumSayfasi />} />
+        <Route path="/sifre-sifirla" element={<SifreSifirlaSayfasi />} />
           <Route path="*" element={<Navigate to="/giris" replace />} />
         </Routes>
       </>

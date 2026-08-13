@@ -67,6 +67,18 @@ export function GirisSayfasi() {
         <Dugme type="submit" bekliyor={giris.isPending}>
           Giriş yap
         </Dugme>
+
+        {/*
+          Düğmenin altında: kullanıcı buraya ancak giriş denemesi
+          başarısız olduktan sonra bakıyor, formun üstünde olsaydı asıl
+          işten önce dikkat dağıtırdı.
+        */}
+        <Link
+          to="/sifre-unuttum"
+          className="self-start text-sm text-slate-600 hover:underline dark:text-slate-400"
+        >
+          Şifremi unuttum
+        </Link>
       </form>
 
       <p className="text-sm text-slate-600 dark:text-slate-400">
