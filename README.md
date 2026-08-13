@@ -1,6 +1,7 @@
-# Abonelik Takip
+# Abonest
 
-Kişisel dijital ve fiziksel abonelikleri tek yerden takip eden web uygulaması.
+**Abonest — Abonelik Takip.** Kişisel dijital ve fiziksel abonelikleri tek
+yerden takip eden web uygulaması.
 Netflix, Spotify, spor salonu, internet — hepsi bir arada: ne kadar ödüyorsun,
 sırada ne var, neyi boşuna ödüyorsun.
 

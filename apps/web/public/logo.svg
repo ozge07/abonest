@@ -1,14 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Abonest">
   <!--
-    Abonest'in simgesi: tekrar halkasının içinde bir S.
+    Abonest'in simgesi: tekrar halkasının içinde bir A.
 
     İki katman iki iş yapıyor. Dıştaki kesik halka aboneliğin tekrar eden
-    doğasını anlatıyor; içteki S markanın harfi. Halka bilerek soluk —
+    doğasını anlatıyor; içteki A markanın harfi. Halka bilerek soluk —
     dikkati harften çalmıyor ve favicon boyutunda gözden kaybolup geriye
-    okunaklı bir S bırakıyor. Küçüldükçe bozulmak yerine sadeleşiyor.
+    okunaklı bir A bırakıyor. Küçüldükçe bozulmak yerine sadeleşiyor.
 
     Kalın çizgi ve tek renk: 16 pikselde ince ayrıntı bulanık bir lekeye
-    dönüşüyor.
+    dönüşüyor. Harfin kolları halkanın içinde kalıyor; taşsaydı küçük
+    boyutta ikisi birbirine karışırdı.
   -->
   <defs>
     <linearGradient id="zemin" x1="0" y1="0" x2="1" y2="1">
@@ -27,9 +28,19 @@
     transform="rotate(-105 32 32)"
   />
 
-  <!-- Markanın harfi. -->
+  <!-- Markanın harfi: iki bacak tek çizgide, tepe yuvarlatılmış. -->
   <path
-    d="M39 24c-2.2-3-6-4-9.5-3s-5.3 4-4.3 7 5 3.8 8.5 4.8 6.9 1.8 7.9 4.8-.8 6-4.3 7-7.3 0-9.5-3"
-    fill="none" stroke="#FFFFFF" stroke-width="6.2" stroke-linecap="round"
+    d="M24 42.5 32 22.5 40 42.5"
+    fill="none" stroke="#FFFFFF" stroke-width="6"
+    stroke-linecap="round" stroke-linejoin="round"
+  />
+  <!--
+    Orta çizgi alçakta ve ince: yukarıda ya da kalın olsaydı harfin
+    içindeki üçgen boşluk 16 pikselde dolar, A bir lekeye dönerdi.
+  -->
+  <path
+    d="M27.6 37.5h8.8"
+    fill="none" stroke="#FFFFFF" stroke-width="4.4"
+    stroke-linecap="round"
   />
 </svg>
