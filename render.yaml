@@ -19,19 +19,36 @@ services:
     # Sıra zorunlu: shared önce, sonra Prisma istemcisi, sonra api ve web.
     # `prisma generate` veritabanına bağlanmıyor; adres olmadan da çalışıyor
     # (bkz. apps/api/prisma.config.ts).
+    #
+    # ## Şema neden burada, ayrı bir adımda değil
+    #
+    # Şema ve başlangıç verisi normalde `preDeployCommand` ile uygulanırdı;
+    # Render **ücretsiz katmanda o alanı kabul etmiyor** ("pre-deploy command
+    # is not supported for free tier services") ve blueprint hiç
+    # uygulanmıyor. Bu yüzden ikisi derleme adımının sonunda.
+    #
+    # Önemsediğimiz sıra korunuyor: derleme, yeni sürüm ayağa kalkmadan
+    # önce bitiyor — yani uygulama hiçbir zaman eksik sütunlu bir şemayla
+    # açılmıyor. Bedeli, derlemenin veritabanına erişmesi gerekmesi;
+    # `DATABASE_URL` panelde tanımlı olduğu için derleme ortamında da var.
+    #
+    # İkisi de tekrar çalıştırılabilir: `migrate deploy` bekleyen migration
+    # yoksa hiçbir şey yapmıyor, tohumlama `upsert` ile yazıyor. Her
+    # dağıtımda koşmaları zararsız.
+    # Prisma komutları `apps/api` içinden çalışıyor: `prisma.config.ts` orada
+    # ve Prisma onu **çalışma dizininden** arıyor. Depo kökünden `--schema`
+    # vererek çağırmak yetmiyor, "datasource.url property is required"
+    # diyerek düşüyor. Ölçüldü; bu komut dizisi Neon'a karşı birebir
+    # çalıştırılıp doğrulandı.
     buildCommand: |
       npm ci
       npm run build -w @abonelik/shared
-      npx prisma generate --schema apps/api/prisma/schema.prisma
+      npm run prisma:generate -w @abonelik/api
       npm run build -w @abonelik/api
       npm run build -w @abonelik/web
-
-    # Şema ve başlangıç verisi her dağıtımda uygulanıyor; ikisi de
-    # tekrar çalıştırılabilir. Uygulamadan **önce** çalışmaları şart:
-    # eksik sütunla açılan bir sürüm ilk istekte patlar.
-    preDeployCommand: |
-      npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
-      node --experimental-strip-types apps/api/prisma/seed.ts
+      cd apps/api
+      npx prisma migrate deploy
+      node --experimental-strip-types prisma/seed.ts
 
     startCommand: node apps/api/dist/main.js
 

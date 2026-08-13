@@ -111,6 +111,17 @@ Arayüz ayrı bir yere kurulmuyor: `apps/api/dist` içinden `../../web/dist`
 olarak bulunup aynı origin'den sunuluyor. İki klasör de dağıtım hedefinde
 bulunmalı.
 
+### Render ücretsiz katman notu
+
+Şema ve tohumlama `preDeployCommand` ile ayrı bir adımda çalışsa daha
+temiz olurdu; **ücretsiz katman o alanı kabul etmiyor** ("pre-deploy
+command is not supported for free tier services") ve blueprint hiç
+uygulanmıyor. Bu yüzden ikisi derleme komutunun sonunda.
+
+Prisma komutları `apps/api` içinden çalışıyor: `prisma.config.ts` orada ve
+Prisma onu çalışma dizininden arıyor. Depo kökünden `--schema` vererek
+çağırmak yetmiyor, "datasource.url property is required" diyerek düşüyor.
+
 ### Konteyner olarak
 
 `apps/api/Dockerfile` depoda ve aynı yerleşimi üretiyor.
