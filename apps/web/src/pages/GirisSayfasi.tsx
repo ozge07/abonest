@@ -1,11 +1,11 @@
-import { type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { z } from 'zod';
 import { epostaAlani } from '@abonelik/shared';
 import { Alan, Dugme, HataKutusu } from '../components/form';
 import { ApiError } from '../lib/api';
 import { useAlan } from '../lib/alan';
-import { useGiris } from '../lib/oturum';
+import { oturumNotu, oturumNotunuSil, useGiris } from '../lib/oturum';
 
 /**
  * Girişte şifre kuralı **yok**.
@@ -18,6 +18,14 @@ const girisSifresi = z.string().min(1, 'Şifre boş olamaz');
 
 export function GirisSayfasi() {
   const giris = useGiris();
+
+  // Not yalnızca okunuyor; silme işi efekte bırakılıyor, çünkü StrictMode
+  // bileşen gövdesini iki kez çalıştırıyor ve okurken silmek ikinci
+  // çalıştırmada notu kaybederdi.
+  const [not] = useState(oturumNotu);
+  useEffect(() => {
+    oturumNotunuSil();
+  }, []);
 
   const hata = giris.error;
   const sunucuHatalari = hata instanceof ApiError ? hata.alanHatalari : {};
@@ -39,6 +47,20 @@ export function GirisSayfasi() {
 
   return (
     <KimlikDuzeni baslik="Giriş yap" altBaslik="Aboneliklerini görmek için giriş yap.">
+      {/*
+        Kırmızı değil nötr: bu bir hata değil, olağan bir güvenlik
+        davranışı. Kırmızı kutu kullanıcıya "bir şey ters gitti"
+        dedirtirdi.
+      */}
+      {not !== null && (
+        <p
+          role="status"
+          className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        >
+          {not}. Devam etmek için tekrar giriş yap.
+        </p>
+      )}
+
       <form onSubmit={gonder} noValidate className="flex flex-col gap-4">
         {hata instanceof ApiError && hata.problem.errors === undefined && (
           <HataKutusu mesaj={hata.problem.title} />

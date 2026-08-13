@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
+import { OturumBostaKaldi } from '../../infra/errors/problem.js';
 import { SessionService, type SessionUser } from './session.service.js';
 import { TokenService } from './token.service.js';
 import { IS_PUBLIC, NEEDS_VERIFIED_EMAIL } from './auth.decorators.js';
@@ -66,10 +67,23 @@ export class AuthGuard implements CanActivate {
       this.assertCsrf(request);
     }
 
-    const user = await this.sessions.validate(token);
-    if (user === null) {
+    const sonuc = await this.sessions.validate(token);
+    if (sonuc.kullanici === undefined) {
+      /*
+       * Mesaj sebebe göre değişiyor.
+       *
+       * "Oturum geçersiz" gören kullanıcı ne yapacağını bilmiyor; bir süre
+       * dokunmadığı için kapandığını bilen kullanıcı ise sadece yeniden
+       * giriş yapıyor. Aynı 401'in arkasındaki iki farklı durum.
+       */
+      if (sonuc.sebep === 'bosta-kaldi') {
+        throw new OturumBostaKaldi(
+          'Bir süre işlem yapılmadığı için oturumun kapandı',
+        );
+      }
       throw new UnauthorizedException('Oturum geçersiz ya da süresi dolmuş');
     }
+    const user = sonuc.kullanici;
 
     const needsVerified = this.reflector.getAllAndOverride<boolean>(
       NEEDS_VERIFIED_EMAIL,

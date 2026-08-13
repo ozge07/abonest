@@ -13,7 +13,12 @@ const KOK = '/api/v1';
 
 /** Sunucudan gelen RFC 9457 hata gövdesi. */
 export interface ProblemDetails {
-  type: string;
+  /**
+   * Sunucu her zaman gönderiyor, ama bu tip **ağdan gelen** veriyi tarif
+   * ediyor: eksik olabileceğini varsaymak zorundayız. Zorunlu sayıldığında
+   * alanı olmayan tek bir yanıt uygulamanın tamamını çökertiyordu.
+   */
+  type?: string;
   title: string;
   status: number;
   detail?: string;

@@ -631,6 +631,32 @@ describe('boşta kalma zaman aşımı', () => {
     expect((await istek('GET', '/me', jeton)).kod).toBe(200);
   });
 
+  it('kullanıcıya neden kapandığını söylüyor', async () => {
+    /*
+     * "Oturum geçersiz" gören kullanıcı ne yapacağını bilmiyor; bir süre
+     * dokunmadığı için kapandığını bilen ise sadece yeniden giriş yapıyor.
+     * Aynı 401'in arkasındaki iki farklı durum.
+     */
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 6 * 60 * 1000) },
+    });
+
+    const { govde } = await istek('GET', '/me', jeton);
+    expect((govde as { title: string }).title).toContain('işlem yapılmadığı');
+  });
+
+  it('hiç olmayan oturumda farklı mesaj veriyor', async () => {
+    // Boşta kalma mesajını her 401'e yapıştırmak yanlış bilgi olurdu.
+    const { govde } = await istek('GET', '/me', 'boyle-bir-jeton-yok');
+    expect((govde as { title: string }).title).not.toContain(
+      'işlem yapılmadığı',
+    );
+  });
+
   it('kapanan oturum veritabanından siliniyor', async () => {
     // Sadece reddetmek yetmez; kayıt kalırsa tablo şişer ve "açık
     // oturumlar" listesi ölü satır gösterir.

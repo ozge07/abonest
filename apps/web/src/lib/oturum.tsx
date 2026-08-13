@@ -47,7 +47,25 @@ export function useOturum() {
    * Aynı durum oturumun süresi dolduğunda da geçerli: sunucu "sen kimsin
    * bilmiyorum" diyorsa, elimizdeki eski kayıt bunu değiştirmiyor.
    */
-  const yetkisiz = sorgu.error instanceof ApiError && sorgu.error.yetkisiz;
+  const hata = sorgu.error instanceof ApiError ? sorgu.error : null;
+  const yetkisiz = hata !== null && hata.yetkisiz;
+
+  /*
+   * Oturum boşta kaldığı için kapandıysa sebebini giriş ekranına bırakıyoruz.
+   *
+   * Ayrım sunucunun `type` alanından: "elimizde eski kullanıcı verisi var
+   * mı" diye bakmak yetmiyordu, çünkü asıl durum sekmeye dönüp **sayfayı
+   * yenilemek** ve orada ilk istek zaten 401 oluyor, elde veri olmuyor.
+   * Ölçtük: not hiç çıkmıyordu.
+   *
+   * Tipe bakmak aynı zamanda "hiç giriş yapmamış ziyaretçi" ile bu durumu
+   * ayırıyor; onda tip sıradan `unauthorized` ve not yazılmıyor.
+   */
+  // `type?.` — ağdan gelen gövdede alan olmayabilir. Zorunlu saymak
+  // uygulamanın tamamını çökertiyordu; testlerde ölçüldü.
+  if (hata?.problem.type?.endsWith('/session-idle') === true) {
+    sessionStorage.setItem(OTURUM_NOTU, hata.problem.title);
+  }
 
   return {
     kullanici: yetkisiz ? null : (sorgu.data ?? null),
@@ -65,6 +83,26 @@ export function useOturum() {
  * kapanınca kendiliğinden siliniyor ve kalıcı bir iz bırakmıyor.
  */
 const GERI_GETIRILDI = 'hesap-geri-getirildi';
+
+/**
+ * "Oturumun neden kapandı" notu.
+ *
+ * Kullanıcı bir anda giriş ekranında buluyor kendini; sebebini bilmeden
+ * bu, uygulamanın kendiliğinden bozulması gibi görünüyor. Sunucu 401'in
+ * gövdesinde sebebi zaten söylüyor, biz onu giriş ekranına taşıyoruz.
+ *
+ * Yalnızca **istem dışı** çıkışlarda yazılıyor: kullanıcı kendi çıktığında
+ * "oturumun kapandı" demek gereksiz gürültü olurdu.
+ */
+const OTURUM_NOTU = 'oturum-notu';
+
+export function oturumNotu(): string | null {
+  return sessionStorage.getItem(OTURUM_NOTU);
+}
+
+export function oturumNotunuSil(): void {
+  sessionStorage.removeItem(OTURUM_NOTU);
+}
 
 export function geriGetirildiMi(): boolean {
   return sessionStorage.getItem(GERI_GETIRILDI) !== null;
@@ -122,6 +160,9 @@ export function useCikis() {
        */
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.clear();
+      // Kendi çıkan kullanıcıya "oturumun kapandı" demek gürültü; yukarıdaki
+      // geçersizleştirme notu yazmış olabilir, siliyoruz.
+      oturumNotunuSil();
     },
   });
 }

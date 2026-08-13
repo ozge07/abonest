@@ -30,6 +30,16 @@ const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
  */
 const LAST_SEEN_REFRESH_MS = 60 * 1000;
 
+/**
+ * Oturum doğrulamasının sonucu.
+ *
+ * Başarısızlıkta sebep de dönüyor; guard bunu kullanıcının okuyacağı
+ * cümleye çeviriyor.
+ */
+export type OturumSonucu =
+  | { kullanici: SessionUser; sebep?: undefined }
+  | { kullanici?: undefined; sebep: 'yok' | 'suresi-doldu' | 'bosta-kaldi' };
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -71,12 +81,17 @@ export class SessionService {
   }
 
   /**
-   * Token'ı doğrular ve kullanıcıyı döner; geçersizse `null`.
+   * Token'ı doğrular; geçerliyse kullanıcıyı, değilse **sebebini** döner.
+   *
+   * Sebep, kullanıcıya doğru cümleyi söyleyebilmek için: "oturumun bir süre
+   * işlem yapılmadığı için kapandı" ile "böyle bir oturum yok" farklı
+   * şeyler ve ikincisini görünce kullanıcı ne yapacağını bilmiyor. Sadece
+   * `null` dönseydi istemci tahmin etmek zorunda kalırdı.
    *
    * Silinmiş hesabın oturumu da geçersiz sayılıyor: hesap silme işaretlendiği
    * anda oturumlar da düşüyor, temizlik işini beklemiyoruz.
    */
-  async validate(token: string): Promise<SessionUser | null> {
+  async validate(token: string): Promise<OturumSonucu> {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: this.tokens.hash(token) },
       select: {
@@ -95,21 +110,21 @@ export class SessionService {
     });
 
     if (session === null || session.user.deletedAt !== null) {
-      return null;
+      return { sebep: 'yok' };
     }
 
     if (session.expiresAt.getTime() <= Date.now()) {
       // Süresi dolmuş oturumu hemen siliyoruz; temizlik işini beklemek
       // tabloyu şişiriyor.
       await this.prisma.session.delete({ where: { id: session.id } });
-      return null;
+      return { sebep: 'suresi-doldu' };
     }
 
     // Boşta kalma sınırı: mutlak ömür dolmamış olsa da, uzun süre
     // kullanılmayan oturum kapanıyor.
     if (Date.now() - session.lastSeenAt.getTime() > IDLE_TIMEOUT_MS) {
       await this.prisma.session.delete({ where: { id: session.id } });
-      return null;
+      return { sebep: 'bosta-kaldi' };
     }
 
     if (Date.now() - session.lastSeenAt.getTime() > LAST_SEEN_REFRESH_MS) {
@@ -120,9 +135,11 @@ export class SessionService {
     }
 
     return {
-      id: session.user.id,
-      email: session.user.email,
-      emailVerifiedAt: session.user.emailVerifiedAt,
+      kullanici: {
+        id: session.user.id,
+        email: session.user.email,
+        emailVerifiedAt: session.user.emailVerifiedAt,
+      },
     };
   }
 

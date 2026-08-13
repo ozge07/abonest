@@ -124,6 +124,124 @@ describe('çıkış', () => {
     expect(screen.queryByRole('link', { name: 'Hesabım' })).toBeNull();
   });
 
+  it('kendi çıkanda "oturumun kapandı" notu çıkmıyor', async () => {
+    // Kullanıcı kendi çıktıysa sebebini söylemek gereksiz gürültü.
+    sunucuKur();
+    const kullanici = userEvent.setup();
+    ciz();
+
+    await kullanici.click(await screen.findByRole('button', { name: 'Çıkış' }));
+    await screen.findByRole('heading', { name: /giriş yap/i });
+
+    expect(screen.queryByText(/tekrar giriş yap/i)).toBeNull();
+  });
+
+  it('oturum kapandığında sebebi giriş ekranında yazıyor', async () => {
+    /*
+     * Kullanıcı bir anda giriş ekranında buluyor kendini; sebebini
+     * bilmeden bu, uygulamanın kendiliğinden bozulması gibi görünüyor.
+     * Sunucunun 401 gövdesindeki cümle ekrana taşınıyor.
+     */
+    let girisli = true;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (girdi: string) => {
+        const yol = String(girdi).replace('/api/v1', '');
+        if (!girisli) {
+          return json(
+            {
+              // Ayrım `type` ile: metne bakmak, cümle değişince sessizce
+              // bozulan bir bağ kurardı.
+              type: 'https://abonelik-takip.app/errors/session-idle',
+              title: 'Bir süre işlem yapılmadığı için oturumun kapandı',
+              status: 401,
+            },
+            401,
+          );
+        }
+        if (yol === '/me') return json(KULLANICI);
+        if (yol === '/me/sessions') return json([]);
+        if (yol === '/dashboard') return json(BOS_OZET);
+        return json({ data: [], nextCursor: null, hasMore: false });
+      }),
+    );
+
+    const queryClient = new QueryClient({ defaultOptions: sorguSecenekleri });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/hesap']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText(`E-posta: ${KULLANICI.email}`);
+
+    girisli = false;
+    await queryClient.invalidateQueries({ queryKey: ['me'] });
+
+    expect(
+      await screen.findByText(/bir süre işlem yapılmadığı için/i),
+    ).toBeInTheDocument();
+  });
+
+  it('sayfa yenilendiğinde de not çıkıyor', async () => {
+    /*
+     * Asıl senaryo bu: kullanıcı sekmeye dönüp yeniliyor, ilk istek zaten
+     * 401 oluyor ve elde eski veri yok. "Önce kullanıcı vardı" koşuluna
+     * bakan ilk uygulamada not hiç çıkmıyordu; ölçülüp düzeltildi.
+     */
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        json(
+          {
+            type: 'https://abonelik-takip.app/errors/session-idle',
+            title: 'Bir süre işlem yapılmadığı için oturumun kapandı',
+            status: 401,
+          },
+          401,
+        ),
+      ),
+    );
+
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: sorguSecenekleri })}
+      >
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText(/bir süre işlem yapılmadığı için/i),
+    ).toBeInTheDocument();
+  });
+
+  it('hiç giriş yapmamış ziyaretçiye not gösterilmiyor', async () => {
+    // Sıradan 401: not gürültü olurdu.
+    sunucuKur();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ title: 'Oturum bulunamadı', status: 401 }, 401)),
+    );
+
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: sorguSecenekleri })}
+      >
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole('heading', { name: /giriş yap/i });
+    expect(screen.queryByText(/tekrar giriş yap/i)).toBeNull();
+  });
+
   it('oturum süresi dolduğunda da giriş ekranına düşüyor', async () => {
     /*
      * Aynı kök sebep: sunucu 401 diyorsa önbellekteki eski kullanıcı

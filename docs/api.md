@@ -39,6 +39,12 @@ bile oturumlar ele geçirilemez.
 | Mutlak ömür | 30 gün | Çalınan bir oturumun sonsuza kadar yaşamasını |
 | Boşta kalma | 5 dakika | Sekmeyi açık unutup masadan kalkmayı |
 
+Boşta kalma yüzünden kapanan oturumun 401'i ayrı bir `type` taşıyor:
+`…/errors/session-idle`. Arayüz giriş ekranında "bir süre işlem
+yapılmadı" notunu yalnızca bunu görünce gösteriyor — hiç giriş yapmamış
+ziyaretçiye göstermek gürültü olurdu. Ayrımı **metne bakarak** yapmak,
+cümle her değiştiğinde sessizce bozulan bir bağ kurardı.
+
 Boşta kalma sayacı her istekte tazeleniyor. `lastSeenAt` yazma sıklığı
 (1 dakika) bu sınırdan belirgin şekilde küçük tutuluyor: ikisi eşit olsaydı
 kesintisiz çalışan bir kullanıcının kaydı bayatlayıp tam sınırda "boşta"

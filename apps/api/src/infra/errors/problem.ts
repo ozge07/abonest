@@ -4,9 +4,18 @@ import {
   type ExceptionFilter,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Logger } from 'pino';
+
+/**
+ * Oturum, uzun süre işlem yapılmadığı için kapandı.
+ *
+ * Kendi sınıfı var çünkü istemcinin bunu diğer 401'lerden ayırması
+ * gerekiyor; ayrım yanıttaki `type` alanından okunuyor.
+ */
+export class OturumBostaKaldi extends UnauthorizedException {}
 
 /**
  * RFC 9457 — Problem Details for HTTP APIs.
@@ -93,6 +102,24 @@ export class ProblemFilter implements ExceptionFilter {
         instance: url,
         requestId,
         errors: exception.fields,
+      };
+    }
+
+    /*
+     * Boşta kalma, sıradan bir 401'den ayrı bir `type` alıyor.
+     *
+     * İstemci giriş ekranında "bir süre işlem yapılmadı" notunu yalnızca bu
+     * durumda gösteriyor; hiç giriş yapmamış ziyaretçiye göstermek gürültü
+     * olurdu. Ayrımı **metne bakarak** yapmak, cümle her değiştiğinde
+     * sessizce bozulan bir bağ kurardı.
+     */
+    if (exception instanceof OturumBostaKaldi) {
+      return {
+        type: `${TYPE_BASE}/session-idle`,
+        title: exception.message,
+        status: HttpStatus.UNAUTHORIZED,
+        instance: url,
+        requestId,
       };
     }
 
