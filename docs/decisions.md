@@ -421,7 +421,7 @@ silindiğine dair denetim kaydı bile tutulmuyordu.
 **Karar.** Yönetici rolü **eklenmedi**. İki şey yapıldı:
 
 1. Abonelik silme geri alınabilir hâle getirildi (hesap silmedeki desenin
-   aynısı): `deletedAt` işaretleniyor, günlük iş 30 gün sonra kalıcı
+   aynısı): `deletedAt` işaretleniyor, günlük iş 10 gün sonra kalıcı
    siliyor, kullanıcı kendi çöp kutusundan geri getirebiliyor.
 2. Veritabanı erişimiyle çalışan bir destek aracı yazıldı
    (`apps/api/tool/destek.ts`).
@@ -438,7 +438,7 @@ Destek aracı yeni bir yetki açmıyor: zaten veritabanına erişebilen biri her
 yazma işlemlerinde `--onayla` istiyor.
 
 **Sonuç.** Kazayla silme vakalarının çoğu operatöre hiç ulaşmıyor —
-kullanıcı kendi çözüyor. Karşılığında silinmiş kayıtlar 30 gün tabloda
+kullanıcı kendi çözüyor. Karşılığında silinmiş kayıtlar 10 gün tabloda
 duruyor ve her okumada elenmesi gerekiyor; bu yüzden `deletedAt` filtresi
 kapsanmış deponun temel koşuluna kondu, tek tek sorgulara bırakılmadı.
 
@@ -452,7 +452,7 @@ silme düğmesi de bu yüzden var.
 
 ## ADR-0024 · Silinmiş hesap doğru şifreyle giriş yapınca geri geliyor
 
-**Bağlam.** Hesap silme yumuşaktı: kayıt 30 gün duruyor, günlük iş sonra
+**Bağlam.** Hesap silme yumuşaktı: kayıt bir süre duruyor, günlük iş sonra
 kalıcı siliyor. Ama geri getirmenin **uygulama içinde hiçbir yolu yoktu**.
 Giriş ucu silinmiş hesabı, kayıtsız bir adresle aynı yanıtla reddediyordu:
 "E-posta ya da şifre hatalı".
@@ -463,7 +463,7 @@ görünmüyordu. Tek çıkış yolu uygulamayı çalıştıran kişinin `destek`
 aracıyla müdahale etmesiydi — yani kullanıcının kurtuluşu bir başkasının
 müsaitliğine bağlıydı.
 
-**Karar.** 30 günlük pencere içindeki silinmiş hesap, **şifre doğrulandıktan
+**Karar.** Geri getirme penceresi içindeki silinmiş hesap, **şifre doğrulandıktan
 sonra** giriş sırasında geri açılıyor. Yanıt `restored: true` taşıyor ve
 arayüz kullanıcıya "hesabın geri getirildi" diyor. Denetim kaydına
 `account.restored` yazılıyor.
@@ -482,7 +482,35 @@ doğrudan yardım ederdi ama hangi adreslerin kayıtlı olduğunu tarayarak
 aynısı.
 
 **Sınır.** Pencere dolduysa geri getirilmiyor; kayıt temizlik sırasını
-bekliyor. "30 gün sonra kalıcı olarak silinecek" sözünü, silmeyi süresiz
+bekliyor. "N gün sonra kalıcı olarak silinecek" sözünü, silmeyi süresiz
 diriltilebilir tutarak bozmuyoruz. Operatör aracı (`hesap-geri-getir`) bu
 sınırı aşabiliyor: kayıt hâlâ tablodaysa geri getiriyor ve süre dolmuşsa
 uyarı yazıyor.
+
+---
+
+## ADR-0025 · Geri alma penceresi 10 gün ve tek sabitte
+
+**Bağlam.** Silinen hesap ve abonelikler 30 gün sonra kalıcı olarak
+temizleniyordu. Süre uzun: kullanıcının fikrini değiştirmesi günler değil
+saatler alıyor, buna karşılık silinmiş veri bir ay boyunca tabloda duruyor
+ve her okumada eleniyor.
+
+Sayı ayrıca **iki yerde ayrı ayrı** duruyordu: sunucuda sabit olarak, arayüz
+metinlerinde ise cümlenin içine elle yazılmış hâlde ("30 gün içinde geri
+getirebilirsin"). Süreyi değiştirmek davranışı değiştirir ama ekrandaki söz
+eski kalırdı — kullanıcıya tutmadığımız bir şey söylemiş olurduk.
+
+**Karar.** Süre **10 gün**. Sabit `@abonelik/shared` içine taşındı;
+sunucu da arayüz de aynı yerden okuyor, arayüz metinleri sayıyı
+şablondan basıyor.
+
+**Kapsam: hem hesap hem abonelik silme.** İkisine ayrı süre vermek
+kullanıcının kafasında iki farklı kural demek olurdu; "silinen şey 10 gün
+duruyor" tek cümlede anlatılabiliyor.
+
+**Sonuç.** Süreyi değiştirmek artık tek satır: sabiti düzeltmek yetiyor,
+ekrandaki söz, sunucunun hesapladığı tarih, giriş ucunun geri getirme
+kararı ve temizlik işi kendiliğinden uyuyor. Testler de sabiti okuyor,
+yani süre değişince "31 gün önce silinmiş" gibi elle yazılmış sayılar
+sessizce yanlışa düşmüyor.

@@ -1,7 +1,13 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { CURRENCIES, adAlani, alanHatasi, sifreAlani } from '@abonelik/shared';
+import {
+  CURRENCIES,
+  PURGE_AFTER_DAYS,
+  adAlani,
+  alanHatasi,
+  sifreAlani,
+} from '@abonelik/shared';
 import { Alan, Dugme, HataKutusu, Secim } from '../components/form';
 import { OnayKutusu } from '../components/OnayKutusu';
 import { ApiError, api } from '../lib/api';
@@ -360,7 +366,7 @@ function cihazAdi(userAgent: string | null): string {
  * Hesap silme.
  *
  * En altta ve kırmızı çerçevede: kullanıcının buraya kazayla düşmesi zor
- * olmalı. Metin silmenin 30 gün geri alınabilir olduğunu söylüyor —
+ * olmalı. Metin silmenin geri alınabilir olduğunu söylüyor —
  * "kalıcı olarak siliniyor" demek doğru olmazdı, insanı olduğundan fazla
  * korkutmaktan başka işe yaramazdı.
  */
@@ -415,7 +421,7 @@ function TehlikeliBolum() {
   return (
     <Bolum
       baslik="Hesabı sil"
-      aciklama="Aboneliklerin, ödeme geçmişin ve bildirimlerin kapanır. 30 gün içinde tekrar giriş yaparak geri getirebilirsin; sonra veriler kalıcı olarak siliniyor."
+      aciklama={`Aboneliklerin, ödeme geçmişin ve bildirimlerin kapanır. ${PURGE_AFTER_DAYS} gün içinde tekrar giriş yaparak geri getirebilirsin; sonra veriler kalıcı olarak siliniyor.`}
       tehlikeli
     >
       <button
@@ -435,7 +441,7 @@ function TehlikeliBolum() {
       {soruluyor && (
         <OnayKutusu
           baslik="Hesabın silinsin mi?"
-          aciklama="Bütün aboneliklerin ve geçmişin kapatılıyor, açık oturumların düşüyor. 30 gün içinde aynı şifreyle giriş yaparsan hesabın geri gelir; o süre dolunca veriler kalıcı olarak siliniyor."
+          aciklama={`Bütün aboneliklerin ve geçmişin kapatılıyor, açık oturumların düşüyor. ${PURGE_AFTER_DAYS} gün içinde aynı şifreyle giriş yaparsan hesabın geri gelir; o süre dolunca veriler kalıcı olarak siliniyor.`}
           onaylaEtiketi="Evet, hesabımı sil"
           bekliyor={sil.isPending}
           onOnayla={() => sil.mutate()}

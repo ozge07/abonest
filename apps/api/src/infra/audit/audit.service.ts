@@ -78,7 +78,7 @@ export type AuditAction =
   | 'auth.password_reset'
   | 'auth.email_verified'
   | 'account.deleted'
-  // Kullanıcı 30 günlük pencere içinde giriş yapıp silmeyi geri aldı.
+  // Kullanıcı geri getirme penceresi içinde giriş yapıp silmeyi geri aldı.
   | 'account.restored'
   | 'account.purged'
   | 'subscription.deleted';

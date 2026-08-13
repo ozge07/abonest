@@ -132,7 +132,7 @@ model User {
   locale          String    @default("tr")
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
-  deletedAt       DateTime?                  // 30 gün sonra kalıcı silinir
+  deletedAt       DateTime?                  // 10 gün sonra kalıcı silinir
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   @@index([deletedAt])                       // temizlik işi için
@@ -282,7 +282,7 @@ değil. Ölçüm gösterirse eklenir. **Erken optimizasyon yapmıyoruz.**
 
 | Veri | Süre |
 |---|---|
-| Silinen hesap | 30 gün sonra kalıcı silme (geri alınabilir pencere) |
+| Silinen hesap | 10 gün sonra kalıcı silme (geri alınabilir pencere) |
 | Audit log | 1 yıl (ücretsiz katmanın 0,5 GB sınırı için) |
 | Süresi dolmuş oturum | Günlük temizlik |
 | Okunmuş bildirim | 6 ay |

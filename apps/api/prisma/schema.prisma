@@ -53,7 +53,8 @@ model User {
   locale          String    @default("tr")
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
-  // Hesap silme geri alınabilir: 30 gün sonra temizlik işi kalıcı siliyor.
+  // Hesap silme geri alınabilir: PURGE_AFTER_DAYS gün sonra temizlik işi
+  // kalıcı siliyor (packages/shared/src/purge.ts).
   deletedAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -76,7 +76,7 @@ export class AuthService {
    * uygulamayı çalıştıran kişiye ulaşmaktı. Kendi hesabını silen bir
    * kullanıcının kurtuluşu bir başkasının müsaitliğine bağlı olamaz.
    *
-   * Şimdi 30 günlük pencere içindeyse ve **şifre doğruysa** hesap geri
+   * Şimdi geri getirme penceresi içindeyse ve **şifre doğruysa** hesap geri
    * açılıyor. Bu bilgi sızdırmıyor: şifreyi bilen kişi zaten hesabın
    * sahibi. Şifre yanlışsa hiçbir şey değişmiyor ve yanıt eskisiyle aynı,
    * yani silinmiş bir hesabın varlığı yine öğrenilemiyor.

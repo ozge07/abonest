@@ -116,8 +116,8 @@ export class DailyJobService {
    * Silinme talebi üzerinden bekleme süresi geçmiş hesapları **kalıcı**
    * siliyor.
    *
-   * Hesap silme yumuşak: `deletedAt` işaretleniyor ve kullanıcıya "30 gün
-   * sonra kalıcı silinecek" deniyor. Bu vaadi tutan kod buydu ve yoktu —
+   * Hesap silme yumuşak: `deletedAt` işaretleniyor ve kullanıcıya kaç gün
+   * sonra kalıcı silineceği söyleniyor. Bu vaadi tutan kod buydu ve yoktu —
    * yani veri süresiz duruyordu. Bir kullanıcıya verisinin sileneceğini
    * söyleyip silmemek, teknik bir eksiklik değil, sözü tutmamak.
    *

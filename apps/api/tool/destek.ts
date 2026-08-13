@@ -54,7 +54,7 @@ Okuma komutları:
 Yazma komutları (--onayla gerektirir):
   geri-getir <abonelik-id>     Silinmiş aboneliği geri getirir
   hesap-geri-getir <e-posta>   Silinmiş hesabı geri getirir
-  hesap-sil <e-posta>          Hesabı siler (30 gün sonra kalıcı)
+  hesap-sil <e-posta>          Hesabı siler (${PURGE_AFTER_DAYS} gün sonra kalıcı)
 
 Örnek:
   npm run destek -w @abonelik/api -- abonelikler ozge@ornek.com
@@ -107,7 +107,7 @@ async function main(): Promise<void> {
       console.log(`Son giriş    : ${gun(user.lastLoginAt)}`);
       console.log(`E-posta doğr.: ${user.emailVerifiedAt === null ? 'HAYIR' : 'evet'}`);
       console.log(
-        `Hesap silme  : ${user.deletedAt === null ? '—' : `${gun(user.deletedAt)} (30 gün sonra kalıcı)`}`,
+        `Hesap silme  : ${user.deletedAt === null ? '—' : `${gun(user.deletedAt)} (${PURGE_AFTER_DAYS} gün sonra kalıcı)`}`,
       );
       console.log(`Abonelik     : ${aktif} aktif, ${silinmis} çöp kutusunda`);
       break;
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
       }
 
       /*
-       * Çoğu durumda bu komuta gerek yok: kullanıcı 30 gün içinde aynı
+       * Çoğu durumda bu komuta gerek yok: kullanıcı pencere içinde aynı
        * şifreyle giriş yaparsa hesap kendiliğinden geri geliyor
        * (ADR-0024). Komut, pencerenin dolduğu ya da kullanıcının şifresini
        * de unuttuğu durumlar için duruyor.
@@ -237,7 +237,9 @@ async function main(): Promise<void> {
       // Oturumlar hemen düşüyor; silinmiş hesabın açık oturumu kalmamalı.
       await prisma.session.deleteMany({ where: { userId: user.id } });
       console.log(`Silindi: ${user.email}`);
-      console.log('30 gün içinde `hesap-geri-getir` ile geri alınabilir.');
+      console.log(
+        `${PURGE_AFTER_DAYS} gün içinde \`hesap-geri-getir\` ile geri alınabilir.`,
+      );
       break;
     }
 

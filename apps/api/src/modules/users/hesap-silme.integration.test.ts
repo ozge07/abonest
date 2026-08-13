@@ -130,7 +130,7 @@ describe('hesap silme', () => {
   });
 
   it('kullanıcıya söylenen tarih gerçek temizlik süresiyle aynı', async () => {
-    // Ekranda "30 gün" yazıp 7 gün sonra silmek verilen sözü bozardı.
+    // Ekranda bir süre yazıp daha erken silmek verilen sözü bozardı.
     const kullanici = await kullaniciOlustur();
     const jeton = await oturumAc(kullanici.id);
 
@@ -185,7 +185,7 @@ describe('silmeyi geri alma', () => {
   });
 
   it('süre dolduktan sonra doğru şifre bile geri getirmiyor', async () => {
-    // "30 gün sonra kalıcı olarak silinecek" sözünün karşılığı: o günden
+    // "N gün sonra kalıcı olarak silinecek" sözünün karşılığı: o günden
     // sonra kayıt temizlik sırasını bekliyor, diriltilmiyor.
     const kullanici = await kullaniciOlustur();
     await istek('DELETE', '/me', await oturumAc(kullanici.id));

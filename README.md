@@ -133,7 +133,7 @@ npm run destek -w @abonelik/api -- hesap-sil a@b.com --onayla
 npm run destek -w @abonelik/api -- hesap-geri-getir a@b.com --onayla
 ```
 
-Hesap geri getirmede **çoğu zaman bu komuta gerek yok**: kullanıcı 30 gün
+Hesap geri getirmede **çoğu zaman bu komuta gerek yok**: kullanıcı 10 gün
 içinde aynı e-posta ve şifreyle giriş yaparsa hesabı kendiliğinden geri
 geliyor ve ekranda bunu söyleyen bir şerit çıkıyor (ADR-0024). Komut,
 pencerenin dolduğu ya da kullanıcının şifresini de unuttuğu durumlar için
@@ -144,7 +144,7 @@ Yazma işlemleri `--onayla` olmadan çalışmıyor: yanlış hesapta çalıştı
 bir komut, düzeltmeye çalıştığı sorundan büyük olabilir.
 
 Çoğu durumda araca gerek kalmıyor — abonelik silme geri alınabilir ve
-kullanıcı kendi çöp kutusundan 30 gün içinde geri getirebiliyor.
+kullanıcı kendi çöp kutusundan 10 gün içinde geri getirebiliyor.
 
 ## Günlük iş
 

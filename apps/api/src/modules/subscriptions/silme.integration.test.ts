@@ -18,6 +18,7 @@ import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module.js';
 import { configureApp } from '../../app.setup.js';
+import { PURGE_AFTER_DAYS } from '@abonelik/shared';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { SessionService } from '../auth/session.service.js';
 import { DailyJobService } from '../jobs/daily.service.js';
@@ -305,7 +306,9 @@ describe('kalıcı temizlik', () => {
 
     await prisma.subscription.update({
       where: { id },
-      data: { deletedAt: new Date(Date.now() - 31 * 86_400_000) },
+      data: {
+        deletedAt: new Date(Date.now() - (PURGE_AFTER_DAYS + 1) * 86_400_000),
+      },
     });
 
     const sonuc = await daily.run();

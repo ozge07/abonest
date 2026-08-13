@@ -42,9 +42,9 @@ değerinin çoğu HTML uygulamalarına yönelik varsayılanlardan geliyor.
 HSTS geliştirmede bilerek gönderilmiyor: yerelde http üzerinden çalışıyoruz ve
 tarayıcıya "bu alan adına hep https ile gel" demek geliştirmeyi kilitler.
 
-### 3. "30 gün sonra kalıcı silinecek" sözü tutulmuyordu
+### 3. "Belirli bir süre sonra kalıcı silinecek" sözü tutulmuyordu
 
-`DELETE /me` hesabı `deletedAt` ile işaretliyor ve kullanıcıya 30 gün sonra
+`DELETE /me` hesabı `deletedAt` ile işaretliyor ve kullanıcıya bir süre sonra
 kalıcı silineceğini söylüyordu. **Bunu yapan hiçbir kod yoktu**; veri süresiz
 duruyordu.
 

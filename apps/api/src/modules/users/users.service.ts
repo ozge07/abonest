@@ -67,7 +67,8 @@ export class UsersService {
   /**
    * Hesabı silinmiş olarak işaretler.
    *
-   * Kalıcı silme 30 gün sonra, temizlik işiyle. Aradaki pencere kazayla
+   * Kalıcı silme `PURGE_AFTER_DAYS` gün sonra, temizlik işiyle. Aradaki
+   * pencere kazayla
    * silmeyi geri alınabilir kılıyor; kullanıcı verisini anında yok etmek
    * geri dönüşü olmayan bir işlem.
    */

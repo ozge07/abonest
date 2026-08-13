@@ -13,6 +13,7 @@ import {
   tarihKisaYaz,
   tarihYaz,
 } from '../lib/money';
+import { PURGE_AFTER_DAYS } from '@abonelik/shared';
 import type { Abonelik, Sayfa } from '../lib/types';
 
 /**
@@ -150,7 +151,7 @@ export function AbonelikSayfasi() {
       {silinecek !== null && (
         <OnayKutusu
           baslik={`${silinecek.name} silinsin mi?`}
-          aciklama="Abonelik çöp kutusuna taşınıyor ve 30 gün içinde geri getirebilirsin; sonra kalıcı olarak siliniyor. Yalnızca ödemeyi durdurmak istiyorsan 'İptal' daha doğru — geçmişin listede kalıyor."
+          aciklama={`Abonelik çöp kutusuna taşınıyor ve ${PURGE_AFTER_DAYS} gün içinde geri getirebilirsin; sonra kalıcı olarak siliniyor. Yalnızca ödemeyi durdurmak istiyorsan 'İptal' daha doğru — geçmişin listede kalıyor.`}
           bekliyor={sil.isPending}
           onOnayla={() => sil.mutate(silinecek.id)}
           onVazgec={() => setSilinecek(null)}
@@ -201,7 +202,7 @@ function CopKutusu({
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {abonelik.deletedAt != null &&
                   `${tarihYaz(abonelik.deletedAt.slice(0, 10))} tarihinde silindi · `}
-                30 gün sonra kalıcı olarak siliniyor
+                {PURGE_AFTER_DAYS} gün sonra kalıcı olarak siliniyor
               </p>
             </div>
 

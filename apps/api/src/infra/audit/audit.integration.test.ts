@@ -3,7 +3,7 @@
  *
  * İki iddia sınanıyor:
  * 1. Güvenlik olayları kaydediliyor ve kayıtta hassas veri **yok**.
- * 2. "30 gün sonra kalıcı silinecek" sözü tutuluyor.
+ * 2. "N gün sonra kalıcı silinecek" sözü tutuluyor.
  */
 
 import 'dotenv/config';
@@ -17,6 +17,7 @@ import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module.js';
 import { configureApp } from '../../app.setup.js';
+import { PURGE_AFTER_DAYS } from '@abonelik/shared';
 import { PrismaService } from '../database/prisma.service.js';
 import { PasswordService } from '../../modules/auth/password.service.js';
 import { DailyJobService } from '../../modules/jobs/daily.service.js';
@@ -171,7 +172,7 @@ describe('denetim kaydı', () => {
 });
 
 describe('silinen hesabın kalıcı temizliği', () => {
-  it('30 günü dolmuş hesabı ve verisini siliyor', async () => {
+  it('bekleme süresi dolmuş hesabı ve verisini siliyor', async () => {
     const kullanici = await kullaniciOlustur();
     const kategori = await prisma.category.findFirstOrThrow({
       where: { userId: null },
@@ -188,10 +189,12 @@ describe('silinen hesabın kalıcı temizliği', () => {
       },
     });
 
-    // 31 gün önce silinmiş.
+    // Bekleme süresi bir gün önce dolmuş.
     await prisma.user.update({
       where: { id: kullanici.id },
-      data: { deletedAt: new Date(Date.now() - 31 * 86_400_000) },
+      data: {
+        deletedAt: new Date(Date.now() - (PURGE_AFTER_DAYS + 1) * 86_400_000),
+      },
     });
 
     const sonuc = await daily.run();

@@ -1,26 +1,13 @@
 /**
- * Silinmiş hesabın kalıcı temizlenmesine kadar geçen süre.
+ * Silme penceresi sabitinin sunucu tarafındaki girişi.
  *
- * Kendi modülünde, çünkü üç ayrı yer aynı sayıyı kullanıyor: hesabı silen
- * servis (kullanıcıya söylenen tarih), günlük temizlik işi (kaydı gerçekten
- * silen taraf) ve giriş ucu (silmeyi geri alıp almayacağına karar veren
- * taraf). Bu dosya hiçbir şey `import` etmiyor; sabit `users.service.ts`
- * içinde kalsaydı giriş ucu onu okumak için kullanıcı servisine bağlanacak
- * ve döngüsel bir bağımlılık doğacaktı.
+ * Değerin kendisi `@abonelik/shared` içinde: arayüz de aynı sayıyı okuyup
+ * kullanıcıya "kaç gün içinde geri getirebilirsin" diye yazıyor. İki yerde
+ * ayrı tutulsaydı, süre değiştiğinde davranış değişir ama ekrandaki söz
+ * eski kalırdı.
  *
- * İki yerde ayrı sabit tutmak, kullanıcıya söylenen süre ile gerçekte
- * beklenen sürenin sessizce ayrışması demek olurdu.
+ * Bu dosya yalnızca yeniden dışa aktarıyor; başka bir şey `import`
+ * etmediği için giriş ucu onu kullanıcı servisine bağlanmadan okuyabiliyor
+ * (döngüsel bağımlılık olmuyor).
  */
-export const PURGE_AFTER_DAYS = 30;
-
-/**
- * Silinmiş bir hesabın geri getirilme penceresi kapandı mı.
- *
- * Silinmemiş hesap için `false`: soru zaten sorulmuyor.
- */
-export function geriGetirmeSuresiDoldu(deletedAt: Date | null): boolean {
-  if (deletedAt === null) {
-    return false;
-  }
-  return Date.now() - deletedAt.getTime() > PURGE_AFTER_DAYS * 86_400_000;
-}
+export { PURGE_AFTER_DAYS, geriGetirmeSuresiDoldu } from '@abonelik/shared';

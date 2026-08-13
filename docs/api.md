@@ -94,7 +94,7 @@ POST   /auth/forgot-password    202   ← e-posta var/yok AYRIMI SIZDIRILMAZ
 POST   /auth/reset-password     204 · 410
 ```
 
-`login` yanıtı `restored` alanı taşıyor: giriş, 30 günlük pencere içindeki
+`login` yanıtı `restored` alanı taşıyor: giriş, 10 günlük pencere içindeki
 silinmiş bir hesabı geri açtıysa `true`. Geri getirme **şifre doğrulandıktan
 sonra** yapılıyor; yanlış şifre hesabı diriltmiyor ve yanıt kayıtsız adresle
 aynı kalıyor (ADR-0024).
@@ -108,7 +108,7 @@ olduğunu tarayarak öğrenmeyi mümkün kılar.
 GET    /me                      200
 PATCH  /me                      200   ad, para birimi, saat dilimi, dil
 PATCH  /me/password             204   → tüm diğer oturumlar düşer
-DELETE /me                      202   30 günlük geri alınabilir silme
+DELETE /me                      202   10 günlük geri alınabilir silme
 GET    /me/sessions             200   aktif oturumlar; `current: true` çağıran
                                       isteğin oturumunu işaretler
 DELETE /me/sessions/{id}        204   başkasının oturumu da 204 alır ama
@@ -133,7 +133,7 @@ GET    /subscriptions           200
 POST   /subscriptions           201
 GET    /subscriptions/{id}      200 · 404
 PATCH  /subscriptions/{id}      200 · 404 · 422
-DELETE /subscriptions/{id}      204   çöp kutusuna taşır (30 gün geri alınabilir)
+DELETE /subscriptions/{id}      204   çöp kutusuna taşır (10 gün geri alınabilir)
 GET    /subscriptions/deleted   200   çöp kutusu
 POST   /subscriptions/{id}/restore 200   silmeyi geri alır
 DELETE /subscriptions/{id}/purge   204   kalıcı siler, geri dönüşü yok
