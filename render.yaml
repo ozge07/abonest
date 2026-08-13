@@ -43,7 +43,16 @@ services:
     buildCommand: |
       set -euo pipefail
 
-      npm ci
+      # `--include=dev` şart: servis `NODE_ENV=production` ile çalışıyor ve
+      # npm bunu görünce geliştirme bağımlılıklarını **atlıyor**. Derleme
+      # onlarsız yapılamıyor — `tsc`, `vite` ve tip paketleri orada.
+      #
+      # Bu, ilk dağıtımı düşüren hataydı: `@types/nodemailer` kurulmayınca
+      # api derlemesi "Could not find a declaration file for module
+      # 'nodemailer'" diyerek durdu. Yerelde görünmüyordu çünkü geliştirme
+      # makinesinde `NODE_ENV` üretim değil. `NODE_ENV=production npm ci`
+      # ile birebir yeniden üretildi.
+      npm ci --include=dev
       npm run build -w @abonelik/shared
       npm run prisma:generate -w @abonelik/api
       npm run build -w @abonelik/api
