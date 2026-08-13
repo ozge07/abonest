@@ -19,7 +19,16 @@ export function BildirimZili() {
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => api.get<{ count: number }>('/notifications/unread-count'),
     // Bildirim gece üretiliyor; sık sormanın faydası yok.
-    refetchInterval: 5 * 60_000,
+    /*
+     * Arka planda yoklama **yok**.
+     *
+     * Beş dakikada bir istek atıyordu ve bu, boşta kalma zaman aşımını
+     * işlevsiz kılıyordu: kullanıcı masadan kalksa bile sayaç her yoklamada
+     * sıfırlanıyor, oturum hiç kapanmıyordu. Zaten oturum beş dakika
+     * boşta kalınca kapanıyor; ondan sonra yoklamanın kime ne faydası olur?
+     *
+     * Bildirimler artık sayfa gezildiğinde tazeleniyor.
+     */
   });
 
   const liste = useQuery({

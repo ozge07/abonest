@@ -575,3 +575,76 @@ describe('6 haneli doğrulama kodu', () => {
     }
   });
 });
+
+describe('boşta kalma zaman aşımı', () => {
+  it('beş dakika işlem yapılmayan oturum kapanıyor', async () => {
+    /*
+     * Kullanıcı sekmeyi açık unutup masadan kalkabiliyor. Mutlak ömür
+     * (30 gün) bu durumu yakalamıyor; boşta kalma sınırı yakalıyor.
+     */
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    expect((await istek('GET', '/me', jeton)).kod).toBe(200);
+
+    // Oturumu altı dakika dokunulmamış gibi gösteriyoruz.
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 6 * 60 * 1000) },
+    });
+
+    expect((await istek('GET', '/me', jeton)).kod).toBe(401);
+  });
+
+  it('sınırın altındaki oturum açık kalıyor', async () => {
+    // Dört dakika önce kullanılmış oturum atılmamalı; aksi hâlde okuma
+    // yapan kullanıcı durup dururken dışarı atılır.
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 4 * 60 * 1000) },
+    });
+
+    expect((await istek('GET', '/me', jeton)).kod).toBe(200);
+  });
+
+  it('her istek sayacı tazeliyor', async () => {
+    // Aksi hâlde kesintisiz çalışan kullanıcı da beş dakikada atılırdı.
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 4 * 60 * 1000) },
+    });
+
+    // Bu istek `lastSeenAt`i tazeliyor…
+    expect((await istek('GET', '/me', jeton)).kod).toBe(200);
+
+    // …dolayısıyla iki dakika sonrası hâlâ geçerli sayılıyor.
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 2 * 60 * 1000) },
+    });
+    expect((await istek('GET', '/me', jeton)).kod).toBe(200);
+  });
+
+  it('kapanan oturum veritabanından siliniyor', async () => {
+    // Sadece reddetmek yetmez; kayıt kalırsa tablo şişer ve "açık
+    // oturumlar" listesi ölü satır gösterir.
+    const kullanici = await kullaniciOlustur();
+    const jeton = await girisYap(kullanici.email);
+
+    await prisma.session.updateMany({
+      where: { userId: kullanici.id },
+      data: { lastSeenAt: new Date(Date.now() - 10 * 60 * 1000) },
+    });
+    await istek('GET', '/me', jeton);
+
+    expect(
+      await prisma.session.count({ where: { userId: kullanici.id } }),
+    ).toBe(0);
+  });
+});

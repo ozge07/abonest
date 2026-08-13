@@ -32,6 +32,18 @@ korumanın dayandığı nokta bu (bkz. ADR-0013).
 Veritabanında ham token **durmaz**, yalnızca SHA-256 özeti. Veritabanı sızsa
 bile oturumlar ele geçirilemez.
 
+**Oturumun iki ayrı sınırı var:**
+
+| Sınır | Süre | Ne yakalıyor |
+|---|---|---|
+| Mutlak ömür | 30 gün | Çalınan bir oturumun sonsuza kadar yaşamasını |
+| Boşta kalma | 5 dakika | Sekmeyi açık unutup masadan kalkmayı |
+
+Boşta kalma sayacı her istekte tazeleniyor. `lastSeenAt` yazma sıklığı
+(1 dakika) bu sınırdan belirgin şekilde küçük tutuluyor: ikisi eşit olsaydı
+kesintisiz çalışan bir kullanıcının kaydı bayatlayıp tam sınırda "boşta"
+sayılabilirdi.
+
 ## Hata biçimi — RFC 9457
 
 Kendi formatımızı uydurmuyoruz; standart var.

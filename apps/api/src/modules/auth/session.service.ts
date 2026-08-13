@@ -7,13 +7,28 @@ import { TokenService } from './token.service.js';
 const SESSION_TTL_DAYS = 30;
 
 /**
+ * Hiç istek gelmezse oturum bu süre sonunda kapanıyor.
+ *
+ * Mutlak ömürden (30 gün) ayrı bir sınır: kullanıcı bilgisayarın başından
+ * kalkıp sekmeyi açık unutabiliyor. Beş dakika, "başka sekmeye geçtim"
+ * ile "masadan kalktım" arasındaki farkı yakalayacak kadar kısa; geri
+ * dönen kullanıcı giriş ekranından devam ediyor.
+ */
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
  * `lastSeenAt` her istekte değil, en fazla bu sıklıkta yazılıyor.
  *
  * Her istekte güncellemek, salt okunur bir sayfa gezintisini bile yazma
- * işlemine çevirirdi. Beş dakikalık çözünürlük "bu oturum ne zaman
- * kullanıldı" sorusunu cevaplamak için fazlasıyla yeterli.
+ * işlemine çevirirdi.
+ *
+ * **Bu süre boşta kalma sınırından belirgin şekilde küçük olmak zorunda.**
+ * İkisi de beş dakika olsaydı, kesintisiz çalışan bir kullanıcının kaydı
+ * beş dakika bayatlayabilir ve tam da sınırda "boşta" sayılıp atılabilirdi.
+ * Bir dakikalık çözünürlükle en kötü ihtimalde dört dakikalık gerçek
+ * boşluk gerekiyor.
  */
-const LAST_SEEN_REFRESH_MS = 5 * 60 * 1000;
+const LAST_SEEN_REFRESH_MS = 60 * 1000;
 
 export interface SessionUser {
   id: string;
@@ -86,6 +101,13 @@ export class SessionService {
     if (session.expiresAt.getTime() <= Date.now()) {
       // Süresi dolmuş oturumu hemen siliyoruz; temizlik işini beklemek
       // tabloyu şişiriyor.
+      await this.prisma.session.delete({ where: { id: session.id } });
+      return null;
+    }
+
+    // Boşta kalma sınırı: mutlak ömür dolmamış olsa da, uzun süre
+    // kullanılmayan oturum kapanıyor.
+    if (Date.now() - session.lastSeenAt.getTime() > IDLE_TIMEOUT_MS) {
       await this.prisma.session.delete({ where: { id: session.id } });
       return null;
     }
