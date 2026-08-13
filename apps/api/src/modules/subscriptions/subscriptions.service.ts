@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import type { Logger } from 'pino';
 import {
   annualizedMinor,
   monthlyEquivalentMinor,
@@ -11,8 +12,10 @@ import {
 } from '@abonelik/shared';
 import { AuditService } from '../../infra/audit/audit.service.js';
 import { PrismaService } from '../../infra/database/prisma.service.js';
+import { LOGGER } from '../../infra/logger/logger.token.js';
 import { scopeTo } from '../../infra/database/scoped.repository.js';
 import { OccurrenceService, today } from './occurrence.service.js';
+import { HatirlatmaService } from '../notifications/hatirlatma.service.js';
 import type {
   CreateSubscriptionInput,
   ListQuery,
@@ -25,6 +28,8 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly occurrences_: OccurrenceService,
     private readonly audit: AuditService,
+    private readonly hatirlatmalar: HatirlatmaService,
+    @Inject(LOGGER) private readonly logger: Logger,
   ) {}
 
   async list(userId: string, query: ListQuery) {
@@ -82,6 +87,27 @@ export class SubscriptionsService {
     });
 
     await this.occurrences_.syncFor(row.id);
+
+    /*
+     * Abonelik zaten hatırlatma penceresinin içindeyse posta hemen gitsin.
+     *
+     * Beklemek "yarın" hatırlatmasını tamamen kaçırıyordu: ilk çalıştırma
+     * ertesi sabahtı ve o zaman ödeme çoktan "bugün" olmuştu.
+     *
+     * **Yanıtı bekletmiyor.** E-posta sağlayıcısına gitmek saniyeler
+     * sürebiliyor; kullanıcı "kaydet"e bastıktan sonra o kadar beklememeli.
+     * Hata da isteği düşürmüyor — abonelik kaydedildi, hatırlatma
+     * gönderilemediyse sabahki iş tekrar deneyecek.
+     */
+    void this.hatirlatmalar
+      .calistir(today(), row.id)
+      .catch((hata: unknown) => {
+        this.logger.warn(
+          { hata, subscriptionId: row.id },
+          'Ekleme anında hatırlatma gönderilemedi; günlük iş tekrar deneyecek',
+        );
+      });
+
     return toDto(row);
   }
 

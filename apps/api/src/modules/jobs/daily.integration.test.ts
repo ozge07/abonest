@@ -443,3 +443,111 @@ describe('tetikleyici ucu', () => {
     expect(yanit.statusCode).toBe(403);
   });
 });
+
+describe('abonelik eklendiği anda hatırlatma', () => {
+  it('ödemesi yarın olan abonelik eklenince posta hemen gidiyor', async () => {
+    /*
+     * Şikâyet: "ödemesi yarın olan bir abonelik ekledim, e-posta ne zaman
+     * gelecek?" Beklemek "yarın" hatırlatmasını tamamen kaçırıyordu: ilk
+     * çalıştırma ertesi sabahtı ve o zaman ödeme çoktan "bugün" olmuştu.
+     */
+    const kullanici = await kullaniciOlustur();
+    const jeton = kullanici.token;
+    const yarin = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+
+    gidenler.length = 0;
+    const kategori = await prisma.category.findFirstOrThrow({
+      where: { userId: null },
+    });
+    const yanit = await app.inject({
+      method: 'POST',
+      url: `${KOK}/subscriptions`,
+      headers: {
+        authorization: `Bearer ${jeton}`,
+        'content-type': 'application/json',
+      },
+      payload: JSON.stringify({
+        name: 'Yarın Ödenecek',
+        categoryId: kategori.id,
+        priceMinor: 9900,
+        currency: 'TRY',
+        billingCycle: 'MONTHLY',
+        startDate: yarin,
+      }),
+    });
+    expect(yanit.statusCode).toBe(201);
+
+    // Gönderim yanıtı bekletmiyor; kısa bir soluk bırakıyoruz.
+    await new Promise((r) => setTimeout(r, 300));
+
+    const postalar = gidenler.filter((m) => m.to === kullanici.email);
+    expect(postalar).toHaveLength(1);
+    expect(postalar[0]?.subject).toContain('yarın');
+  });
+
+  it('pencere dışındaki abonelik eklenince posta gitmiyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    const jeton = kullanici.token;
+    const ileri = new Date(Date.now() + 20 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    gidenler.length = 0;
+    const kategori = await prisma.category.findFirstOrThrow({
+      where: { userId: null },
+    });
+    await app.inject({
+      method: 'POST',
+      url: `${KOK}/subscriptions`,
+      headers: {
+        authorization: `Bearer ${jeton}`,
+        'content-type': 'application/json',
+      },
+      payload: JSON.stringify({
+        name: 'Uzak',
+        categoryId: kategori.id,
+        priceMinor: 9900,
+        currency: 'TRY',
+        billingCycle: 'MONTHLY',
+        startDate: ileri,
+      }),
+    });
+    await new Promise((r) => setTimeout(r, 300));
+
+    expect(gidenler.filter((m) => m.to === kullanici.email)).toHaveLength(0);
+  });
+
+  it('sabahki iş aynı postayı ikinci kez göndermiyor', async () => {
+    // Ekleme anındaki çağrı ile günlük iş aynı gün çakışıyor; kullanıcı
+    // iki posta almamalı.
+    const kullanici = await kullaniciOlustur();
+    const jeton = kullanici.token;
+    const yarin = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+
+    gidenler.length = 0;
+    const kategori = await prisma.category.findFirstOrThrow({
+      where: { userId: null },
+    });
+    await app.inject({
+      method: 'POST',
+      url: `${KOK}/subscriptions`,
+      headers: {
+        authorization: `Bearer ${jeton}`,
+        'content-type': 'application/json',
+      },
+      payload: JSON.stringify({
+        name: 'Çakışma',
+        categoryId: kategori.id,
+        priceMinor: 9900,
+        currency: 'TRY',
+        billingCycle: 'MONTHLY',
+        startDate: yarin,
+      }),
+    });
+    await new Promise((r) => setTimeout(r, 300));
+
+    await daily.run();
+
+    expect(gidenler.filter((m) => m.to === kullanici.email)).toHaveLength(1);
+  });
+});
