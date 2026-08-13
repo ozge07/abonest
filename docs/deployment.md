@@ -16,11 +16,17 @@ API onu aynı origin'den sunuyor (bkz. ADR-0022).
 Redis yok, nesne depolama yok, mesaj kuyruğu yok. Bunlar bilinçli olarak
 seçilmedi (ADR-0004, ADR-0015).
 
-## Barındırma seçimi hakkında dürüst not
+## Barındırma seçimi
 
-**Bu belgede belirli bir sağlayıcı önerilmiyor, çünkü ücretsiz katman
-koşulları sık değişiyor ve doğrulayamadığım bir şeyi yazmak istemiyorum.**
-"Kredi kartı istemiyor" gibi bir bilgi altı ay içinde yanlış olabiliyor.
+Ücretsiz katman koşulları sık değişiyor, o yüzden aşağıdaki tablo bir
+**öneri değil, kontrol listesi**: seçmeden önce güncel fiyatlandırma
+sayfasını oku. Tarihli bilgiler Ağustos 2026'da bakıldığında geçerliydi.
+
+| Katman | Aday | Bakılacak |
+|---|---|---|
+| Veritabanı | Neon | Kartsız, kalıcı ücretsiz, 0,5 GB, boşta sıfıra iniyor |
+| Veritabanı | Supabase | Kartsız, 500 MB — **7 gün hareketsizlikte projeyi duraklatıyor** |
+| Uygulama | Render | Ücretsiz web servisi var, boşta uykuya geçiyor; kart isteyip istemediğini kayıt ekranında gör |
 
 Seçerken bakılacaklar:
 
@@ -31,13 +37,17 @@ Seçerken bakılacaklar:
    (GitHub Actions), yani uygulama uyusa bile günlük iş tetikleniyor ve
    çağrı uygulamayı uyandırıyor. İlk isteğin yavaş olması normal.
 3. **Veritabanının ömrü.** Bazı ücretsiz Postgres katmanları belirli bir
-   süre sonra siliniyor. Silinmeden önce yedek almanın yolunu bil.
+   süre sonra siliniyor ya da duraklatılıyor. Silinmeden önce yedek almanın
+   yolunu bil (aşağıda).
 4. **Giden e-posta.** Çoğu barındırma SMTP portlarını kapatıyor; e-posta
-   sağlayıcısının HTTP API'si olan biri gerekebilir.
+   sağlayıcısının HTTP API'si olan biri gerekebilir. **Bu zorunlu bir
+   adım:** `SMTP_HOST` tanımsızsa uygulama üretimde açılmayı reddediyor.
 
-Değerlendirmeye değer aday kategorileri: konteyner çalıştıran PaaS'lar,
-yönetilen Postgres sunan sağlayıcılar, ücretsiz e-posta gönderim
-servisleri. **Seçmeden önce güncel fiyatlandırma sayfasını oku.**
+**Sunucusuz (serverless) platformlar bu uygulamaya uymuyor.** Hız sınırı
+süreç belleğinde tutuluyor (ADR-0004: Redis yok); her isteğin ayrı bir
+örnekte koştuğu bir ortamda sınır örnek başına düşer ve kaba kuvvet
+koruması zayıflar. Sunucusuz bir hedef seçilecekse önce o sınırın
+dışarı taşınması gerekir.
 
 ## Ortam değişkenleri
 
@@ -68,28 +78,68 @@ görünür:
 
 ## Adımlar
 
+Aşağıdaki komutlar **temiz bir klonda birebir çalıştırılıp doğrulandı**
+(`npm ci`den üretim modunda ayağa kalkmış sürece kadar). Platforma özel
+karşılıkları `render.yaml` içinde.
+
 ```bash
-# 1. İmajı derle (depo kökünden)
-docker build -f apps/api/Dockerfile -t abonelik-takip .
+# 1. Kurulum
+npm ci
 
-# 2. Şemayı uygula — uygulamayı başlatmadan önce
-docker run --rm -e DATABASE_URL="$DATABASE_URL" abonelik-takip \
-  npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+# 2. Derleme — sıra zorunlu
+npm run build -w @abonelik/shared
+npx prisma generate --schema apps/api/prisma/schema.prisma
+npm run build -w @abonelik/api
+npm run build -w @abonelik/web
 
-# 3. Başlangıç verisi (kategoriler ve sağlayıcılar) — tekrar çalıştırılabilir
-docker run --rm -e DATABASE_URL="$DATABASE_URL" abonelik-takip \
-  node --experimental-strip-types apps/api/prisma/seed.ts
+# 3. Şema — uygulamayı başlatmadan ÖNCE
+npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
 
-# 4. Çalıştır
-docker run -d -p 3000:3000 --env-file .env.production abonelik-takip
+# 4. Başlangıç verisi (11 kategori, 30 sağlayıcı) — tekrar çalıştırılabilir
+node --experimental-strip-types apps/api/prisma/seed.ts
+
+# 5. Çalıştır
+node apps/api/dist/main.js
 ```
 
-> **Doğrulanmadı:** Bu imaj derlenip çalıştırılmadı — geliştirme makinesinde
-> Docker kurulu değildi. Dockerfile'ın mantığı ve dosya yerleşimi gözden
-> geçirildi (`apps/api/dist`ten `../../web/dist` yolu yerel çalıştırmayla
-> doğrulandı, `npm prune --omit=dev`in üretilmiş Prisma istemcisini
-> silmediği gerçek bir kopyada ölçüldü), ama `docker build` çalıştırılmadı.
-> İlk derlemede sürpriz çıkabilir.
+`prisma generate` veritabanına **bağlanmıyor**, dolayısıyla derleme
+aşamasında `DATABASE_URL` gerekmiyor — bu bilinçli (bkz.
+`apps/api/prisma.config.ts`). Adres bir sır; derleme ortamına ve imaja
+girmemeli.
+
+Arayüz ayrı bir yere kurulmuyor: `apps/api/dist` içinden `../../web/dist`
+olarak bulunup aynı origin'den sunuluyor. İki klasör de dağıtım hedefinde
+bulunmalı.
+
+### Konteyner olarak
+
+`apps/api/Dockerfile` depoda ve aynı yerleşimi üretiyor.
+
+> **Doğrulanmadı:** İmaj derlenip çalıştırılmadı — geliştirme makinesinde
+> Docker kurulu değil. Mantığı ve dosya yerleşimi gözden geçirildi, derleme
+> komutları yukarıdaki doğrulanmış sırayla aynı. İlk `docker build`
+> denemesinde sürpriz çıkabilir.
+
+## Sıfırdan yayına: sıra
+
+1. **Veritabanını aç** (Neon vb.), bağlantı adresini al. Adreste
+   `sslmode=require` gerekebiliyor.
+2. **Sırları üret** — ikisi farklı olmalı, aynıysa uygulama açılmıyor:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+   ```
+3. **E-posta sağlayıcısı ayarla.** Bu adım atlanamaz: `SMTP_HOST` yoksa
+   uygulama üretimde açılmayı reddediyor. Bağlantıyı önce yerelde dene:
+   ```bash
+   npm run eposta:dene -w @abonelik/api
+   ```
+4. **Uygulamayı bağla** (depoyu platforma, `render.yaml` varsa okutarak),
+   ortam değişkenlerini gir.
+5. **İlk dağıtımdan sonra** aşağıdaki kontrol listesini çalıştır.
+6. **GitHub deposuna iki sır ekle** (`API_URL`, `CRON_SECRET`), sonra
+   Actions sekmesinden günlük işi elle bir kez tetikle.
+7. **Kendine bir hesap aç** ve doğrulama e-postasının gerçekten geldiğini
+   gör. Gelmiyorsa günlüğe bak: e-posta gönderilemediğinde uyarı yazılıyor.
 
 ## Zamanlayıcı
 

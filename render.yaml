@@ -1,0 +1,74 @@
+# Render "blueprint" — depoyu bağlayıp bu dosyayı okutunca servis kuruluyor.
+#
+# Neden Docker değil de Node çalışma zamanı: aşağıdaki komutların hepsi
+# temiz bir klonda birebir çalıştırıldı ve doğrulandı. Dockerfile da depoda
+# duruyor (`apps/api/Dockerfile`) ve konteyner isteyen platformlar için —
+# ama bu makinede Docker kurulu olmadığı için imaj derlenmedi.
+#
+# Bu dosya Render'a özel; başka bir platform seçersen değerler aynı kalıyor,
+# yalnızca biçim değişiyor. Asıl bilgi burada: derleme komutu, başlatma
+# komutu, sağlık yolu ve ortam değişkenleri.
+
+services:
+  - type: web
+    name: abonest
+    runtime: node
+    plan: free
+    region: frankfurt
+
+    # Sıra zorunlu: shared önce, sonra Prisma istemcisi, sonra api ve web.
+    # `prisma generate` veritabanına bağlanmıyor; adres olmadan da çalışıyor
+    # (bkz. apps/api/prisma.config.ts).
+    buildCommand: |
+      npm ci
+      npm run build -w @abonelik/shared
+      npx prisma generate --schema apps/api/prisma/schema.prisma
+      npm run build -w @abonelik/api
+      npm run build -w @abonelik/web
+
+    # Şema ve başlangıç verisi her dağıtımda uygulanıyor; ikisi de
+    # tekrar çalıştırılabilir. Uygulamadan **önce** çalışmaları şart:
+    # eksik sütunla açılan bir sürüm ilk istekte patlar.
+    preDeployCommand: |
+      npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+      node --experimental-strip-types apps/api/prisma/seed.ts
+
+    startCommand: node apps/api/dist/main.js
+
+    # Kimlik doğrulama istemiyor ve veritabanına dokunmuyor: süreç ayakta mı
+    # sorusunu cevaplıyor. Veritabanı kontrolü ayrı uçta (`/ready`).
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Uygulamanın önünde platformun vekili var; `X-Forwarded-For` ondan
+      # geliyor. Kapalı olsaydı bütün istekler tek IP'den geliyor görünür ve
+      # IP tabanlı hız sınırı herkesi birlikte cezalandırırdı.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: LOG_LEVEL
+        value: info
+      # Aşağıdakiler panelden girilecek; `sync: false` "bunu ben vermeyeceğim,
+      # sen sor" demek. Sırları depoya yazmıyoruz.
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      # SMTP zorunlu: tanımsızsa uygulama üretimde açılmayı reddediyor,
+      # çünkü kullanıcılar doğrulama e-postası alamadan hesaplarında
+      # kilitli kalır.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

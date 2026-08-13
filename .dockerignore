@@ -1,0 +1,30 @@
+# Derleme bağlamına girmeyecekler.
+#
+# Dockerfile `COPY apps/api apps/api` gibi klasörleri olduğu gibi alıyor.
+# Bu dosya olmasaydı geliştirme makinesindeki `node_modules` ve `dist`
+# klasörleri de imaja kopyalanırdı: bağlam yüzlerce megabayta çıkar,
+# derleme yavaşlar ve daha kötüsü **yerelde derlenmiş çıktı imaja sızar** —
+# yani imajın içeriği derleme makinesine göre değişir, aynı commit'ten iki
+# farklı imaj çıkabilir.
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+
+# Sırlar. `.env` imaja girerse veritabanı adresi ve oturum sırrı imajı
+# çekebilen herkese açık olur.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+*.log
+.DS_Store
+
+# Belgeler ve testler çalışma zamanında gerekmiyor.
+docs
+*.md
+!README.md
