@@ -27,10 +27,22 @@ import type { Kullanici } from '../lib/types';
  * geri alması destek gerektiren işlem.
  */
 export function HesapSayfasi() {
+  const { kullanici } = useOturum();
+
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <h1 className="text-lg font-semibold">Hesabım</h1>
-      <ProfilBolumu />
+      {/*
+        `key`: profil formu alanlarını **ilk çizimde** kullanıcıdan
+        dolduruyor. Veri sonradan gelirse (ya da başka bir kullanıcıya
+        geçilirse) alanlar eskide kalırdı — form boş görünür, kaydete
+        basınca "ad en az 3 karakter" derdi. Kimlik değişince bileşen
+        yeniden kuruluyor ve alanlar doğru değerle başlıyor.
+
+        Uygulamada kabuk zaten kullanıcıyı bekliyor, yani bu durum bugün
+        oluşmuyor; ama doğruluğu o tesadüfe bırakmıyoruz.
+      */}
+      <ProfilBolumu key={kullanici?.id ?? 'yukleniyor'} />
       <SifreBolumu />
       <OturumlarBolumu />
       <TehlikeliBolum />

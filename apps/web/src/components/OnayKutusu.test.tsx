@@ -71,10 +71,18 @@ describe('onay kutusu', () => {
     expect(onOnayla).not.toHaveBeenCalled();
   });
 
-  it('beklerken sil düğmesi kilitli', () => {
-    // Çift tıklama iki silme isteği göndermemeli.
+  it('beklerken sil düğmesi kilitli ve etiketi değişmiyor', () => {
+    /*
+     * Çift tıklama iki silme isteği göndermemeli.
+     *
+     * Etiket de yerinde kalıyor: eskiden "Siliniyor…" ile değiştiriliyordu,
+     * yani kullanıcı tam da onay anında neyi onayladığını okuyamıyordu.
+     * Durum artık `aria-busy` ve dönen halkayla anlatılıyor.
+     */
     ciz({ bekliyor: true });
-    expect(screen.getByRole('button', { name: /siliniyor/i })).toBeDisabled();
+    const dugme = screen.getByRole('button', { name: /^sil$/i });
+    expect(dugme).toBeDisabled();
+    expect(dugme).toHaveAttribute('aria-busy', 'true');
   });
 
   it('buzlu cam bir kartın içinden açılsa da body altına çıkıyor', async () => {

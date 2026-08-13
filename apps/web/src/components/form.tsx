@@ -158,16 +158,64 @@ export function Dugme({
     <button
       type="button"
       disabled={bekliyor || rest.disabled}
+      // Ekran okuyucuya "bu düğme şu an çalışıyor" diyor; metin
+      // değişmediği için tek işaret görsel kalmasın.
+      aria-busy={bekliyor}
       className={[
-        'rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-md px-4 py-2',
+        'text-sm font-medium transition-colors disabled:opacity-50',
         ikincil
           ? 'border border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'
           : 'bg-marka-600 text-white hover:bg-marka-700',
       ].join(' ')}
       {...rest}
     >
-      {bekliyor ? 'Bekle…' : children}
+      {/*
+        Etiket **değişmiyor**, yanına dönen bir halka geliyor.
+        
+        Önce metin "Bekle…" ile değiştiriliyordu. İki sorunu vardı:
+        düğmenin genişliği zıplıyordu ve kullanıcı neye bastığını
+        okuyamıyordu — "Giriş yap"a bastıysa hâlâ "Giriş yap" görmeli,
+        sadece işin sürdüğünü de anlamalı.
+      */}
+      {bekliyor && <Donen />}
+      {children}
     </button>
+  );
+}
+
+/**
+ * Yükleniyor halkası.
+ *
+ * `currentColor` kullanıyor: birincil düğmede beyaz, ikincil düğmede
+ * metin rengiyle aynı oluyor, ayrıca renk vermek gerekmiyor.
+ *
+ * `aria-hidden`: durumu zaten `aria-busy` söylüyor, ekran okuyucu aynı
+ * şeyi iki kez duymasın.
+ */
+function Donen() {
+  return (
+    <svg
+      className="donen h-4 w-4 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeOpacity="0.25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

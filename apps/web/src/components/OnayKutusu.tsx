@@ -101,15 +101,25 @@ export function OnayKutusu({
             type="button"
             onClick={onOnayla}
             disabled={bekliyor}
+            aria-busy={bekliyor}
             className={[
-              'rounded-md px-3.5 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50',
+              'inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2',
+              'text-sm font-medium text-white transition-colors disabled:opacity-50',
               'focus-visible:ring-2 focus-visible:outline-none',
               tehlikeli
                 ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-500/40'
                 : 'bg-marka-600 hover:bg-marka-700 focus-visible:ring-marka-500/40',
             ].join(' ')}
           >
-            {bekliyor ? 'Siliniyor…' : onaylaEtiketi}
+            {/* Etiket sabit kalıyor; onay kutusunda hangi işlemi
+                onayladığını görmek daha da önemli. */}
+            {bekliyor && (
+              <svg className="donen h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            )}
+            {onaylaEtiketi}
           </button>
         </div>
       </div>

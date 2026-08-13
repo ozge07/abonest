@@ -218,6 +218,29 @@ describe('hesap silme', () => {
   });
 });
 
+describe('düğme yükleniyor durumu', () => {
+  it('etiket değişmiyor, düğme kilitleniyor ve durum bildiriliyor', async () => {
+    /*
+     * Eskiden metin "Bekle…" oluyordu: düğmenin genişliği zıplıyor ve
+     * kullanıcı neye bastığını okuyamıyordu. Etiket sabit, işaret ayrı.
+     */
+    varsayilan({
+      // Yanıt gelmesin ki "bekliyor" durumu ekranda kalsın.
+      '/me PATCH': () => new Response(new ReadableStream(), { status: 200 }),
+    });
+    const kullanici = userEvent.setup();
+    ciz();
+
+    // Profil yüklenmeden tıklamak doğrulamaya takılır ve istek hiç gitmez.
+    await screen.findByDisplayValue('Özge');
+    await kullanici.click(screen.getByRole('button', { name: 'Kaydet' }));
+
+    const dugme = await screen.findByRole('button', { name: 'Kaydet' });
+    expect(dugme).toBeDisabled();
+    expect(dugme).toHaveAttribute('aria-busy', 'true');
+  });
+});
+
 describe('açık oturumlar', () => {
   it('kullanıcı kendi oturumunu kapatamıyor', async () => {
     // İşaretsiz bir listede "şüpheli oturumu kapat" derken insan kendini
@@ -332,7 +355,8 @@ describe('profil', () => {
     const kullanici = userEvent.setup();
     ciz();
 
-    const ad = await screen.findByLabelText('Ad');
+    await screen.findByDisplayValue('Özge');
+    const ad = screen.getByLabelText('Ad');
     await kullanici.clear(ad);
     await kullanici.type(ad, 'Öz');
     await kullanici.click(screen.getByRole('button', { name: 'Kaydet' }));
@@ -349,7 +373,8 @@ describe('profil', () => {
     const kullanici = userEvent.setup();
     ciz();
 
-    const ad = await screen.findByLabelText('Ad');
+    await screen.findByDisplayValue('Özge');
+    const ad = screen.getByLabelText('Ad');
     await kullanici.clear(ad);
     await kullanici.type(ad, 'Özge N');
     await kullanici.selectOptions(

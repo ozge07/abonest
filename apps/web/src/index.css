@@ -57,6 +57,27 @@ html {
  * Vestibüler rahatsızlığı olan kullanıcılar için sürekli hareket gerçek bir
  * sorun. Uyarı kaybolmuyor — kenar sabit kalıyor, yalnızca hareket bitiyor.
  */
+/*
+ * Yükleniyor halkası.
+ *
+ * Süslemeden farklı olarak bu bir **durum göstergesi**: dönmeyi tamamen
+ * durdurmak "iş sürüyor mu" sorusunu cevapsız bırakırdı. Hareketi azaltmak
+ * isteyen kullanıcıda duruyor ama yavaşlıyor.
+ */
+.donen {
+  animation: donen-don 0.7s linear infinite;
+}
+
+@keyframes donen-don {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donen {
+    animation-duration: 2s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nabiz {
     animation: none;
@@ -171,67 +192,83 @@ html {
   to { transform: translate3d(-5rem, -6rem, 0) scale(1.15); }
 }
 
-/* --- Tekrar halkaları --- */
+/* --- Dönen ışık süpürmesi --- */
 
 /*
- * Kart siluetlerinin yerini aldılar.
+ * Konik gradyan, ekranın üstünden yavaşça geçen bir ışık huzmesi gibi
+ * dönüyor. Tek şekille hem renk hem hareket taşıdığı için arka planın
+ * "canlı" hissini asıl bu veriyor; lekeler yumuşaklığı, halkalar
+ * yapıyı ekliyor.
  *
- * Kartlar 34-56 saniyede 2-3 rem ötelenirdi ve **hareket ettikleri
- * görülmüyordu**: göz, yavaş ötelemeyi hareket olarak okumuyor. Dönme
- * farklı — açı sürekli değiştiği için yavaşken bile fark ediliyor, üstelik
- * kenarları ekranın dışına taşan büyük bir halkada etki daha da belirgin.
- *
- * Motif markanın kendisi: logo, tekrar eden aboneliği anlatan kesikli bir
- * halka. Arka plan onu büyütüp yavaşça döndürüyor — dekoratif ama keyfi
- * değil, uygulamanın konusunu anlatıyor.
- *
- * Yalnızca `transform` canlandırılıyor: `filter` ya da `box-shadow`
- * canlandırmak her karede yeniden çizim demek, dizüstünde fanı çalıştırır.
+ * `filter` yok: konik gradyanın kendisi zaten yumuşak geçiyor ve
+ * dönüşü yalnızca `transform` ile yapıyoruz — bileşik katmanda kalıyor.
  */
-.tema-halka {
+.tema-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120rem;
+  height: 120rem;
+  margin: -60rem 0 0 -60rem;
+  border-radius: 50%;
+  opacity: var(--tema-aura-guc);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--tema-aura-a) 55deg,
+    transparent 130deg,
+    var(--tema-aura-b) 210deg,
+    transparent 290deg,
+    var(--tema-aura-c) 340deg,
+    transparent 360deg
+  );
+  will-change: transform;
+  animation: don-saga 100s linear infinite;
+}
+
+/* --- Yörünge yayları --- */
+
+/*
+ * Kesikli tam halkaların yerini aldılar: tam halka statik bir çerçeve
+ * gibi duruyordu, yay ise bir yörüngeyi ima ediyor ve döndüğü apaçık
+ * görülüyor — çünkü ucu sürekli yeni bir yere geliyor.
+ *
+ * Görünen tek kenar üstteki; diğer üçü saydam. Bu, tek bir `div` ile
+ * yay çizmenin en ucuz yolu (SVG ya da maske gerekmiyor).
+ */
+.tema-yay {
   position: absolute;
   border-radius: 50%;
-  border: 2px dashed var(--tema-halka-cizgi);
+  border: 2px solid transparent;
+  border-top-color: var(--tema-yay-a);
+  border-right-color: var(--tema-yay-b);
   will-change: transform;
 }
 
-/* İçteki dolu kenarlık, kesikli halkayla birlikte katman hissi veriyor. */
-.tema-halka::after {
-  content: '';
-  position: absolute;
-  inset: 12%;
-  border-radius: 50%;
-  border: 1.5px solid var(--tema-halka-ic);
+.tema-yay-1 {
+  top: -16rem;
+  right: -10rem;
+  width: 44rem;
+  height: 44rem;
+  animation: don-saga 60s linear infinite;
 }
 
-/*
- * Her halkanın kendi süresi ve **yönü** var. Aynı yöne dönen şekiller
- * mekanik duruyor; zıt yönler birbirinin üstünden geçerken sürekli
- * değişen bir örüntü çıkarıyor.
- */
-.tema-halka-1 {
-  top: -14rem;
-  right: -12rem;
-  width: 42rem;
-  height: 42rem;
-  animation: don-saga 90s linear infinite;
+.tema-yay-2 {
+  bottom: -20rem;
+  left: -12rem;
+  width: 52rem;
+  height: 52rem;
+  border-width: 3px;
+  animation: don-sola 84s linear infinite;
 }
 
-.tema-halka-2 {
-  bottom: -18rem;
-  left: -14rem;
-  width: 48rem;
-  height: 48rem;
-  animation: don-sola 120s linear infinite;
-}
-
-.tema-halka-3 {
-  top: 30%;
-  left: 55%;
-  width: 26rem;
-  height: 26rem;
-  opacity: 0.6;
-  animation: don-saga 70s linear infinite;
+.tema-yay-3 {
+  top: 22%;
+  left: 48%;
+  width: 30rem;
+  height: 30rem;
+  opacity: 0.7;
+  animation: don-saga 46s linear infinite;
 }
 
 @keyframes don-saga {
@@ -269,8 +306,12 @@ html {
   --tema-leke-b: #c9b8e8;
   --tema-leke-c: #8fd4cc;
   --tema-nokta: rgb(15 23 42 / 0.075);
-  --tema-halka-cizgi: rgb(15 23 42 / 0.11);
-  --tema-halka-ic: rgb(15 23 42 / 0.05);
+  --tema-aura-guc: 0.16;
+  --tema-aura-a: #6366f1;
+  --tema-aura-b: #14b8a6;
+  --tema-aura-c: #a855f7;
+  --tema-yay-a: rgb(79 70 229 / 0.22);
+  --tema-yay-b: rgb(20 184 166 / 0.16);
 }
 
 /* Koyu tema */
@@ -287,8 +328,12 @@ html {
     --tema-leke-b: #6d28d9;
     --tema-leke-c: #0e7490;
     --tema-nokta: rgb(148 163 184 / 0.1);
-    --tema-halka-cizgi: rgb(148 163 184 / 0.22);
-    --tema-halka-ic: rgb(148 163 184 / 0.09);
+    --tema-aura-guc: 0.3;
+    --tema-aura-a: #4f46e5;
+    --tema-aura-b: #0d9488;
+    --tema-aura-c: #9333ea;
+    --tema-yay-a: rgb(129 140 248 / 0.4);
+    --tema-yay-b: rgb(45 212 191 / 0.28);
   }
 }
 
@@ -298,7 +343,8 @@ html {
  */
 @media (prefers-reduced-motion: reduce) {
   .tema-leke,
-  .tema-halka {
+  .tema-aura,
+  .tema-yay {
     animation: none;
   }
 }

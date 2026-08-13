@@ -15,13 +15,19 @@ export function TemaArkaplani() {
       <div className="tema-leke tema-leke-3" />
 
       {/*
-        Yavaşça dönen tekrar halkaları — logodaki motifin büyütülmüş hâli.
-        Yerlerinde duran kart siluetleri vardı; ötelenme yavaşken hareket
-        ettikleri görülmüyordu, dönme ise fark ediliyor.
+        Dönen ışık süpürmesi: arka planın canlı hissini asıl bu veriyor.
+        Lekelerin arkasında, yayların önünde duruyor.
       */}
-      <div className="tema-halka tema-halka-1" />
-      <div className="tema-halka tema-halka-2" />
-      <div className="tema-halka tema-halka-3" />
+      <div className="tema-aura" />
+
+      {/*
+        Yörünge yayları. Kesikli tam halkalar vardı; tam halka statik bir
+        çerçeve gibi duruyordu, yayın ucu ise sürekli yer değiştirdiği
+        için döndüğü apaçık görülüyor.
+      */}
+      <div className="tema-yay tema-yay-1" />
+      <div className="tema-yay tema-yay-2" />
+      <div className="tema-yay tema-yay-3" />
 
       <div className="tema-izgara" />
     </div>
