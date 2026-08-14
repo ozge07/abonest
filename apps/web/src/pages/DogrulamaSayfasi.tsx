@@ -78,7 +78,7 @@ export function DogrulamaSayfasi() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-6 dark:border-slate-800 dark:bg-slate-900/70">
+        <div className="cam flex flex-col gap-5 rounded-xl p-6">
           <form onSubmit={gonder} noValidate className="flex flex-col gap-4">
             {hata instanceof ApiError && hata.problem.errors === undefined && (
               <HataKutusu mesaj={hata.problem.title} />
@@ -102,7 +102,7 @@ export function DogrulamaSayfasi() {
             </Dugme>
           </form>
 
-          <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
+          <div className="border-t border-white/10 pt-4">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Kod gelmediyse gelen kutunu ve spam klasörünü kontrol et.
             </p>

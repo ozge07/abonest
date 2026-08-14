@@ -3,52 +3,77 @@
     Abonest'in simgesi: tekrar halkasının içinde bir yumurta.
 
     Ad "abone" ile "nest"i (yuva) birleştiriyor. Halka aboneliğin tekrar
-    eden doğasını, yumurta da yuvada saklanan şeyi anlatıyor — dağınık
-    abonelikler tek yerde.
+    eden doğasını, yumurta da yuvada saklanan şeyi anlatıyor.
+
+    ## Yumurtanın şekli hesaplanıyor
+
+    Yol elle çizilmedi: `src/lib/yumurta.ts` içindeki bağıntıdan üretildi
+    (`w(t) = sin(t)·(0.9 - 0.135·cos(t))`). Giriş ekranındaki büyük
+    yumurta, hikâye sayfasındaki 3B kabuk ve yuvadaki altı yumurta da aynı
+    bağıntıyı kullanıyor — hepsi **aynı** yumurta.
+
+    Bu ilişki eskiden tersti: logo elle çizilmişti ve 3B model ona
+    benzetilmeye çalışılıyordu. Artık tek bir tanım var.
+
+    ## Renkler neden değişti
+
+    Önceki sürüm mavi bir karo üzerinde düz beyaz bir yumurtaydı.
+    Uygulama koyu zemin ve bronz-amber bir kimliğe geçince o mavi karo
+    yabancı kaldı. Şimdi zemin uygulamanın kendi zemini, yumurta da
+    ekrandaki kabuğun aynısı: sol üstten ışık, sağ altta gölge.
 
     ## Denenip elenenler
 
-    Simge önce **yuva + üç yumurta** olarak çizildi: 16 pikselde (arama
-    çubuğundaki favicon boyutu) örgü çizgileri ve yumurtalar tek bir
-    lekeye dönüştü. Küçültülüp bakıldı, okunmuyordu.
+    - **Yuva + üç yumurta:** 16 pikselde örgü çizgileri ve yumurtalar tek
+      bir lekeye dönüştü, okunmuyordu.
+    - **Kâse + tek yumurta:** 512 pikselde evrensel profil/avatar ikonuna
+      benzedi. Marka simgesinin başka bir şeye benzemesi, okunmamasından
+      daha kötü.
 
-    Sonra **kâse + tek yumurta** denendi: bu sefer 512 pikselde beyaz oval
-    + geniş kâse, evrensel **profil/avatar** ikonuna benzedi. Marka
-    simgesinin başka bir şeye benzemesi, okunmamasından daha kötü.
-
-    Kalan çözüm ikisinin ortası: yumurta kapalı bir kâsede değil, açık bir
-    halkanın içinde. Halka çevrelediği için avatar okuması oluşmuyor;
-    tek büyük şekil olduğu için de küçülünce dağılmıyor.
-
-    ## Neden iki katman
-
-    Halka soluk (0.45) ve arkada, yumurta solid ve önde. Aynı beyazla
-    çizilselerdi küçük boyutta birleşirlerdi. Halka favicon boyutunda
-    silikleşip geriye okunaklı bir yumurta bırakıyor — küçüldükçe bozulmak
-    yerine sadeleşiyor.
+    Halka çevrelediği için avatar okuması oluşmuyor; tek büyük şekil
+    olduğu için de küçülünce dağılmıyor. Halka favicon boyutunda
+    silikleşip geriye okunaklı bir yumurta bırakıyor — küçüldükçe
+    bozulmak yerine sadeleşiyor.
   -->
   <defs>
     <linearGradient id="zemin" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2F7DD1" />
-      <stop offset="1" stop-color="#1B4F91" />
+      <stop offset="0" stop-color="#1A1420" />
+      <stop offset="1" stop-color="#07080B" />
     </linearGradient>
+
+    <linearGradient id="kabuk" x1="0.24" y1="0.06" x2="0.8" y2="0.95">
+      <stop offset="0" stop-color="#FFF3DE" />
+      <stop offset="0.4" stop-color="#F5CE9A" />
+      <stop offset="0.75" stop-color="#D89B58" />
+      <stop offset="1" stop-color="#96602C" />
+    </linearGradient>
+
+    <!-- Işığın vurduğu yer; kenara değmeden sönüyor. -->
+    <radialGradient id="parlama" cx="0.36" cy="0.26" r="0.4">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+
+    <clipPath id="sinir">
+      <path d="M32.00,16.00 L32.41,16.01 L32.81,16.04 L33.22,16.08 L33.62,16.15 L34.02,16.23 L34.42,16.33 L34.83,16.44 L35.22,16.58 L35.62,16.73 L36.02,16.90 L36.41,17.09 L36.80,17.29 L37.19,17.52 L37.58,17.75 L37.96,18.01 L38.34,18.28 L38.71,18.56 L39.09,18.87 L39.45,19.18 L39.81,19.51 L40.17,19.86 L40.52,20.22 L40.87,20.59 L41.21,20.98 L41.54,21.38 L41.87,21.79 L42.19,22.22 L42.50,22.65 L42.81,23.10 L43.11,23.56 L43.39,24.02 L43.67,24.50 L43.94,24.99 L44.20,25.48 L44.45,25.98 L44.69,26.49 L44.92,27.01 L45.13,27.54 L45.34,28.07 L45.53,28.60 L45.71,29.14 L45.87,29.68 L46.03,30.23 L46.16,30.78 L46.29,31.33 L46.40,31.89 L46.49,32.44 L46.57,33.00 L46.64,33.56 L46.68,34.11 L46.71,34.67 L46.73,35.22 L46.73,35.77 L46.71,36.32 L46.67,36.86 L46.62,37.40 L46.55,37.93 L46.46,38.46 L46.36,38.99 L46.24,39.51 L46.09,40.02 L45.94,40.52 L45.76,41.01 L45.57,41.50 L45.35,41.98 L45.13,42.44 L44.88,42.90 L44.62,43.35 L44.34,43.78 L44.04,44.21 L43.73,44.62 L43.40,45.02 L43.05,45.41 L42.69,45.78 L42.32,46.14 L41.93,46.49 L41.52,46.82 L41.11,47.13 L40.67,47.44 L40.23,47.72 L39.78,47.99 L39.31,48.25 L38.84,48.48 L38.35,48.71 L37.85,48.91 L37.35,49.10 L36.84,49.27 L36.32,49.42 L35.79,49.56 L35.26,49.67 L34.72,49.77 L34.18,49.85 L33.64,49.92 L33.10,49.96 L32.55,49.99 L32.00,50.00 L32.00,50.00 L31.45,49.99 L30.90,49.96 L30.36,49.92 L29.82,49.85 L29.28,49.77 L28.74,49.67 L28.21,49.56 L27.68,49.42 L27.16,49.27 L26.65,49.10 L26.15,48.91 L25.65,48.71 L25.16,48.48 L24.69,48.25 L24.22,47.99 L23.77,47.72 L23.33,47.44 L22.89,47.13 L22.48,46.82 L22.07,46.49 L21.68,46.14 L21.31,45.78 L20.95,45.41 L20.60,45.02 L20.27,44.62 L19.96,44.21 L19.66,43.78 L19.38,43.35 L19.12,42.90 L18.87,42.44 L18.65,41.98 L18.43,41.50 L18.24,41.01 L18.06,40.52 L17.91,40.02 L17.76,39.51 L17.64,38.99 L17.54,38.46 L17.45,37.93 L17.38,37.40 L17.33,36.86 L17.29,36.32 L17.27,35.77 L17.27,35.22 L17.29,34.67 L17.32,34.11 L17.36,33.56 L17.43,33.00 L17.51,32.44 L17.60,31.89 L17.71,31.33 L17.84,30.78 L17.97,30.23 L18.13,29.68 L18.29,29.14 L18.47,28.60 L18.66,28.07 L18.87,27.54 L19.08,27.01 L19.31,26.49 L19.55,25.98 L19.80,25.48 L20.06,24.99 L20.33,24.50 L20.61,24.02 L20.89,23.56 L21.19,23.10 L21.50,22.65 L21.81,22.22 L22.13,21.79 L22.46,21.38 L22.79,20.98 L23.13,20.59 L23.48,20.22 L23.83,19.86 L24.19,19.51 L24.55,19.18 L24.91,18.87 L25.29,18.56 L25.66,18.28 L26.04,18.01 L26.42,17.75 L26.81,17.52 L27.20,17.29 L27.59,17.09 L27.98,16.90 L28.38,16.73 L28.78,16.58 L29.17,16.44 L29.58,16.33 L29.98,16.23 L30.38,16.15 L30.78,16.08 L31.19,16.04 L31.59,16.01 L32.00,16.00 Z" />
+    </clipPath>
   </defs>
 
   <rect width="64" height="64" rx="15" fill="url(#zemin)" />
 
+  <!-- Zeminin sol üstünde sıcak bir ışık: karo düz durmasın. -->
+  <rect width="64" height="64" rx="15" fill="url(#parlama)" opacity="0.1" />
+
   <!-- Tekrar halkası: uçları açık, dönüyormuş izlenimi veriyor. -->
   <circle
-    cx="32" cy="32" r="20"
-    fill="none" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="4.5"
-    stroke-linecap="round" stroke-dasharray="82 44"
-    transform="rotate(-105 32 32)"
+    cx="32" cy="32" r="25"
+    fill="none" stroke="#FFC94A" stroke-opacity="0.55" stroke-width="3.2"
+    stroke-linecap="round" stroke-dasharray="126 32"
+    transform="rotate(-126 32 32)"
   />
 
-  <!-- Yumurta: tepesi dar, tabanı geniş. Simetrik bir oval "nokta" gibi
-       duruyordu; asimetri onu bir şeye benzetiyor. -->
-  <path
-    d="M32 21 C38.5 21 41.5 28 41.5 33.2 C41.5 39.2 37.2 43 32 43
-       C26.8 43 22.5 39.2 22.5 33.2 C22.5 28 25.5 21 32 21 Z"
-    fill="#FFFFFF"
-  />
+  <path d="M32.00,16.00 L32.41,16.01 L32.81,16.04 L33.22,16.08 L33.62,16.15 L34.02,16.23 L34.42,16.33 L34.83,16.44 L35.22,16.58 L35.62,16.73 L36.02,16.90 L36.41,17.09 L36.80,17.29 L37.19,17.52 L37.58,17.75 L37.96,18.01 L38.34,18.28 L38.71,18.56 L39.09,18.87 L39.45,19.18 L39.81,19.51 L40.17,19.86 L40.52,20.22 L40.87,20.59 L41.21,20.98 L41.54,21.38 L41.87,21.79 L42.19,22.22 L42.50,22.65 L42.81,23.10 L43.11,23.56 L43.39,24.02 L43.67,24.50 L43.94,24.99 L44.20,25.48 L44.45,25.98 L44.69,26.49 L44.92,27.01 L45.13,27.54 L45.34,28.07 L45.53,28.60 L45.71,29.14 L45.87,29.68 L46.03,30.23 L46.16,30.78 L46.29,31.33 L46.40,31.89 L46.49,32.44 L46.57,33.00 L46.64,33.56 L46.68,34.11 L46.71,34.67 L46.73,35.22 L46.73,35.77 L46.71,36.32 L46.67,36.86 L46.62,37.40 L46.55,37.93 L46.46,38.46 L46.36,38.99 L46.24,39.51 L46.09,40.02 L45.94,40.52 L45.76,41.01 L45.57,41.50 L45.35,41.98 L45.13,42.44 L44.88,42.90 L44.62,43.35 L44.34,43.78 L44.04,44.21 L43.73,44.62 L43.40,45.02 L43.05,45.41 L42.69,45.78 L42.32,46.14 L41.93,46.49 L41.52,46.82 L41.11,47.13 L40.67,47.44 L40.23,47.72 L39.78,47.99 L39.31,48.25 L38.84,48.48 L38.35,48.71 L37.85,48.91 L37.35,49.10 L36.84,49.27 L36.32,49.42 L35.79,49.56 L35.26,49.67 L34.72,49.77 L34.18,49.85 L33.64,49.92 L33.10,49.96 L32.55,49.99 L32.00,50.00 L32.00,50.00 L31.45,49.99 L30.90,49.96 L30.36,49.92 L29.82,49.85 L29.28,49.77 L28.74,49.67 L28.21,49.56 L27.68,49.42 L27.16,49.27 L26.65,49.10 L26.15,48.91 L25.65,48.71 L25.16,48.48 L24.69,48.25 L24.22,47.99 L23.77,47.72 L23.33,47.44 L22.89,47.13 L22.48,46.82 L22.07,46.49 L21.68,46.14 L21.31,45.78 L20.95,45.41 L20.60,45.02 L20.27,44.62 L19.96,44.21 L19.66,43.78 L19.38,43.35 L19.12,42.90 L18.87,42.44 L18.65,41.98 L18.43,41.50 L18.24,41.01 L18.06,40.52 L17.91,40.02 L17.76,39.51 L17.64,38.99 L17.54,38.46 L17.45,37.93 L17.38,37.40 L17.33,36.86 L17.29,36.32 L17.27,35.77 L17.27,35.22 L17.29,34.67 L17.32,34.11 L17.36,33.56 L17.43,33.00 L17.51,32.44 L17.60,31.89 L17.71,31.33 L17.84,30.78 L17.97,30.23 L18.13,29.68 L18.29,29.14 L18.47,28.60 L18.66,28.07 L18.87,27.54 L19.08,27.01 L19.31,26.49 L19.55,25.98 L19.80,25.48 L20.06,24.99 L20.33,24.50 L20.61,24.02 L20.89,23.56 L21.19,23.10 L21.50,22.65 L21.81,22.22 L22.13,21.79 L22.46,21.38 L22.79,20.98 L23.13,20.59 L23.48,20.22 L23.83,19.86 L24.19,19.51 L24.55,19.18 L24.91,18.87 L25.29,18.56 L25.66,18.28 L26.04,18.01 L26.42,17.75 L26.81,17.52 L27.20,17.29 L27.59,17.09 L27.98,16.90 L28.38,16.73 L28.78,16.58 L29.17,16.44 L29.58,16.33 L29.98,16.23 L30.38,16.15 L30.78,16.08 L31.19,16.04 L31.59,16.01 L32.00,16.00 Z" fill="url(#kabuk)" />
+  <g clip-path="url(#sinir)">
+    <rect width="64" height="64" fill="url(#parlama)" />
+  </g>
 </svg>

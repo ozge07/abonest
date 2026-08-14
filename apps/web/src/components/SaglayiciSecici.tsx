@@ -50,7 +50,7 @@ export function SaglayiciSecici({
         onChange={(olay) => setArama(olay.target.value)}
         placeholder="Ara ya da aşağıdan seç"
         aria-label="Servis ara"
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-marka-500 focus:ring-2 focus:ring-marka-500/40 dark:border-slate-700 dark:bg-slate-900"
+        className="rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none transition-colors focus:border-marka-500 focus:ring-2 focus:ring-marka-500/40"
       />
 
       {suzulmus.length === 0 ? (
@@ -60,7 +60,7 @@ export function SaglayiciSecici({
       ) : (
         <ul
           // Yükseklik sınırlı: seçici formun tamamını itip kaydırmasın.
-          className="grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto rounded-md border border-slate-200 p-1.5 sm:grid-cols-3 dark:border-slate-800"
+          className="grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto rounded-md border border-white/10 p-1.5 sm:grid-cols-3"
         >
           {suzulmus.map((saglayici) => {
             const secili = saglayici.id === seciliId;

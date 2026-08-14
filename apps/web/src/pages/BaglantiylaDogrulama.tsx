@@ -132,7 +132,7 @@ function Girise({ etiket = 'Giriş yap' }: { etiket?: string }) {
   return (
     <Link
       to="/"
-      className="self-start rounded-md bg-marka-600 px-4 py-2 text-sm font-medium text-white hover:bg-marka-700"
+      className="self-start rounded-md bg-marka-600 px-4 py-2 text-sm font-medium text-marka-yazi hover:bg-marka-500"
     >
       {etiket}
     </Link>

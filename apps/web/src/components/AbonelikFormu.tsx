@@ -117,7 +117,7 @@ export function AbonelikFormu({
   return (
     <form
       onSubmit={gonder}
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-5 dark:border-slate-800 dark:bg-slate-900/70"
+      className="cam flex flex-col gap-4 rounded-xl p-5"
     >
       <h2 className="font-medium">Yeni abonelik</h2>
 

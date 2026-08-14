@@ -1,21 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
 import { UYGULAMA_ADI } from '../lib/marka';
-import {
-  geriGetirildiMi,
-  geriGetirmeNotunuSil,
-  useCikis,
-  useOturum,
-} from '../lib/oturum';
+import { useCikis, useOturum } from '../lib/oturum';
 import { api } from '../lib/api';
 import type { Ozet } from '../lib/types';
 import { BildirimZili } from './BildirimZili';
+import { Imlec, Izgara } from '../sahne/Katmanlar';
 
 /** Giriş yapmış kullanıcının gördüğü çerçeve: başlık, gezinme, içerik. */
 export function Kabuk({ children }: { children: ReactNode }) {
   const { kullanici } = useOturum();
   const cikis = useCikis();
+  const konum = useLocation();
 
   /*
    * Özet sekmesi, gösterecek bir şey olmadan görünmüyor.
@@ -34,14 +31,43 @@ export function Kabuk({ children }: { children: ReactNode }) {
   });
   const abonelikVar = (ozet.data?.activeCount ?? 0) > 0;
 
+  /*
+   * Girişten hemen sonra uygulama yukarıdan kayarak beliriyor; kırılma
+   * animasyonunun son adımı bu. Not `sessionStorage`'da, çünkü giriş
+   * ekranı bu noktada sökülmüş oluyor ve React durumu onunla birlikte
+   * kayboluyor.
+   *
+   * Bir kez oynuyor: her sayfa açılışında tekrarlarsa süsleme olmaktan
+   * çıkıp gecikme gibi hissediliyor.
+   */
+  const [girisAnimasyonu] = useState(
+    () => sessionStorage.getItem('kabuk-girisi') !== null,
+  );
+  useEffect(() => {
+    sessionStorage.removeItem('kabuk-girisi');
+  }, []);
+
   return (
-    <div className="min-h-dvh text-slate-900 dark:text-slate-100">
+    <div
+      className={[
+        'min-h-dvh text-slate-900 dark:text-slate-100',
+        girisAnimasyonu ? 'kabuk-girisi' : '',
+      ].join(' ')}
+    >
+      {/*
+        Hikâyedeki mimari ızgara ve özel imleç burada da var: iki ekran
+        arasında geçerken görsel dil değişmiyor. Izgara `pointer-events`
+        geçiriyor, içeriğe tıklamayı engellemiyor.
+      */}
+      <Izgara dar={false} arkada />
+      <Imlec />
+
       {/*
         * Buzlu cam: tema arka planı başlığın altından geçiyor ve sayfa
         * kaydırıldıkça hafifçe değişiyor. Opak bir şerit temayı ikiye
         * bölüyordu.
         */}
-      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/70">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-white/[0.04] backdrop-blur-xl">
         {/*
           * Dar ekranda taşmayan başlık.
           *
@@ -60,7 +86,7 @@ export function Kabuk({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 sm:gap-6">
           <NavLink to="/" className="flex shrink-0 items-center gap-2">
             <img
-              src="/logo.svg"
+              src="/logo.svg?v=3"
               alt=""
               width={28}
               height={28}
@@ -72,6 +98,11 @@ export function Kabuk({ children }: { children: ReactNode }) {
           </NavLink>
 
           <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+            {/*
+              Hikâye en solda: girişten sonra ilk gelinen yer orası,
+              gezinmedeki sırası da bunu yansıtıyor.
+            */}
+            <Baglanti to="/hikaye">Hikâye</Baglanti>
             {abonelikVar && <Baglanti to="/">Özet</Baglanti>}
             <Baglanti to="/abonelikler">Abonelikler</Baglanti>
             <Baglanti to="/analiz">Analiz</Baglanti>
@@ -100,53 +131,14 @@ export function Kabuk({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <GeriGetirmeSeridi />
+      {/*
+        `key` yol adı: sekme değişince React içeriği yeniden kuruyor ve
+        giriş animasyonu tekrar oynuyor. Anahtar olmadan aynı düğüm
+        korunuyor ve geçiş hiç görünmüyordu.
+      */}
+      <main key={konum.pathname} className="sayfa-icerigi mx-auto max-w-5xl px-4 py-8">
         {children}
       </main>
-    </div>
-  );
-}
-
-/**
- * "Hesabın geri getirildi" şeridi.
- *
- * Silinmiş bir hesapla giriş yapmak silmeyi geri alıyor. Bunun sessizce
- * olması, kullanıcıyı hesabının hâlâ silinme sırasında olduğunu sanır
- * hâlde bırakırdı — ya da tam tersi, sildiğini unutturur. Şerit bir kez
- * çıkıyor ve kapatılabiliyor.
- */
-function GeriGetirmeSeridi() {
-  // Not yalnızca **okunuyor**; silme işi efekte bırakılıyor, çünkü
-  // StrictMode bileşen gövdesini iki kez çalıştırıyor ve okurken silmek
-  // ikinci çalıştırmada haberi kaybederdi.
-  const [gorunur, setGorunur] = useState(geriGetirildiMi);
-
-  useEffect(() => {
-    geriGetirmeNotunuSil();
-  }, []);
-
-  if (!gorunur) {
-    return null;
-  }
-
-  return (
-    <div
-      role="status"
-      className="mb-6 flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-800/60 dark:bg-green-950/40 dark:text-green-200"
-    >
-      <p className="flex-1">
-        <strong className="font-semibold">Hesabın geri getirildi.</strong> Silme
-        işlemi iptal edildi; aboneliklerin ve geçmişin olduğu gibi duruyor.
-      </p>
-      <button
-        type="button"
-        onClick={() => setGorunur(false)}
-        aria-label="Kapat"
-        className="rounded px-1.5 text-green-700 hover:bg-green-100 dark:text-green-300 dark:hover:bg-green-900/40"
-      >
-        ✕
-      </button>
     </div>
   );
 }

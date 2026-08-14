@@ -13,3 +13,41 @@ import { afterEach } from 'vitest';
  * bakmaya götürüyor.
  */
 afterEach(cleanup);
+
+/*
+ * `matchMedia` jsdom'da yok.
+ *
+ * Uygulama bunu hareket tercihini okumak için kullanıyor; tanımsızken
+ * giriş ekranı çöküyordu. Varsayılan olarak "hareket açık" diyoruz, yani
+ * testler kullanıcıların büyük çoğunluğunun gördüğü yolu koşuyor. Azaltma
+ * davranışını sınayan test bu değeri kendi değiştiriyor.
+ */
+if (window.matchMedia === undefined) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+/*
+ * jsdom canvas çizemiyor.
+ *
+ * `getContext` çağrıldığında "Not implemented" uyarısı basıyor ve test
+ * çıktısı her çalıştırmada onlarca satır gürültüyle doluyor — gerçek bir
+ * hata mesajı arasında kaybolur. Burada sessizce `null` dönüyoruz;
+ * parçacık küresi zaten bu durumu karşılayıp çizmekten vazgeçiyor, yani
+ * sahte bir bağlam uydurmaya gerek yok.
+ *
+ * Kürenin çizim mantığı tarayıcıda ekran görüntüsüyle doğrulanıyor;
+ * jsdom'da sınanacak bir şey yok.
+ */
+HTMLCanvasElement.prototype.getContext = () => null;

@@ -105,8 +105,8 @@ export function BildirimZili() {
         yaramıyor, çünkü arkasında düz bir zemin değil metin var.
       */}
       {acik && (
-        <div className="absolute right-0 z-10 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
+        <div className="cam-opak absolute right-0 z-10 mt-2 w-80 overflow-hidden rounded-xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
             <span className="text-sm font-medium">Bildirimler</span>
             {okunmamis > 0 && (
               <button

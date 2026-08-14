@@ -76,7 +76,7 @@ export function OnayKutusu({
         aria-modal="true"
         aria-labelledby="onay-baslik"
         aria-describedby="onay-aciklama"
-        className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+        className="cam-opak w-full max-w-sm rounded-xl p-5"
       >
         <h2 id="onay-baslik" className="text-base font-semibold">
           {baslik}
@@ -104,11 +104,11 @@ export function OnayKutusu({
             aria-busy={bekliyor}
             className={[
               'inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2',
-              'text-sm font-medium text-white transition-colors disabled:opacity-50',
+              'text-sm font-medium transition-colors disabled:opacity-50',
               'focus-visible:ring-2 focus-visible:outline-none',
               tehlikeli
-                ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-500/40'
-                : 'bg-marka-600 hover:bg-marka-700 focus-visible:ring-marka-500/40',
+                ? 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/40'
+                : 'bg-marka-600 text-marka-yazi hover:bg-marka-500 focus-visible:ring-marka-500/40',
             ].join(' ')}
           >
             {/* Etiket sabit kalıyor; onay kutusunda hangi işlemi

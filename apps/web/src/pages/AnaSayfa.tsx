@@ -120,7 +120,14 @@ function ToplamKarti({
   const cokParaBirimi = ozet.totals.length > 1;
 
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-marka-600 to-marka-700 p-6 text-white shadow-sm">
+    /*
+      Derin bronz, parlak amber değil.
+      
+      Kart ekrandaki en büyük renk alanı ve üstündeki yazı beyaz. Düğmede
+      kullanılan açık amber burada beyaz yazıyı okunmaz yapardı; ton
+      koyulaştırılınca hem tema korunuyor hem yazı okunuyor.
+    */
+    <section className="ozet-kart rounded-2xl p-6 text-white">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="min-w-0">
           <p className="text-sm text-white/70">Aylık gideri</p>
@@ -431,7 +438,7 @@ function BolumBasligi({ children }: { children: React.ReactNode }) {
 
 function Kart({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
+    <div className="cam overflow-hidden rounded-xl">
       {children}
     </div>
   );

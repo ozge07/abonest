@@ -136,7 +136,7 @@ function girdiSinifi(hatali: boolean, sagBosluk = false): string {
     'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors',
     // Göz düğmesi metnin üstüne binmesin.
     sagBosluk ? 'pr-10' : '',
-    'bg-white dark:bg-slate-900',
+    'bg-white/5',
     'focus:ring-2 focus:ring-marka-500/40',
     hatali
       ? 'border-red-400 focus:border-red-500'
@@ -166,7 +166,15 @@ export function Dugme({
         'text-sm font-medium transition-colors disabled:opacity-50',
         ikincil
           ? 'border border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'
-          : 'bg-marka-600 text-white hover:bg-marka-700',
+          : /*
+             * Amber zeminde **koyu** yazı.
+             *
+             * Beyaz yazı bu parlaklıkta okunmuyordu: amber açık bir renk,
+             * beyazla arasındaki kontrast eşiğin çok altında kalıyor.
+             * Hikâye sayfasındaki beyaz hap düğmelerin de yazısı siyah;
+             * aynı mantık.
+             */
+            'bg-marka-600 text-marka-yazi hover:bg-marka-500',
       ].join(' ')}
       {...rest}
     >

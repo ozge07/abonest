@@ -1,3 +1,4 @@
+import { SayfaBasligi } from '../components/SayfaBasligi';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AbonelikFormu } from '../components/AbonelikFormu';
@@ -88,13 +89,8 @@ export function AbonelikSayfasi() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Abonelikler</h1>
-          {aktifler.length > 0 && (
-            <OzetSatiri abonelikler={aktifler} kurlar={kurlar.data} />
-          )}
-        </div>
+      <SayfaBasligi baslik="Abonelikler">
+        <div className="sayfa-basligi-yan">
         {!formAcik && (
           <Dugme onClick={() => setFormAcik(true)}>
             <span className="flex items-center gap-1.5">
@@ -103,7 +99,11 @@ export function AbonelikSayfasi() {
             </span>
           </Dugme>
         )}
-      </div>
+        </div>
+      </SayfaBasligi>
+      {aktifler.length > 0 && (
+        <OzetSatiri abonelikler={aktifler} kurlar={kurlar.data} />
+      )}
 
       {formAcik && (
         <AbonelikFormu
@@ -181,7 +181,7 @@ function CopKutusu({
       <h2 className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
         Çöp kutusu
       </h2>
-      <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white/80 backdrop-blur-xl dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900/70">
+      <ul className="cam cam-ayrac overflow-hidden rounded-xl border-dashed">
         {abonelikler.map((abonelik) => (
           <li
             key={abonelik.id}
@@ -315,7 +315,7 @@ function Liste({
   return (
     <ul
       className={[
-        'divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900/70',
+        'cam cam-ayrac overflow-hidden rounded-xl',
         soluk ? 'opacity-70' : '',
       ].join(' ')}
     >
@@ -643,7 +643,7 @@ function Iskelet() {
   // Boş ekran yerine yer tutucu: içerik gelince düzen zıplamıyor.
   return (
     <div
-      className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800"
+      className="cam-ayrac overflow-hidden rounded-xl border border-white/10"
       aria-hidden
     >
       {[0, 1, 2].map((i) => (

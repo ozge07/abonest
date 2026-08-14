@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api } from './api';
 import type { Kullanici } from './types';
@@ -112,9 +113,28 @@ export function geriGetirmeNotunuSil(): void {
   sessionStorage.removeItem(GERI_GETIRILDI);
 }
 
-export function useGiris() {
+/**
+ * Girişten sonra uygulamayı açan tazeleme.
+ *
+ * Ayrı bir kanca, çünkü ne zaman çağrılacağı ekrana bağlı: giriş ekranı
+ * bunu kırılma animasyonu bittikten sonra çağırıyor.
+ */
+export function useOturumuTazele() {
   const queryClient = useQueryClient();
 
+  /*
+   * `useCallback` şart: bu fonksiyon giriş ekranındaki zamanlayıcı
+   * efektinin bağımlılığı. Her çizimde yeni bir referans dönseydi efekt
+   * her seferinde sökülüp yeniden kurulur, zamanlayıcılar sıfırlanır ve
+   * kırılma sırası hiçbir zaman tamamlanmazdı. Testte tam olarak bu oldu.
+   */
+  return useCallback(async () => {
+    // Önceki kullanıcının önbellekteki verisi ekranda kalmasın.
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
+}
+
+export function useGiris() {
   return useMutation({
     mutationFn: (girdi: { email: string; password: string }) =>
       api.post<{ token: string; restored: boolean }>('/auth/login', girdi),
@@ -124,9 +144,13 @@ export function useGiris() {
         // Sessizce olup bitmesi doğru olmazdı.
         sessionStorage.setItem(GERI_GETIRILDI, '1');
       }
-      // Girişten sonra her şey yeniden okunuyor: önceki kullanıcının
-      // önbellekteki verisi ekranda kalmasın.
-      await queryClient.invalidateQueries();
+      /*
+       * Tazeleme burada **yapılmıyor**.
+       *
+       * Yenilendiği anda uygulama giriş ekranını söküp panoyu çiziyor;
+       * kırılma animasyonu da o anda kesiliyordu. Zamanlamayı çağıran
+       * ekran biliyor, o yüzden kararı ona bırakıyoruz.
+       */
     },
   });
 }

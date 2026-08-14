@@ -84,6 +84,23 @@ async function girisYap() {
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   sessionStorage.clear();
+
+  /*
+   * Bu dosya kırılma animasyonunu değil, geri getirme şeridini sınıyor.
+   * Hareket azaltma açıkken giriş doğrudan uygulamayı açıyor ve testler
+   * üç saniye beklemek zorunda kalmıyor. Animasyonun kendisi
+   * `KirilmaAnimasyonu.test.tsx` içinde.
+   */
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
 });
 
 afterEach(() => {
@@ -131,11 +148,20 @@ describe('silinmiş hesapla giriş', () => {
 
     await girisYap();
 
-    // Uygulamanın açıldığından emin oluyoruz; yoksa "mesaj yok" iddiası
-    // hiçbir şey kanıtlamazdı.
-    expect(await screen.findByRole('link', { name: 'Hesabım' })).toBeInTheDocument();
+    /*
+     * Girişin gerçekten tamamlandığından emin oluyoruz; yoksa "mesaj yok"
+     * iddiası hiçbir şey kanıtlamazdı. Varış noktası artık özet ekranı
+     * değil, girişten sonra açılan hikâye sayfası.
+     */
+    expect(
+      await screen.findByRole(
+        'link',
+        { name: 'Aboneliklerime git' },
+        { timeout: 9000 },
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/hesabın geri getirildi/i)).toBeNull();
-  });
+  }, 15000);
 
   it('not tek seferlik: sayfa yenilenince tekrar çıkmıyor', async () => {
     sunucuKur(() =>

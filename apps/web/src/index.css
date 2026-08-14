@@ -7,15 +7,40 @@
  */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --color-marka-50: oklch(0.97 0.02 250);
-  --color-marka-100: oklch(0.93 0.04 250);
-  --color-marka-500: oklch(0.58 0.16 250);
-  --color-marka-600: oklch(0.51 0.16 250);
-  --color-marka-700: oklch(0.44 0.14 250);
+  /*
+   * Marka rengi amber-bronz.
+   *
+   * Önce maviydi (hue 250) ve uygulama koyu zemin + bronz kimliğe
+   * geçtiğinde ekrandaki tek yabancı renk o kaldı: özetteki gider kartı
+   * ve "Yeni abonelik" düğmesi mavi lekeler olarak duruyordu.
+   *
+   * Ton tek yerde tanımlı; düğmeler, bağlantılar, etkin sekme, odak
+   * halkaları ve bildirim noktaları hepsi bunu okuyor. Renk burada
+   * değişince hepsi birlikte değişiyor — on dört yere elle yazılsaydı
+   * biri geride kalırdı.
+   */
+  --color-marka-50: oklch(0.96 0.03 75);
+  --color-marka-100: oklch(0.92 0.07 75);
+  --color-marka-500: oklch(0.79 0.14 70);
+  --color-marka-600: oklch(0.74 0.15 66);
+  --color-marka-700: oklch(0.64 0.13 60);
+  /* Amber üzerinde okunacak yazı: beyaz değil, neredeyse siyah. */
+  --color-marka-yazi: oklch(0.18 0.02 60);
 }
 
+/*
+ * Uygulama koyu temada sabit.
+ *
+ * Giriş ekranının kimliği (koyu zemin, sıcak ışıklar, cam kartlar) tüm
+ * ekranlara geçirildi; aynı yüzeylerin açık temada karşılığı yok — saydam
+ * beyaz bir kart beyaz zeminde kaybolur. Bu yüzden `dark:` varyantı artık
+ * işletim sistemi tercihini değil kökteki sınıfı izliyor, o sınıf da her
+ * zaman duruyor. Mevcut `dark:` yazımları olduğu gibi çalışıyor.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 /*
@@ -89,26 +114,16 @@ html {
    Arka plan teması
    ==========================================================================
 
-   Dört katman, dıştan içe:
+   Koyu zemin ve üç bulanık ışık lekesi. Giriş ekranı için tasarlandı,
+   sonra uygulamanın tamamına geçirildi: iki ayrı arka plan, girişten
+   sonra başka bir uygulamaya girilmiş hissi veriyordu.
 
-   1. Zemin — düz taban rengi.
-   2. Işık lekeleri — büyük yumuşak gradyanlar, çok yavaş süzülüyor.
-   3. Kart siluetleri — konuyla bağ kuran şekil katmanı.
-   4. Nokta dokusu — kenarlara doğru sönen ince bir ızgara.
+   ## Neden burada `filter: blur()` var
 
-   ## Neden kart siluetleri
-
-   Düz bir renk geçişi "arka plan" olduğunu belli ediyor ama hiçbir şey
-   anlatmıyor. Buradaki şekiller uygulamanın konusundan geliyor: üst üste
-   duran abonelik kartları. Yalnızca dış hatları çiziliyor ve çok soluklar;
-   içeriğin arkasında değil, geniş ekranda boş kalan kenarlarda duruyorlar.
-
-   ## Neden `filter: blur()` yok
-
-   Büyük bir öğeye blur uygulamak her karede yeniden çiziliyor ve zayıf
-   makinelerde kaydırmayı takıyor. Radyal gradyan aynı yumuşaklığı bedelsiz
-   veriyor. Hareket de yalnızca `transform` ve `opacity` ile — ikisi de
-   düzeni yeniden hesaplatmıyor.
+   Önceki arka planda bilerek kaçınılmıştı: orada sürekli canlandırılan
+   şekiller vardı ve bulanıklık her karede yeniden hesaplanıyordu. Bunlar
+   çok yavaş hareket ediyor ve yalnızca `transform` değişiyor, yani
+   bulanıklık bir kez hesaplanıp katmanda kalıyor.
    ========================================================================== */
 
 .tema-arkaplan {
@@ -118,233 +133,1169 @@ html {
   overflow: hidden;
   /* Tıklamaları geçiriyor: arka plan hiçbir zaman etkileşimi engellemesin. */
   pointer-events: none;
-  background-color: var(--tema-zemin);
+  /* WebGL çalışmazsa görünen yedek: koyu zemin, sıcak ve soğuk iki ışık. */
+  background:
+    radial-gradient(60% 55% at 22% 30%, rgb(180 110 45 / 0.3), transparent 70%),
+    radial-gradient(55% 50% at 78% 70%, rgb(45 90 180 / 0.28), transparent 70%),
+    #07080b;
 }
 
-/* --- Işık lekeleri --- */
-
-.tema-leke {
-  position: absolute;
-  width: 52rem;
-  height: 52rem;
-  border-radius: 50%;
-  opacity: var(--tema-leke-guc);
-  /*
-   * `opacity` de canlandırılıyor, sadece `transform` değil.
-   *
-   * Sebep: üç leke aynı anda aynı güçte durunca palet sabit kalıyor ve
-   * "renksiz, hareketsiz" görünüyordu. Farklı ritimlerde soluklaşıp
-   * belirginleşince baskın renk sürekli değişiyor — hareket, şekiller
-   * yer değiştirmeden de fark ediliyor.
-   *
-   * İkisi de bileşik katmanda çalışıyor: yeniden düzen (layout) ya da
-   * yeniden boyama (paint) tetiklemiyorlar. `filter: blur()` tetiklerdi,
-   * o yüzden yumuşaklık radyal gradyandan geliyor.
-   */
-  will-change: transform, opacity;
-}
-
-.tema-leke-1 {
-  top: -20rem;
-  left: -16rem;
-  background: radial-gradient(circle, var(--tema-leke-a) 0%, transparent 62%);
-  animation:
-    suzul-a 38s ease-in-out infinite alternate,
-    nefes 19s ease-in-out infinite alternate;
-}
-
-.tema-leke-2 {
-  top: -8rem;
-  right: -20rem;
-  background: radial-gradient(circle, var(--tema-leke-b) 0%, transparent 62%);
-  animation:
-    suzul-b 46s ease-in-out infinite alternate,
-    nefes 26s ease-in-out infinite alternate -8s;
-}
-
-.tema-leke-3 {
-  bottom: -26rem;
-  left: 28%;
-  background: radial-gradient(circle, var(--tema-leke-c) 0%, transparent 62%);
-  animation:
-    suzul-c 52s ease-in-out infinite alternate,
-    nefes 31s ease-in-out infinite alternate -15s;
-}
-
-/* Lekenin gücü; 1 = değişkendeki tam değer. */
-@keyframes nefes {
-  from { opacity: calc(var(--tema-leke-guc) * 0.45); }
-  to { opacity: var(--tema-leke-guc); }
-}
-
-@keyframes suzul-a {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(6rem, 4rem, 0) scale(1.12); }
-}
-
-@keyframes suzul-b {
-  from { transform: translate3d(0, 0, 0) scale(1.08); }
-  to { transform: translate3d(-7rem, 5rem, 0) scale(1); }
-}
-
-@keyframes suzul-c {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-5rem, -6rem, 0) scale(1.15); }
-}
-
-/* --- Dönen ışık süpürmesi --- */
-
-/*
- * Konik gradyan, ekranın üstünden yavaşça geçen bir ışık huzmesi gibi
- * dönüyor. Tek şekille hem renk hem hareket taşıdığı için arka planın
- * "canlı" hissini asıl bu veriyor; lekeler yumuşaklığı, halkalar
- * yapıyı ekliyor.
- *
- * `filter` yok: konik gradyanın kendisi zaten yumuşak geçiyor ve
- * dönüşü yalnızca `transform` ile yapıyoruz — bileşik katmanda kalıyor.
- */
-.tema-aura {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120rem;
-  height: 120rem;
-  margin: -60rem 0 0 -60rem;
-  border-radius: 50%;
-  opacity: var(--tema-aura-guc);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    var(--tema-aura-a) 55deg,
-    transparent 130deg,
-    var(--tema-aura-b) 210deg,
-    transparent 290deg,
-    var(--tema-aura-c) 340deg,
-    transparent 360deg
-  );
-  will-change: transform;
-  animation: don-saga 100s linear infinite;
-}
-
-/* --- Yörünge yayları --- */
-
-/*
- * Kesikli tam halkaların yerini aldılar: tam halka statik bir çerçeve
- * gibi duruyordu, yay ise bir yörüngeyi ima ediyor ve döndüğü apaçık
- * görülüyor — çünkü ucu sürekli yeni bir yere geliyor.
- *
- * Görünen tek kenar üstteki; diğer üçü saydam. Bu, tek bir `div` ile
- * yay çizmenin en ucuz yolu (SVG ya da maske gerekmiyor).
- */
-.tema-yay {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  border-top-color: var(--tema-yay-a);
-  border-right-color: var(--tema-yay-b);
-  will-change: transform;
-}
-
-.tema-yay-1 {
-  top: -16rem;
-  right: -10rem;
-  width: 44rem;
-  height: 44rem;
-  animation: don-saga 60s linear infinite;
-}
-
-.tema-yay-2 {
-  bottom: -20rem;
-  left: -12rem;
-  width: 52rem;
-  height: 52rem;
-  border-width: 3px;
-  animation: don-sola 84s linear infinite;
-}
-
-.tema-yay-3 {
-  top: 22%;
-  left: 48%;
-  width: 30rem;
-  height: 30rem;
-  opacity: 0.7;
-  animation: don-saga 46s linear infinite;
-}
-
-@keyframes don-saga {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes don-sola {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
-}
-
-.tema-izgara {
+.tema-tuval {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(var(--tema-nokta) 1.2px, transparent 1.2px);
-  background-size: 26px 26px;
-  mask-image: radial-gradient(ellipse 110% 70% at 50% 0%, #000 5%, transparent 72%);
+  width: 100%;
+  height: 100%;
+  display: block;
 }
-
-/* --- Palet --- */
 
 /*
- * Doygunluk bilerek düşük: bir leke hafif mavi, biri nötr sıcak gri, biri
- * soluk yeşilimsi. Hepsi maviye yakın olduğunda ekran tek renge boğulup
- * gözü yoruyordu; tamamen nötr olduğunda ise düz ve cansız kaldı. Derinlik
- * renkten değil, katmanların birbirine göre farkından geliyor.
+ * WebGL yoksa tuval gizleniyor ve altındaki renk geçişleri kalıyor.
+ * Arka plan bir süs; uygulamanın çalışmasını buna bağlamak yanlış olurdu.
  */
-
-/* Açık tema */
-:root {
-  --tema-zemin: #f7f9fb;
-  --tema-leke-guc: 0.55;
-  --tema-leke-a: #93b4e8;
-  --tema-leke-b: #c9b8e8;
-  --tema-leke-c: #8fd4cc;
-  --tema-nokta: rgb(15 23 42 / 0.075);
-  --tema-aura-guc: 0.16;
-  --tema-aura-a: #6366f1;
-  --tema-aura-b: #14b8a6;
-  --tema-aura-c: #a855f7;
-  --tema-yay-a: rgb(79 70 229 / 0.22);
-  --tema-yay-b: rgb(20 184 166 / 0.16);
+.tema-tuval-yok {
+  display: none;
 }
 
-/* Koyu tema */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tema-zemin: #080b12;
-    /*
-     * Koyu zemin ince çizgileri yutuyor: açık temadaki değerler burada
-     * neredeyse görünmez kalıyordu. Kart kenarları ve lekeler bir tık
-     * güçlü.
-     */
-    --tema-leke-guc: 0.62;
-    --tema-leke-a: #1d4ed8;
-    --tema-leke-b: #6d28d9;
-    --tema-leke-c: #0e7490;
-    --tema-nokta: rgb(148 163 184 / 0.1);
-    --tema-aura-guc: 0.3;
-    --tema-aura-a: #4f46e5;
-    --tema-aura-b: #0d9488;
-    --tema-aura-c: #9333ea;
-    --tema-yay-a: rgb(129 140 248 / 0.4);
-    --tema-yay-b: rgb(45 212 191 / 0.28);
+/* ==========================================================================
+   Cam yüzey
+   ==========================================================================
+
+   Kartlar, başlık şeridi ve açılır kutular bunu paylaşıyor. Tek yerde
+   duruyor çünkü aynı değerler on dört ayrı bileşene elle yazıldığında
+   biri değiştiğinde diğerleri sessizce geride kalıyordu.
+
+   `backdrop-filter` bir uyarı taşıyor: bu özelliği taşıyan eleman,
+   içindeki `position: fixed` elemanlar için **kapsayıcı blok** oluyor.
+   Yani cam bir kartın içine tam ekran bir katman koyulamaz; o katman
+   kartın kutusuna hapsolur. Bu hata projede iki kez yaşandı (onay kutusu
+   ve kırılma ışığı); ikisi de çözümü portal ya da kök seviyeye taşımak
+   oldu.
+   ========================================================================== */
+
+/*
+ * `@layer components` şart: Tailwind'in yardımcı sınıfları `utilities`
+ * katmanında ve o katman bundan **sonra** geliyor. Katmansız yazıldığında
+ * `.cam` her yardımcı sınıfı yeniyordu — kesikli kenar düzleşiyor,
+ * hesap ekranındaki tehlike kartının kırmızı kenarı kayboluyordu.
+ */
+@layer components {
+  .cam {
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.06);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px rgb(0 0 0 / 0.45);
+  }
+
+  /*
+   * İçeriğin **üstünde** duran yüzeyler: onay kutusu ve bildirim listesi.
+   *
+   * Saydam olamazlar. Cam kart arkasındaki zemini gösteriyor; bir menü ya
+   * da uyarı kutusu ise arkasındaki **yazının** üstünde duruyor ve iki
+   * metin üst üste binince ikisi de okunmuyor.
+   */
+  .cam-opak {
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #15171d;
+    box-shadow: 0 24px 70px rgb(0 0 0 / 0.6);
+  }
+
+  /* Ayraçlı listelerde satır araları — kart kenarıyla aynı tonda. */
+  .cam-ayrac > * + * {
+    border-top: 1px solid rgb(255 255 255 / 0.1);
   }
 }
 
+/* ==========================================================================
+   Yörünge halkaları
+   ==========================================================================
+
+   Gerçek 3B: halkalar `rotateX` ile yatırılmış birer yörünge düzlemi,
+   simgeler o düzlemde dönüyor ve kameraya bakmak için yatırmayı geri
+   alıyor.
+
+   ## Derinlik nasıl kazanılıyor
+
+   Kapsayıcıdaki `perspective` uzaktaki simgeleri kendiliğinden küçültüyor
+   — boyut farkı elle hesaplanmıyor, tarayıcı izdüşüm yapıyor. Yörüngenin
+   arka yarısındaki simgeler ayrıca kürenin **gerisinde** kalıyor.
+
+   `preserve-3d` olmadan bunların hiçbiri olmuyor: tarayıcı alt elemanları
+   tek bir düzleme yassıltıyor, perspektif de sıralama da kayboluyor.
+   Denendi — halkalar yatık görünüyor ama simgeler hep aynı boyutta
+   kalıyor ve küreyi hiç geçmiyorlardı.
+
+   Eğim tek yerde (`--egim`): halkalar bu kadar yatıyor, simgeler tam bu
+   kadar geri dönüyor. İki ayrı sayı yazılsaydı biri değiştiğinde simgeler
+   sessizce eğri durmaya başlardı.
+   ========================================================================== */
+
+.yorunge {
+  --egim: 44deg;
+  perspective: 1100px;
+  transform-style: preserve-3d;
+}
+
+.yorunge-yumurta,
+.yorunge-halka,
+.yorunge-kol {
+  transform-style: preserve-3d;
+}
+
+.yorunge-halka {
+  transform: rotateX(var(--egim));
+}
+
 /*
- * Hareketi azaltılmış tercihte her şey duruyor ama kaybolmuyor: tema ve
- * şekiller yerinde kalıyor, yalnızca hareket bitiyor.
+ * Yumurtanın altındaki sıcak hale. Kutusu yumurtadan belirgin biçimde
+ * büyük ve geçiş kenarlara varmadan saydamlaşıyor: hale hiçbir yerde bir
+ * kenara çarpmıyor.
+ */
+.yorunge-yumurta::before {
+  content: '';
+  position: absolute;
+  inset: -55%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 160 90 / 0.3),
+    rgb(255 160 90 / 0.1) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.yorunge-yumurta {
+  filter: drop-shadow(0 22px 44px rgb(0 0 0 / 0.55));
+}
+
+/* --- Simgenin cismi --- */
+
+/*
+ * Logolar yassı resim gibi durmasın diye simge bir **nesne**: üstten gelen
+ * ışıkla aydınlanan, altı gölgede kalan bir disk.
+ *
+ * Üç katman birlikte çalışıyor:
+ *   1. Radyal gradyan — yüzeyin kendi eğriliği (sol üstte açık, sağ altta koyu).
+ *   2. İçe gölgeler — üstte ince bir ışık çizgisi, altta oyulmuş karanlık.
+ *   3. Dışa gölge — diski zeminden kaldırıyor.
+ *
+ * Tek renk arka plan + kenarlıkla denendi: yatırılmış düzlemde kâğıt
+ * kesiği gibi duruyordu, hacim hissi yoktu.
+ */
+.yorunge-simge {
+  position: relative;
+  background: radial-gradient(circle at 32% 24%, #343943 0%, #191c23 58%, #0e1015 100%);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  box-shadow:
+    inset 0 1.5px 1px rgb(255 255 255 / 0.3),
+    inset 0 -7px 12px rgb(0 0 0 / 0.55),
+    0 10px 20px rgb(0 0 0 / 0.55),
+    0 2px 5px rgb(0 0 0 / 0.4);
+}
+
+/* Tepeden vuran ışığın parlaması; diske cam hissi veriyor. */
+.yorunge-simge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    155deg,
+    rgb(255 255 255 / 0.3) 0%,
+    rgb(255 255 255 / 0.06) 32%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+/*
+ * Logo diskin yüzeyinin **üstünde** duruyor: kendi gölgesi onu kabartma
+ * gibi gösteriyor. Gölgesiz hâlinde diske basılmış bir çıkartma gibiydi.
+ */
+.yorunge-logo {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.65));
+}
+
+/*
+ * Dönüş ve giriş geçişi burada değil, `YorungeHalkalari.tsx` içinde.
+ *
+ * Motion sürüyor. Aynı animasyon hem CSS'te hem Motion'da tanımlı
+ * kalsaydı biri diğerinin `transform`'unu sessizce ezerdi — Motion
+ * dönüşümü satır içi stille yazıyor ve CSS'teki `animation` kuralını her
+ * karede geçersiz kılıyor. Hareket azaltma tercihi de orada, Motion'ın
+ * `useReducedMotion` kancasıyla.
+ */
+
+/* ==========================================================================
+   Girişten sonraki geçiş
+   ==========================================================================
+
+   Zaman çizelgesi (toplam ~3 sn). Sıra, her adımın bir öncekini
+   tamamlamasına dayanıyor; çakışan süreler hareketi karmaşık gösteriyordu:
+
+     0.00 – 0.80  halkalar hafifçe büyüyor  (beklenti)
+     0.80 – 1.50  merkeze doğru toplanıp sönüyor
+     1.40 – 2.00  ışık patlaması büyüyor
+     2.00 – 2.60  ışık sönüyor
+     2.60 – 3.00  uygulama yukarıdan kayarak beliriyor
+
+   Halkaların dönüş hızı değiştirilmiyor. Denendi: `animation-duration`
+   çalışırken değiştiğinde tarayıcı animasyonu baştan hesaplıyor ve
+   simgeler yerinden zıplıyordu. Ölçek değişimi aynı "toplanma" hissini
+   sarsıntısız veriyor.
+   ========================================================================== */
+
+/*
+ * Işık patlaması.
+ *
+ * `220vmax` çapında bir **daire**: kutusu ekrandan küçük olduğunda radyal
+ * geçiş kenarda kesiliyor ve ortada dikdörtgen bir iz kalıyordu.
+ *
+ * Düzenin kökünde çiziliyor, form kartının içinde değil — kartın
+ * `backdrop-filter`'ı `position: fixed` için kapsayıcı blok üretiyor ve
+ * ışık kartın kutusuna hapsoluyordu.
+ */
+.giris-isigi {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 220vmax;
+  height: 220vmax;
+  margin: -110vmax 0 0 -110vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 40;
+  background: radial-gradient(
+    circle,
+    rgb(255 201 74 / 0.95) 0%,
+    rgb(255 138 92 / 0.6) 35%,
+    transparent 70%
+  );
+  opacity: 0;
+  animation: giris-parla 1.2s ease-out 0.18s forwards;
+}
+
+@keyframes giris-parla {
+  0% { opacity: 0; transform: scale(0.05); }
+  45% { opacity: 0.88; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
+}
+
+/*
+ * Hareket azaltıldığında geçiş hiç oynamıyor; giriş doğrudan uygulamayı
+ * açıyor. Ekranı üç saniye kaplayan bir efekt, kısılacak bir süsleme
+ * değil — baş dönmesi yapabiliyor.
+ */
+
+/* ==========================================================================
+   Sinematik giriş sahnesi
+   ==========================================================================
+
+   Sayfa 800vh kaydırılıyor, tuval ve arayüz 100vw × 100vh sabit kalıyor.
+   Kaydırma kamerayı yumurtanın çevresinde tam bir tur döndürüyor.
+
+   ## Yazı tipleri neden depoda
+
+   Google Fonts'tan `<link>` ile çekilemiyor: bu uygulamanın içerik
+   güvenlik politikası `style-src 'self'` ve `font-src 'self' data:` diyor,
+   yani hem stil dosyası hem woff2 engellenirdi. Dosyalar bir kez indirilip
+   `public/yazitipleri` altına konuldu (üçü de OFL lisanslı, barındırmaya
+   izin veriyor).
+
+   Başlıklarda Italiana değil Playfair Display var: Italiana'nın
+   `latin-ext` alt kümesi yok, yani ğ ş ı İ harfleri o yazı tipinde
+   bulunmuyor ve Türkçe bir başlığın ortasında başka bir fonta düşerdi.
+   Italiana yalnızca marka adında — orası ASCII.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Italiana';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/yazitipleri/italiana-400-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-300-normal-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-300-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-400-normal-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-400-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-600-normal-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/yazitipleri/outfit-600-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/yazitipleri/playfair-display-500-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/yazitipleri/playfair-display-500-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+.sahne {
+  position: relative;
+}
+
+/* Kaydırma mesafesini üreten boşluk. */
+.sahne-mesafe {
+  width: 1px;
+  pointer-events: none;
+}
+
+/*
+ * Sayfa açıkken yatay taşma yok ve kaydırma çubuğu gizli. Gövdeye
+ * yazılıyor çünkü kaydırma çubuğu belgenin kendisine ait; bir alt
+ * kapsayıcıya `overflow` vermek onu gizlemiyor.
+ */
+body:has(.sahne) {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+body:has(.sahne)::-webkit-scrollbar {
+  display: none;
+}
+
+.sahne-tuval {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+.sahne-tuval-yok {
+  display: none;
+}
+
+/* WebGL kurulamazsa: siyah zemin, bronz ve mavi radyal ışıklar. */
+.sahne-yedek {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(60% 55% at 22% 30%, rgb(180 110 45 / 0.35), transparent 70%),
+    radial-gradient(55% 50% at 78% 70%, rgb(45 90 180 / 0.32), transparent 70%),
+    #05060a;
+}
+
+/*
+ * Tam ekran katmanlar tıklamayı geçiriyor; yalnızca gerçekten
+ * tıklanabilir olanlar bunu geri açıyor. Aksi hâlde görünmez bir katman
+ * formun üstünü kapatıyordu.
+ */
+.sahne-katman {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.sahne-katman-arkada {
+  z-index: -1;
+}
+
+/* --- Izgara --- */
+
+.sahne-izgara-yatay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4.5rem;
+  height: 1px;
+  background: rgb(255 255 255 / 0.07);
+}
+
+.sahne-izgara-dikey {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.055);
+}
+
+.sahne-izgara-nokta {
+  position: absolute;
+  left: -1.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(255 214 150 / 0.85);
+  box-shadow: 0 0 8px rgb(255 190 120 / 0.7);
+  animation-name: izgara-kay;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes izgara-kay {
+  from { top: -2%; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { top: 102%; opacity: 0; }
+}
+
+/* --- Başlık --- */
+
+.sahne-baslik {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4.5rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  pointer-events: none;
+}
+.sahne-baslik > * {
+  pointer-events: auto;
+}
+
+.sahne-marka {
+  font-family: 'Italiana', serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.sahne-gezinme {
+  display: flex;
+  align-items: center;
+}
+
+.sahne-gezinme-oge {
+  display: flex;
+  align-items: center;
+}
+
+.sahne-ayrac {
+  width: 3px;
+  height: 3px;
+  margin: 0 0.85rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.28);
+}
+
+.sahne-bag {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.55);
+  transition: color 0.3s ease;
+}
+.sahne-bag:hover,
+.sahne-bag-etkin {
+  color: rgb(255 255 255 / 0.95);
+}
+
+/* Hap kalktı; sağdaki boşluk gezinmeyi ortada tutuyor. */
+.sahne-baslik-bosluk {
+  width: 6rem;
+}
+
+/* --- Bölümler --- */
+
+.sahne-bolum {
+  position: absolute;
+  display: none;
+  max-width: min(22rem, 30vw);
+}
+.sahne-bolum-etkin {
+  display: block;
+}
+
+/*
+ * Dört bölüm de **sol bantta**, yalnızca girinti ve yükseklik değişiyor.
+ *
+ * Kaynak tasarımda bölümler ikinci ve dördüncü ızgara sütunlarına
+ * yayılıyordu; orada sayfanın ortası boştu. Burada ortada yumurta, sağda
+ * giriş formu var. 33%'ten başlayan bir başlık doğrudan yumurtanın
+ * üstüne düşüyordu ve bronz yüzeyde beyaz yazı okunmuyordu — ekran
+ * görüntüsünde görüldü. Kompozisyon çeşitliliği artık yatay değil dikey.
+ */
+.sahne-bolum-sol-alt { left: 6%; bottom: 15%; }
+.sahne-bolum-ikinci-sutun { left: 13%; bottom: 19%; }
+.sahne-bolum-sag-yari { left: 6%; top: 24%; }
+
+.sahne-baslik-metni {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(2.2rem, 5.2vw, 4.1rem);
+  line-height: 0.98;
+  color: rgb(255 255 255 / 0.96);
+  margin-bottom: 1.6rem;
+}
+
+.sahne-satir {
+  display: block;
+}
+
+/*
+ * Harf harf beliriyor: 50 piksel aşağıdan, bulanık ve saydam başlayıp
+ * yukarı doğru netleşerek. `inline-block` şart — satır içi bir öğeye
+ * `transform` uygulanmıyor.
+ */
+.sahne-harf {
+  display: inline-block;
+  white-space: pre;
+  animation: harf-belir 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes harf-belir {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.sahne-paragraflar {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.sahne-paragraf {
+  flex: 1;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgb(255 255 255 / 0.62);
+  max-width: 22rem;
+  animation: paragraf-belir 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes paragraf-belir {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Yuva ve kuş --- */
+
+/*
+ * "Ne kadar gidiyor" bölümünün görseli. Bölümün yazısıyla aynı sol
+ * bantta, onun üstünde duruyor.
+ *
+ * Kendi katmanında olduğu için konumunu kendisi taşıyor: bölümün içinde
+ * olsaydı bölüm kapandığı anda yok olur, kuş uçarak ayrılamazdı.
+ */
+.yuva {
+  position: absolute;
+  left: 6%;
+  bottom: 46%;
+  width: clamp(15rem, 22vw, 21rem);
+  animation: yuva-belir 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Kuş yuvadan ayrılırken yuva da sönüyor; ikisi birlikte gidiyor. */
+.yuva-ucuyor {
+  animation: yuva-son 1.5s ease-in forwards;
+}
+
+@keyframes yuva-belir {
+  from { opacity: 0; transform: translateY(22px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes yuva-son {
+  0% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+
+.yuva-cizim {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 18px 34px rgb(0 0 0 / 0.55));
+}
+
+/* Bırakılan dal yuvaya düşüyor ve orada kalıyor. */
+.yuva-birakilan-dal {
+  animation: dal-dus 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+
+@keyframes dal-dus {
+  from { transform: translateY(-34px) rotate(-14deg); opacity: 0; }
+  to { transform: translateY(0) rotate(0); opacity: 1; }
+}
+
+/*
+ * Kuş.
+ *
+ * Uçuş yolu tek bir `transform` zinciri: konum, dönüş ve ölçek birlikte
+ * değişiyor. Ayrı ayrı animasyonlara bölünseydi biri diğerinin
+ * `transform`'unu ezerdi — CSS'te aynı özelliğe iki animasyon
+ * uygulanamıyor.
+ */
+.kus {
+  position: absolute;
+  /*
+   * Yuvanın ağzının kenarına oturuyor.
+   *
+   * Önce `top: -1.5rem` idi ve kuş yuvanın epey üstünde havada asılı
+   * duruyordu — konmuş değil, süzülüyor gibiydi. Ekran görüntüsünde
+   * görüldü. Yuva çiziminde ağzın üst kenarı kutunun %40'ında; kuşun
+   * ayakları oraya denk gelsin diye yüksekliği kadar yukarıdan
+   * başlıyor.
+   */
+  left: 47%;
+  top: 12%;
+  width: clamp(6.5rem, 9vw, 8.5rem);
+}
+
+.kus-cizim {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.5));
+}
+
+.kus-geliyor {
+  animation: kus-gelis 2.1s cubic-bezier(0.32, 0.5, 0.35, 1) both;
+}
+
+.kus-kondu {
+  animation: kus-tuner 3.6s ease-in-out infinite;
+}
+
+.kus-ucuyor {
+  animation: kus-gidis 1.5s cubic-bezier(0.6, 0, 0.75, 0.5) forwards;
+}
+
+/*
+ * Geliş: uzaktan, yüksekten, küçük başlıyor; yuvaya yaklaşırken alçalıp
+ * büyüyor ve son anda burnunu kaldırıp konuyor (`85%`). O fren olmadan
+ * kuş yuvaya çarpıyormuş gibi duruyordu.
+ */
+@keyframes kus-gelis {
+  0% { transform: translate(-24rem, -14rem) rotate(-16deg) scale(0.45); opacity: 0; }
+  12% { opacity: 1; }
+  55% { transform: translate(-8rem, -6rem) rotate(-9deg) scale(0.78); }
+  85% { transform: translate(0.6rem, -1.2rem) rotate(7deg) scale(1); }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+}
+
+/* Konduğunda hafifçe nefes alıyor; tamamen donuk durmuyor. */
+@keyframes kus-tuner {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(-1.5deg); }
+}
+
+@keyframes kus-gidis {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  20% { transform: translate(0.4rem, -2.4rem) rotate(-10deg) scale(1.02); }
+  100% { transform: translate(20rem, -16rem) rotate(-20deg) scale(0.4); opacity: 0; }
+}
+
+/*
+ * Kanatlar yalnızca uçarken çırpıyor.
+ *
+ * İkisi **zıt fazda**: yakın kanat yukarıdayken uzak kanat aşağıda.
+ * `animation-direction` biri için ters çevriliyor, böylece tek bir
+ * keyframe iki kanadı da sürüyor. Aynı fazda çırpsalardı kuş kâğıttan
+ * kesilmiş gibi düz görünürdü; derinlik hissini bu fark veriyor.
+ *
+ * Konduğunda hiç çırpmıyorlar — konmuş bir kuşun kanadı kapalıdır.
+ */
+.kus-geliyor .kus-kanat,
+.kus-ucuyor .kus-kanat {
+  transform-origin: 106px 68px;
+  animation: kanat-cirp 0.26s ease-in-out infinite alternate;
+}
+
+.kus-geliyor .kus-kanat-uzak,
+.kus-ucuyor .kus-kanat-uzak {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes kanat-cirp {
+  from { transform: rotate(-30deg) scaleY(0.82); }
+  to { transform: rotate(26deg) scaleY(1.08); }
+}
+
+/*
+ * Kuyruk uçarken hafifçe salınıyor: dümen gibi. Sabit kalsaydı gövdeye
+ * yapıştırılmış bir levha gibi dururdu.
+ */
+.kus-geliyor .kus-kuyruk,
+.kus-ucuyor .kus-kuyruk {
+  transform-origin: 96px 86px;
+  animation: kuyruk-salin 0.52s ease-in-out infinite alternate;
+}
+
+@keyframes kuyruk-salin {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(6deg); }
+}
+
+/* Ayaklar yalnızca konduğunda; uçarken gövdeye çekiliyor. */
+.kus-geliyor .kus-ayak,
+.kus-ucuyor .kus-ayak {
+  opacity: 0;
+}
+
+/* Dal yalnızca gelirken ağızda; konunca yuvaya bırakılıyor. */
+.kus-kondu .kus-dal,
+.kus-ucuyor .kus-dal {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yuva,
+  .yuva-ucuyor,
+  .yuva-birakilan-dal,
+  .kus-geliyor,
+  .kus-kondu,
+  .kus-ucuyor,
+  .kus-geliyor .kus-kanat,
+  .kus-ucuyor .kus-kanat,
+  .kus-geliyor .kus-kuyruk,
+  .kus-ucuyor .kus-kuyruk {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- İlerleme --- */
+
+.sahne-ilerleme {
+  position: fixed;
+  left: 84%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.sahne-cizik {
+  width: 2px;
+  height: 26px;
+  background: rgb(255 255 255 / 0.13);
+  overflow: hidden;
+}
+.sahne-cizik-dolu {
+  display: block;
+  width: 100%;
+  background: rgb(255 214 150 / 0.9);
+  box-shadow: 0 0 6px rgb(255 190 120 / 0.6);
+}
+
+/* --- İmleç --- */
+
+.sahne-nokta,
+.sahne-halka {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.sahne-nokta {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: #ffffff;
+}
+.sahne-halka {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  transition: width 0.25s ease, height 0.25s ease, margin 0.25s ease,
+    background-color 0.25s ease;
+}
+.sahne-halka-buyuk {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  background: rgb(255 255 255 / 0.1);
+}
+
+@media (hover: none) {
+  .sahne-nokta,
+  .sahne-halka {
+    display: none;
+  }
+}
+
+/* --- Giriş formu --- */
+
+.sahne-form {
+  position: fixed;
+  right: clamp(1rem, 5vw, 4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: min(21rem, 88vw);
+}
+
+.sahne-form-baslik {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  color: rgb(255 255 255 / 0.95);
+}
+
+/* --- Dar ekran --- */
+
+@media (max-width: 767px) {
+  .sahne-bolum,
+  .sahne-bolum-sol-alt,
+  .sahne-bolum-ikinci-sutun,
+  .sahne-bolum-sag-yari {
+    left: 1.25rem;
+    right: 1.25rem;
+    top: auto;
+    bottom: auto;
+    max-width: none;
+  }
+
+  /*
+   * Bölüm yazısı formun üstünde duruyor. Form ekranın altında sabit;
+   * yazı da onun üstündeki boşluğa yerleşiyor.
+   */
+  /*
+   * Yazı bloğu üstte, form altta. `max-height` şart: uzun bir paragraf
+   * formun başlığının üstüne taşıyor ve iki metin üst üste biniyordu.
+   */
+  .sahne-bolum {
+    top: 5.5rem;
+    max-height: 38vh;
+    overflow: hidden;
+  }
+
+  .sahne-baslik-metni {
+    font-size: clamp(2rem, 12vw, 3rem);
+    margin-bottom: 1rem;
+  }
+
+  .sahne-paragraflar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .sahne-paragraf {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    max-width: 32ch;
+  }
+  /* Yer yoksa açılış bölümünün ikinci paragrafı gizleniyor. */
+  .sahne-paragraf-ikincil {
+    display: none;
+  }
+
+  .sahne-form {
+    top: auto;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    width: auto;
+    transform: none;
+  }
+
+  .sahne-ilerleme {
+    left: auto;
+    right: 0.75rem;
+    transform: translateY(-50%);
+  }
+}
+
+/* --- Hareket azaltma --- */
+
+/*
+ * Yazı geçişleri ve ızgara noktaları duruyor; metin son hâlinde
+ * görünüyor. Kamera turu ve renk geçişi kaydırmaya bağlı olduğu için
+ * kalıyor — onlar kullanıcının kendi hareketi.
  */
 @media (prefers-reduced-motion: reduce) {
-  .tema-leke,
-  .tema-aura,
-  .tema-yay {
+  .sahne-harf,
+  .sahne-paragraf,
+    .sahne-izgara-nokta {
+    animation: none;
+    opacity: 0.5;
+    top: 50%;
+  }
+  /* Hap kalktı; sağdaki boşluk gezinmeyi ortada tutuyor. */
+.sahne-baslik-bosluk {
+  width: 6rem;
+}
+
+.sahne-hap {
+    transition: none;
+  }
+}
+
+/* --- Girişten sonraki kapanış --- */
+
+/*
+ * Sahnenin tamamı merkeze çöküp sönüyor. Tuval de dahil: yalnızca yazılar
+ * kaybolsaydı arkada dönmeye devam eden bir yumurta kalırdı ve ışık
+ * patlaması bir şeyin bittiğini söylemezdi.
+ */
+.kimlik-hizlanma .yorunge,
+.kimlik-hizlanma .cam,
+.kimlik-hizlanma .kimlik-baslik {
+  animation: sahne-beklenti 0.8s ease-in forwards;
+}
+
+.kimlik-toplanma .yorunge,
+.kimlik-toplanma .cam,
+.kimlik-toplanma .kimlik-baslik {
+  animation: sahne-topla 0.7s cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
+}
+
+@keyframes sahne-beklenti {
+  to { transform: scale(1.05); }
+}
+
+@keyframes sahne-topla {
+  from { transform: scale(1.05); opacity: 1; }
+  to { transform: scale(0.12); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kimlik-hizlanma .yorunge,
+  .kimlik-hizlanma .cam,
+  .kimlik-hizlanma .kimlik-baslik,
+  .kimlik-toplanma .yorunge,
+  .kimlik-toplanma .cam,
+  .kimlik-toplanma .kimlik-baslik {
     animation: none;
   }
+}
+
+/* --- Kimlik ekranları --- */
+
+.kimlik {
+  color: rgb(241 245 249 / 0.95);
+}
+
+.kimlik-marka {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.kimlik-baslik {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  color: rgb(255 255 255 / 0.96);
+}
+
+/*
+ * Yörünge ekranı kaplıyor.
+ *
+ * `min(112vh, 108vw)`: hangisi küçükse o. Yalnızca genişliğe bakılsaydı
+ * alçak ve geniş ekranlarda halkalar dikey olarak taşıyor, yalnızca
+ * yüksekliğe bakılsaydı dar ekranlarda yanlardan çıkıyordu.
+ */
+.kimlik-yorunge {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(112vh, 108vw);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kimlik-marka {
+  position: fixed;
+  top: 1.5rem;
+  left: clamp(1rem, 4vw, 3rem);
+  z-index: 4;
+}
+
+/* Kart yörüngenin üstünde ve sağda; yumurta ortada kalıyor. */
+.kimlik-kart {
+  position: relative;
+  z-index: 3;
+  margin-left: auto;
+  margin-right: clamp(1rem, 6vw, 5rem);
+  width: min(21rem, 100%);
+  padding-top: 6rem;
+  padding-bottom: 3rem;
+}
+
+@media (max-width: 767px) {
+  .kimlik-kart {
+    margin-inline: auto;
+    padding-top: 5rem;
+  }
+}
+
+/* Uygulamaya giriş düğmesi: başlıktaki hapın büyük hâli. */
+.sahne-gir-dugmesi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #05060a;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sahne-gir-dugmesi:hover {
+  transform: scale(1.04);
+}
+
+/* ==========================================================================
+   Uygulama ekranlarının başlığı
+   ==========================================================================
+
+   Hikâyedeki bölüm başlıklarıyla aynı dil, daha küçük ölçek. Orada başlık
+   sayfanın konusu; burada bir ekranın adı ve asıl iş listede.
+   ========================================================================== */
+
+.sayfa-basligi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sayfa-basligi-metni {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.6rem, 3.4vw, 2.1rem);
+  line-height: 1.15;
+  color: rgb(255 255 255 / 0.95);
+}
+
+.sayfa-basligi-alt {
+  margin-top: 0.35rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.sayfa-basligi-yan {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/*
+ * İçerik yukarıdan süzülerek beliriyor.
+ *
+ * Kabuk zaten girişten sonra bir kez açılış animasyonu oynatıyor; bu ise
+ * her sekme değişiminde. İkisi de kısa: uzun bir giriş animasyonu, sık
+ * kullanılan bir ekranda gecikme gibi hissediliyor.
+ */
+.sayfa-icerigi {
+  animation: sayfa-belir 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sayfa-belir {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sayfa-icerigi {
+    animation: none;
+  }
+}
+
+/*
+ * Özetteki aylık gider kartı.
+ *
+ * Uygulamanın en büyük tek renk alanı. Bronz bir geçiş: yumurtanın
+ * kabuğuyla aynı aileden ama çok daha koyu, çünkü üstündeki yazı beyaz.
+ * Sağ üstteki sıcak ışık kartı düz bir levha olmaktan çıkarıyor.
+ */
+.ozet-kart {
+  background:
+    radial-gradient(120% 140% at 82% 8%, rgb(255 176 96 / 0.32), transparent 62%),
+    linear-gradient(135deg, #6E4318 0%, #3E2510 100%);
+  border: 1px solid rgb(255 200 140 / 0.16);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.45);
 }

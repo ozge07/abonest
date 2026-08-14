@@ -1,3 +1,4 @@
+import { SayfaBasligi } from '../components/SayfaBasligi';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -31,7 +32,7 @@ export function HesapSayfasi() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <h1 className="text-lg font-semibold">Hesabım</h1>
+      <SayfaBasligi baslik="Hesabım" />
       {/*
         `key`: profil formu alanlarını **ilk çizimde** kullanıcıdan
         dolduruyor. Veri sonradan gelirse (ya da başka bir kullanıcıya
@@ -64,10 +65,10 @@ function Bolum({
   return (
     <section
       className={[
-        'rounded-xl border bg-white/80 p-5 backdrop-blur-xl dark:bg-slate-900/70',
+        'cam rounded-xl p-5',
         tehlikeli
           ? 'border-red-300 dark:border-red-900/60'
-          : 'border-slate-200 dark:border-slate-800',
+          : '',
       ].join(' ')}
     >
       <h2
@@ -159,15 +160,23 @@ function ProfilBolumu() {
           E-posta: {kullanici?.email}
         </p>
 
-        <div className="flex items-center gap-3">
-          <Dugme type="submit" bekliyor={kaydet.isPending}>
-            Kaydet
-          </Dugme>
+        {/*
+          Düğme satırın **sonunda**, onay yazısı solunda.
+          
+          Sıra önemli: düğme son eleman olduğu için kartın sağ kenarıyla
+          hizalı kalıyor. Ters sırada "Kaydedildi" yazısı belirdiğinde
+          düğme sola kayardı — yani ekranda bir şey her kaydedişte yer
+          değiştirirdi.
+        */}
+        <div className="flex items-center justify-end gap-3">
           {kaydedildi && (
             <span className="text-sm text-green-700 dark:text-green-400">
               Kaydedildi
             </span>
           )}
+          <Dugme type="submit" bekliyor={kaydet.isPending}>
+            Kaydet
+          </Dugme>
         </div>
       </form>
     </Bolum>
@@ -243,15 +252,15 @@ function SifreBolumu() {
           {...yeni.bagla}
         />
 
-        <div className="flex items-center gap-3">
-          <Dugme type="submit" bekliyor={degistir.isPending}>
-            Şifreyi değiştir
-          </Dugme>
+        <div className="flex items-center justify-end gap-3">
           {tamam && (
             <span className="text-sm text-green-700 dark:text-green-400">
               Şifren değişti
             </span>
           )}
+          <Dugme type="submit" bekliyor={degistir.isPending}>
+            Şifreyi değiştir
+          </Dugme>
         </div>
       </form>
     </Bolum>
@@ -295,7 +304,7 @@ function OturumlarBolumu() {
           {oturumlar.map((oturum) => (
             <li
               key={oturum.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-800"
+              className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">

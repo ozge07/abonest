@@ -1,3 +1,4 @@
+import { SayfaBasligi } from '../components/SayfaBasligi';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -27,7 +28,7 @@ export function AnalizSayfasi() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold">Harcama analizi</h1>
+        <SayfaBasligi baslik="Harcama analizi" />
 
         <div className="flex gap-2">
           <SecimDugmeleri
@@ -99,7 +100,7 @@ function ToplamKartlari({
       {toplamlar.map((toplam) => (
         <div
           key={toplam.currency}
-          className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70"
+          className="cam rounded-xl p-4"
         >
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {toplam.currency} · toplam
@@ -158,7 +159,7 @@ function HarcamaGrafigi({
                 {currency}
               </p>
             )}
-            <div className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70">
+            <div className="cam rounded-xl p-4">
               <ul className="flex flex-col gap-2.5">
                 {kendi.map((kova) => (
                   <li
@@ -246,7 +247,7 @@ function KullanilmayanlarBolumu() {
           {abonelikler.map((abonelik) => (
             <li
               key={abonelik.id}
-              className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-xl p-4 dark:border-slate-800 dark:bg-slate-900/70"
+              className="flex flex-wrap items-center gap-4 cam rounded-xl p-4"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{abonelik.name}</p>
@@ -305,7 +306,7 @@ function SecimDugmeleri({
           className={[
             'px-3 py-1.5 text-xs font-medium transition-colors',
             secili === secenek.deger
-              ? 'bg-marka-600 text-white'
+              ? 'bg-marka-600 text-marka-yazi'
               : 'hover:bg-slate-100 dark:hover:bg-slate-800',
           ].join(' ')}
         >

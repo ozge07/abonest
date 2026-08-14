@@ -11,5 +11,3 @@
  */
 export const UYGULAMA_ADI = 'Abonest';
 
-/** Tarayıcı sekmesinde ve giriş ekranında görünen alt başlık. */
-export const UYGULAMA_TANIMI = 'Abonelik takibi';

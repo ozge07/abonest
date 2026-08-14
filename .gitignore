@@ -12,3 +12,11 @@ coverage/
 
 # Prisma üretilmiş istemci
 apps/api/src/generated/
+
+# UI/UX Pro Max becerisi (uipro ile kurulan araç).
+#
+# Depoya girmiyor: 4,6 MB, 172 dosya ve içeriği bu projenin kodu değil,
+# üçüncü taraf bir aracın kopyası. `uipro init --ai claude` ile her
+# makinede yeniden kurulabiliyor. Depoya alınması istenirse bu satır
+# silinir — sonradan eklemek kolay, herkese açık geçmişten çıkarmak zor.
+.claude/
