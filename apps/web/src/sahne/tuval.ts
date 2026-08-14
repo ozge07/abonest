@@ -411,7 +411,24 @@ export function sahneKur(
     // Kamera: tam tur, ortada biraz yükselip yaklaşıyor.
     const aci = -Math.PI * 0.12 + yIlerleme * Math.PI * 2;
     const orta = Math.sin(yIlerleme * Math.PI);
-    const uzaklik = 5.2 - orta * 0.9;
+
+    /*
+     * Dar ekranda kamera geriye çekiliyor.
+     *
+     * Perspektif kameranın **dikey** görüş açısı sabit; yataydaki açı
+     * en-boy oranından türüyor. Dikey bir telefon ekranında oran 1'in
+     * altına düşüyor ve yatay alan daralıyor: yumurta ekranı doldururken
+     * yörüngedeki diskler çerçevenin dışında kalıyor, kenardakiler de
+     * yarım kesiliyor. Telefonda ölçüldü — 390 pikselde on iki diskten
+     * yalnızca biri görünüyordu, o da yarısı kesik.
+     *
+     * Uzaklığı `1/oran` ile çarpmak yataydaki görüş alanını geri
+     * kazandırıyor. Üst sınır var: çok geniş ekranlarda kamerayı
+     * yakınlaştırmak istemiyoruz, oran 1'in üstündeyken çarpan 1 kalıyor.
+     */
+    const oran = kamera.aspect;
+    const darlikPayi = oran < 1 ? Math.min(1 / oran, 1.9) : 1;
+    const uzaklik = (5.2 - orta * 0.9) * darlikPayi;
     kamera.position.set(
       Math.sin(aci) * uzaklik,
       0.35 + orta * 1.15,
