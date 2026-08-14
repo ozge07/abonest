@@ -234,8 +234,22 @@ export function sahneKur(
   const sahne = new Scene();
   sahne.fog = new FogExp2(0x07080b, 0.055);
 
+  /*
+   * Dar ekranda görüş açısı geniş, yörünge dar.
+   *
+   * Perspektif kameranın **dikey** açısı sabit; yataydaki ondan ve
+   * en-boy oranından türüyor. Dikey telefon ekranında oran 0.46'ya
+   * düşüyor ve yatayda görülebilen alan ±0.83 birime iniyordu — yörünge
+   * yarıçapı 2.3–3.5 olduğu için diskler kadraja **matematiksel olarak**
+   * giremiyordu. Telefonda ölçüldü: on iki diskten hiçbiri görünmüyordu.
+   *
+   * Kamerayı geriye çekmek çözmüyor: yarıçapı sığdıracak uzaklıkta
+   * yumurta nokta kadar kalıyor. Çözüm ikisini birlikte değiştirmek —
+   * açıyı genişletmek ve yörüngeyi yumurtanın etrafına toplamak.
+   */
+  const dar = secenekler.dar;
   const kamera = new PerspectiveCamera(
-    38,
+    dar ? 52 : 38,
     window.innerWidth / window.innerHeight,
     0.1,
     100,
@@ -306,7 +320,7 @@ export function sahneKur(
           fog: false,
         }),
       );
-      sprite.scale.setScalar(0.2);
+      sprite.scale.setScalar(dar ? 0.15 : 0.2);
       yorunge.add(sprite);
       diskler.push({
         sprite,
@@ -315,10 +329,11 @@ export function sahneKur(
          * Önce 1,5–2,6 aralığındaydı ve yumurtanın üstüne biniyorlardı;
          * ekran görüntüsünde YouTube diski yumurtayı örtüyordu.
          */
-        yaricap: 2.3 + (i % 3) * 0.62,
+        // Dar ekranda yörünge yumurtanın çevresine toplanıyor.
+        yaricap: (2.3 + (i % 3) * 0.62) * (dar ? 0.36 : 1),
         hiz: (i % 3 === 1 ? -1 : 1) * (0.16 - (i % 3) * 0.035),
         faz: (i / SAHNE.yorungeLogolari.length) * Math.PI * 2,
-        yukseklik: ((i % 5) - 2) * 0.3,
+        yukseklik: ((i % 5) - 2) * (dar ? 0.16 : 0.3),
       });
     };
   });
@@ -412,23 +427,8 @@ export function sahneKur(
     const aci = -Math.PI * 0.12 + yIlerleme * Math.PI * 2;
     const orta = Math.sin(yIlerleme * Math.PI);
 
-    /*
-     * Dar ekranda kamera geriye çekiliyor.
-     *
-     * Perspektif kameranın **dikey** görüş açısı sabit; yataydaki açı
-     * en-boy oranından türüyor. Dikey bir telefon ekranında oran 1'in
-     * altına düşüyor ve yatay alan daralıyor: yumurta ekranı doldururken
-     * yörüngedeki diskler çerçevenin dışında kalıyor, kenardakiler de
-     * yarım kesiliyor. Telefonda ölçüldü — 390 pikselde on iki diskten
-     * yalnızca biri görünüyordu, o da yarısı kesik.
-     *
-     * Uzaklığı `1/oran` ile çarpmak yataydaki görüş alanını geri
-     * kazandırıyor. Üst sınır var: çok geniş ekranlarda kamerayı
-     * yakınlaştırmak istemiyoruz, oran 1'in üstündeyken çarpan 1 kalıyor.
-     */
-    const oran = kamera.aspect;
-    const darlikPayi = oran < 1 ? Math.min(1 / oran, 1.9) : 1;
-    const uzaklik = (5.2 - orta * 0.9) * darlikPayi;
+    // Dar ekranda biraz daha geride: geniş açı yakın planda bozuyor.
+    const uzaklik = (5.2 - orta * 0.9) * (dar ? 1.25 : 1);
     kamera.position.set(
       Math.sin(aci) * uzaklik,
       0.35 + orta * 1.15,
