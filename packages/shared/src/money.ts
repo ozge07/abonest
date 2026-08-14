@@ -21,6 +21,14 @@ export type Currency = (typeof CURRENCIES)[number];
  * de 2 olsa bile varsayımı koda gömmek, beşinci para birimi eklendiğinde
  * sessiz bir hataya dönüşürdü.
  */
+/**
+ * Tutarlar tamsayı **kuruş** olarak taşınıyor.
+ *
+ * Kayan nokta para için uygun değil: `0.1 + 0.2 !== 0.3`. Tamsayı kuruşta
+ * böyle bir sapma olmuyor.
+ */
+export type MinorUnits = number;
+
 const EXPONENTS: Record<Currency, number> = {
   TRY: 2,
   USD: 2,
@@ -28,43 +36,8 @@ const EXPONENTS: Record<Currency, number> = {
   GBP: 2,
 };
 
-/** Tamsayı minor unit. Değişmez kural: tamsayı ve |x| < 2^53. */
-export type MinorUnits = number;
-
-export const MAX_SAFE_MINOR = Number.MAX_SAFE_INTEGER;
-
-export interface Money {
-  readonly amountMinor: MinorUnits;
-  readonly currency: Currency;
-}
-
-export function isCurrency(value: string): value is Currency {
-  return (CURRENCIES as readonly string[]).includes(value);
-}
-
-export function exponentOf(currency: Currency): number {
+function exponentOf(currency: Currency): number {
   return EXPONENTS[currency];
-}
-
-/**
- * `BIGINT` sütunundan gelen değeri uygulama tipine çevirir.
- *
- * Aralık dışında sessizce yuvarlamak yerine hata fırlatıyor: para verisinde
- * sessiz kayıp, gürültülü çökmeden çok daha pahalı.
- */
-export function fromDatabase(value: bigint): MinorUnits {
-  if (value > BigInt(MAX_SAFE_MINOR) || value < BigInt(-MAX_SAFE_MINOR)) {
-    throw new RangeError(
-      `Tutar güvenli tamsayı aralığının dışında: ${value}. ` +
-        'Bu bir veri bozulması işareti.',
-    );
-  }
-  return Number(value);
-}
-
-export function toDatabase(value: MinorUnits): bigint {
-  assertValidMinor(value);
-  return BigInt(value);
 }
 
 export function assertValidMinor(value: number): asserts value is MinorUnits {
@@ -100,13 +73,3 @@ export function parseAmount(input: string, currency: Currency): MinorUnits {
   return negative ? -amount : amount;
 }
 
-/** Görüntüleme biçimi. Yalnızca sunumda kullanılır, hesapta asla. */
-export function formatMoney(money: Money, locale = 'tr-TR'): string {
-  const exponent = exponentOf(money.currency);
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: money.currency,
-    minimumFractionDigits: exponent,
-    maximumFractionDigits: exponent,
-  }).format(money.amountMinor / 10 ** exponent);
-}

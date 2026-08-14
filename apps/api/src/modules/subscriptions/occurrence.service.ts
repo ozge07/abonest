@@ -13,7 +13,7 @@ import { PrismaService } from '../../infra/database/prisma.service.js';
  * kaçırmasına yol açar. 60 gün, en uzun hatırlatma penceresinin (kullanıcı en
  * fazla 30 gün önceden uyarı isteyebiliyor) rahatça iki katı.
  */
-export const HORIZON_DAYS = 60;
+const HORIZON_DAYS = 60;
 
 /**
  * Beklenen ödeme kayıtlarının üretimi.

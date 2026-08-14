@@ -9,7 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 
-export interface RateLimit {
+interface RateLimit {
   /** Pencere içinde izin verilen istek sayısı. */
   limit: number;
   /** Pencere uzunluğu (ms). */
@@ -18,7 +18,7 @@ export interface RateLimit {
   keyField?: string;
 }
 
-export const RATE_LIMIT = 'rate-limit';
+const RATE_LIMIT = 'rate-limit';
 export const Throttle = (options: RateLimit): MethodDecorator =>
   SetMetadata(RATE_LIMIT, options);
 

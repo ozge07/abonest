@@ -10,17 +10,6 @@ export interface EmailMessage {
   text: string;
 }
 
-/** Gönderen kimliği; her göndericinin ihtiyacı olan ortak alanlar. */
-export interface GonderenKimligi {
-  /** `MAIL_FROM` — "Ad <adres>" ya da düz adres. */
-  from: string;
-  /**
-   * Yanıt adresi. Verilmezse yanıtlar gönderen adrese, yani uygulamayı
-   * çalıştıran kişinin özel kutusuna gidiyor.
-   */
-  replyTo?: string | undefined;
-}
-
 export abstract class EmailSender {
   abstract send(message: EmailMessage): Promise<void>;
 

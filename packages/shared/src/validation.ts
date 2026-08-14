@@ -30,7 +30,7 @@ export const SIFRE_MIN = 6;
 export const SIFRE_MAX = 200;
 
 export const AD_MIN = 3;
-export const AD_MAX = 100;
+const AD_MAX = 100;
 
 export const sifreAlani = z
   .string()
