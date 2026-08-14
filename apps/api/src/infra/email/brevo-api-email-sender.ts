@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { Logger } from 'pino';
 import { EmailSender, type EmailMessage } from './email-sender.js';
@@ -57,6 +58,21 @@ export class BrevoApiEmailSender extends EmailSender {
         to: [{ email: message.to }],
         subject: message.subject,
         textContent: message.text,
+        /*
+         * Her postaya benzersiz bir kimlik.
+         *
+         * Gmail aynı konuyu taşıyan iletileri tek bir konuşmada topluyor.
+         * Hatırlatmalar üç gün üst üste gidiyor ve toplandıklarında
+         * sonrakiler bildirim üretmiyor — kullanıcı yalnızca ilkini
+         * görüyor. Bu başlık her iletiyi ayrı tutuyor.
+         *
+         * **Kasten eklenmeyenler:** `List-Unsubscribe` ve
+         * `Precedence: bulk`. İkisi de "bu toplu postadır" demek ve
+         * iletiyi doğrudan Gmail'de Tanıtımlar, Outlook'ta Diğer
+         * sekmesine gönderiyor. Hatırlatma pazarlama değil, kullanıcının
+         * kendi isteğiyle kurduğu bir uyarı.
+         */
+        headers: { 'X-Entity-Ref-ID': randomUUID() },
       }),
     });
 
@@ -75,6 +91,69 @@ export class BrevoApiEmailSender extends EmailSender {
     const sonuc = (await yanit.json()) as { messageId?: string };
     // Alıcı adresi loglanmıyor: kişisel veri ve zaten veritabanında.
     this.logger.info({ messageId: sonuc.messageId }, 'E-posta gönderildi');
+  }
+
+  /**
+   * Gönderen alan adı Brevo'da doğrulanmamışsa yüksek sesle uyarıyor.
+   *
+   * ## Neden önemli
+   *
+   * Bir posta, `From` alanındaki alan adının sahibi tarafından
+   * yetkilendirilmiş bir sunucudan gitmelidir. Alıcı sunucu bunu üç
+   * kayıtla denetliyor: SPF (bu sunucu bu alan adı için gönderebilir mi),
+   * DKIM (imza alan adıyla eşleşiyor mu) ve DMARC (ikisinden biri
+   * tutuyor mu).
+   *
+   * `hotmail.com` gibi başkasının alan adından gönderirken bunların
+   * hiçbiri tutmuyor: hotmail.com'un SPF kaydı yalnızca Microsoft'un
+   * sunucularını yetkilendiriyor, Brevo orada yok. Ölçüldü:
+   *
+   *   dig TXT hotmail.com   → v=spf1 include:spf2.outlook.com ...
+   *   (Brevo'nun sunucuları listede geçmiyor)
+   *
+   * Sonuç, postanın reddedilmesi değil — hotmail.com'un DMARC ilkesi
+   * `p=none` — ama alıcı sunucu iletiye güvenmiyor ve güvenli tarafa
+   * atıyor: Outlook'ta Diğer, Gmail'de Tanıtımlar ya da doğrudan spam.
+   * Kullanıcı bildirim almıyor.
+   *
+   * Bunun kod tarafında çözümü yok; alan adının DNS kayıtlarına erişim
+   * gerekiyor. Yapabileceğimiz şey sorunu görünür kılmak: sessizce
+   * yanlış çalışan bir sistem, gürültülü hata veren sistemden daha
+   * kötüdür.
+   */
+  private async uyarAlanAdiDogrulanmamissa(): Promise<void> {
+    const alanAdi = ayrisGonderen(this.ayarlar.from).email.split('@')[1];
+    if (alanAdi === undefined) {
+      return;
+    }
+
+    try {
+      const yanit = await fetch('https://api.brevo.com/v3/senders/domains', {
+        headers: { 'api-key': this.ayarlar.apiKey, accept: 'application/json' },
+      });
+      if (!yanit.ok) {
+        return;
+      }
+
+      const govde = (await yanit.json()) as {
+        domains?: { domain_name?: string; authenticated?: boolean }[];
+      };
+      const dogrulanmis = (govde.domains ?? []).some(
+        (d) => d.domain_name === alanAdi && d.authenticated === true,
+      );
+
+      if (!dogrulanmis) {
+        this.logger.warn(
+          { alanAdi },
+          'Gönderen alan adı Brevo\'da doğrulanmamış: SPF/DKIM eşleşmeyecek. ' +
+            'Hatırlatmalar Outlook\'ta Diğer, Gmail\'de Tanıtımlar sekmesine ' +
+            'düşebilir. Kalıcı çözüm: sahip olunan bir alan adını Brevo\'da ' +
+            'doğrulayıp MAIL_FROM\'u ona çevirmek.',
+        );
+      }
+    } catch {
+      // Uyarı üretemedik; gönderimi engellemesin.
+    }
   }
 
   /**
@@ -102,6 +181,7 @@ export class BrevoApiEmailSender extends EmailSender {
       }
 
       this.logger.info('Brevo API anahtarı doğrulandı');
+      await this.uyarAlanAdiDogrulanmamissa();
       return true;
     } catch (hata) {
       this.logger.error(

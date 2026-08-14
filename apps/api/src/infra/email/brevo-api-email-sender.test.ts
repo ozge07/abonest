@@ -79,12 +79,47 @@ describe('gönderim', () => {
     expect((secenekler.headers as Record<string, string>)['api-key']).toBe(
       'xkeysib-test',
     );
-    expect(JSON.parse(secenekler.body as string)).toEqual({
+    const govde = JSON.parse(secenekler.body as string) as Record<
+      string,
+      unknown
+    >;
+    const { headers, ...kalani } = govde;
+    expect(kalani).toEqual({
       sender: { name: 'Abonest', email: 'posta@ornek.com' },
       to: [{ email: 'alici@ornek.com' }],
       subject: 'Konu',
       textContent: 'Gövde',
     });
+    expect(headers).toHaveProperty('X-Entity-Ref-ID');
+  });
+
+  it('her ileti ayrı bir kimlik taşıyor', async () => {
+    /*
+     * Hatırlatmalar üç gün üst üste aynı konuyla gidiyor. Kimlik ortak
+     * olsaydı Gmail onları tek konuşmada toplar ve sonraki günlerin
+     * postaları bildirim üretmezdi — kullanıcı yalnızca ilkini görürdü.
+     */
+    const kimlikler: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, secenekler: RequestInit) => {
+        const g = JSON.parse(secenekler.body as string) as {
+          headers: Record<string, string>;
+        };
+        kimlikler.push(g.headers['X-Entity-Ref-ID'] ?? '');
+        return new Response(JSON.stringify({ messageId: '<abc>' }), {
+          status: 201,
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
+    );
+
+    const g = gonderici();
+    await g.send({ to: 'a@ornek.com', subject: 'Konu', text: 'Gövde' });
+    await g.send({ to: 'a@ornek.com', subject: 'Konu', text: 'Gövde' });
+
+    expect(kimlikler[0]).not.toBe('');
+    expect(kimlikler[0]).not.toBe(kimlikler[1]);
   });
 
   it('yanıt adresi verilmişse gövdeye giriyor', async () => {
