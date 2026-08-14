@@ -78,6 +78,43 @@ describe('arayüz aynı origin\'den', () => {
     expect(yanit.statusCode).toBe(200);
     expect(yanit.body).toContain('console.log');
   });
+
+  it('olmayan varlık 404 dönüyor, arayüz sayfası değil', async () => {
+    /*
+     * Tarayıcı `/favicon.ico`'yu sayfada bildirilmese de kendiliğinden
+     * istiyor ve Accept başlığında "her türü kabul ederim" diyor. Geri
+     * dönüş bunu sayfa isteği sayınca simge yerine `index.html`
+     * dönüyordu: "200 OK, text/html".
+     * Aynı kusur adı yanlış yazılmış her varlığı da sessizce 200
+     * yapıyordu — hatanın görünmesi gereken yerde hiçbir şey görünmüyor.
+     *
+     * Ayırt edici işaret uzantı: istemci tarafı rotaları uzantı taşımıyor.
+     */
+    for (const yol of ['/favicon.ico', '/olmayan.png', '/assets/yok.js']) {
+      const yanit = await app.inject({
+        method: 'GET',
+        url: yol,
+        headers: { accept: '*/*' },
+      });
+
+      expect(yanit.statusCode, yol).toBe(404);
+      expect(yanit.body, yol).not.toContain('id="root"');
+    }
+  });
+
+  it('uzantısız istemci rotaları hâlâ arayüze düşüyor', async () => {
+    // Yukarıdaki kural fazla geniş olsaydı uygulamanın rotaları kırılırdı.
+    for (const yol of ['/abonelikler', '/hesap', '/hikaye']) {
+      const yanit = await app.inject({
+        method: 'GET',
+        url: yol,
+        headers: { accept: 'text/html' },
+      });
+
+      expect(yanit.statusCode, yol).toBe(200);
+      expect(yanit.body, yol).toContain('id="root"');
+    }
+  });
 });
 
 describe('API yolları arayüze karışmıyor', () => {

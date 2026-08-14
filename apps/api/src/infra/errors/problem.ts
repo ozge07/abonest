@@ -171,6 +171,24 @@ function sayfaIstegi(request: FastifyRequest, exception: unknown): boolean {
     return false;
   }
 
+  /*
+   * Uzantılı yollar **varlık** isteği, sayfa değil.
+   *
+   * Arayüzün istemci tarafı rotaları uzantı taşımıyor (`/abonelikler`,
+   * `/hesap`, `/hikaye`); `logo.svg` ya da `favicon.ico` ise gerçek birer
+   * dosya. Dosya bulunamadığında `index.html` döndürmek iki şeyi bozuyor:
+   *
+   * 1. Tarayıcı `/favicon.ico`'yu kendiliğinden istiyor ve karşılığında
+   *    "200 OK, text/html" alıyordu. Simge yerine bir HTML belgesi.
+   * 2. Adı yanlış yazılmış her varlık sessizce 200 dönüyordu; ölçüldü:
+   *    `/olmayan-dosya.png` → 200, text/html. Hatanın görünmesi gereken
+   *    yerde hiçbir şey görünmüyordu.
+   */
+  const sonParca = yol.slice(yol.lastIndexOf('/') + 1);
+  if (sonParca.includes('.')) {
+    return false;
+  }
+
   const kabul = request.headers.accept ?? '';
   return kabul.includes('text/html') || kabul === '' || kabul.includes('*/*');
 }
