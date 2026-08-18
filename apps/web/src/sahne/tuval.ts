@@ -266,6 +266,15 @@ export function sahneKur(
   const ortam = pmrem.fromScene(new RoomEnvironment(), 0.04);
   sahne.environment = ortam.texture;
 
+  /**
+   * Yumurtanın merkezinin yüksekliği.
+   *
+   * Yörünge de buna oturuyor: ikisi ayrı sayılar olsaydı biri
+   * değiştirildiğinde diskler sessizce yumurtanın altında dönmeye başlardı —
+   * zaten öyle olmuştu.
+   */
+  const YUMURTA_Y = 0.35;
+
   const yumurta = new Mesh(
     new LatheGeometry(yumurtaProfili(), 96),
     new MeshStandardMaterial({
@@ -278,7 +287,7 @@ export function sahneKur(
   yumurta.castShadow = true;
   yumurta.scale.setScalar(0.6);
   // Biraz yukarıda: sol alttaki bölüm yazısına yer bırakıyor.
-  yumurta.position.y = 0.35;
+  yumurta.position.y = YUMURTA_Y;
   const yumurtaGrubu = new Group();
   yumurtaGrubu.add(yumurta);
   sahne.add(yumurtaGrubu);
@@ -302,6 +311,17 @@ export function sahneKur(
   // --- Yörüngedeki servis diskleri ---
 
   const yorunge = new Group();
+  /*
+   * Yörünge yumurtanın hizasında.
+   *
+   * Önce grup y=0'daydı, yumurta ise 0.35'te: diskler yumurtanın çevresinde
+   * değil, altındaki bir noktanın çevresinde dönüyordu. Dar ekranda göze
+   * batıyor, çünkü orada yörünge yarıçapı 0.36 katına indiriliyor ve halka
+   * yumurtaya iyice yaklaşıyor — kayma yarıçapla birlikte küçülmediği için
+   * oransal olarak büyüyor. Telefonda ölçüldü: disk kuşağının merkezi
+   * yumurtanınkinden 150–216 piksel aşağıdaydı (yumurta boyunun %28–39'u).
+   */
+  yorunge.position.y = YUMURTA_Y;
   sahne.add(yorunge);
   const diskler: { sprite: Sprite; yaricap: number; hiz: number; faz: number; yukseklik: number }[] =
     [];
