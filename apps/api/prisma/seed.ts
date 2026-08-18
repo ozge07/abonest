@@ -123,6 +123,16 @@ const SAGLAYICILAR: SaglayiciTohumu[] = [
   { slug: 'github', name: 'GitHub', kategori: 'yazilim', website: 'https://github.com', currency: 'USD', cycle: 'MONTHLY' , color: '#181717' },
   { slug: 'chatgpt-plus', name: 'ChatGPT Plus', kategori: 'yazilim', website: 'https://chat.openai.com', currency: 'USD', cycle: 'MONTHLY' , color: '#10A37F' },
   { slug: 'claude-pro', name: 'Claude Pro', kategori: 'yazilim', website: 'https://claude.ai', currency: 'USD', cycle: 'MONTHLY' , color: '#D97757' },
+  /*
+   * Play Store tek bir servis değil, faturalama kanalı: Android'de alınan
+   * pek çok abonelik buradan çekiliyor ve ekstrede "Google Play" olarak
+   * görünüyor. Kullanıcı hangi uygulamaya ödediğini not olarak yazabilsin
+   * diye tek bir kalem olarak duruyor.
+   *
+   * Ad "Google Play Store": seçicideki arama yalnızca ada bakıyor, bu ad
+   * hem "play" hem "store" hem "google" yazana çıkıyor.
+   */
+  { slug: 'google-play', name: 'Google Play Store', kategori: 'yazilim', website: 'https://play.google.com', currency: 'TRY', cycle: 'MONTHLY' , color: '#01875F' },
 
   // Bulut depolama
   { slug: 'icloud-plus', name: 'iCloud+', kategori: 'bulut', website: 'https://www.icloud.com', currency: 'TRY', cycle: 'MONTHLY' },

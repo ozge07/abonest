@@ -67,6 +67,20 @@ turkcell|turkcell.com.tr
 vodafone|vodafone.com.tr
 "
 
+# Elle çizilen logolar.
+#
+# Her markanın indirilebilir logosu yok. Play Store bunun örneği:
+# play.google.com'un `apple-touch-icon.png`'si 404 dönüyor ve Google'ın
+# favicon servisi yalnızca 32 piksel veriyor — aşağıdaki `gorsel_mu` onu
+# haklı olarak reddediyor, çünkü 128'e büyütmek bulanık bir leke üretir.
+#
+# Bu slug'ların PNG'si depoda elle tutuluyor. Betik onları indirmeye
+# çalışmıyor, yalnızca dosya duruyorsa künyeye ekliyor; yoksa künye her
+# çalıştırmada onları düşürür ve logolar sessizce kaybolurdu.
+ELLE="
+google-play
+"
+
 # Kullanılabilir bir logo mu?
 #
 # İki kontrol var ve ikisi de gerekli:
@@ -108,9 +122,23 @@ while IFS='|' read -r slug alan; do
   fi
 
   if [ -z "$kaynak" ]; then
-    printf "  ✗ %-24s logo bulunamadı\n" "$slug"
-    basarisiz=$((basarisiz + 1))
     rm -f "$gecici"
+    # İndirme başarısızsa ama dosya depoda duruyorsa künye girdisi korunuyor.
+    #
+    # Önce koşulsuz `continue` vardı ve künye her çalıştırmada sıfırdan
+    # yazıldığı için tek bir geçici ağ hatası çalışan bir logoyu sessizce
+    # düşürüyordu: vodafone bir çalıştırmada indi, sonrakinde inmedi ve
+    # künyeden çıktı — dosya yerinde dururken uygulama harf karosuna
+    # düşüyordu.
+    if [ -f "$HEDEF/${slug}.png" ]; then
+      [ $ilk -eq 0 ] && echo "," >> "$KUNYE.tmp"
+      printf '  "%s": "/logolar/%s.png"' "$slug" "$slug" >> "$KUNYE.tmp"
+      ilk=0
+      printf "  ~ %-24s indirilemedi, depodaki korunuyor\n" "$slug"
+    else
+      printf "  ✗ %-24s logo bulunamadı\n" "$slug"
+      basarisiz=$((basarisiz + 1))
+    fi
     continue
   fi
 
@@ -129,6 +157,21 @@ while IFS='|' read -r slug alan; do
   fi
   rm -f "$gecici"
 done <<< "$SAGLAYICILAR"
+
+while IFS= read -r slug; do
+  [ -z "$slug" ] && continue
+  dosya="$HEDEF/${slug}.png"
+  if [ -f "$dosya" ]; then
+    [ $ilk -eq 0 ] && echo "," >> "$KUNYE.tmp"
+    printf '  "%s": "/logolar/%s.png"' "$slug" "$slug" >> "$KUNYE.tmp"
+    ilk=0
+    printf "  ✎ %-24s %-16s %s kB\n" "$slug" "elle" "$(( $(stat -f%z "$dosya") / 1024 ))"
+    basarili=$((basarili + 1))
+  else
+    printf "  ✗ %-24s elle tutulması gereken dosya yok\n" "$slug"
+    basarisiz=$((basarisiz + 1))
+  fi
+done <<< "$ELLE"
 
 printf "\n}\n" >> "$KUNYE.tmp"
 mv "$KUNYE.tmp" "$KUNYE"
