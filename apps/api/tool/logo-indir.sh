@@ -60,11 +60,13 @@ icloud-plus|icloud.com
 google-one|one.google.com
 dropbox|dropbox.com
 strava|strava.com
+macfit|macfit.com
 duolingo-super|duolingo.com
 udemy|udemy.com
 turk-telekom|turktelekom.com.tr
 turkcell|turkcell.com.tr
 vodafone|vodafone.com.tr
+turknet|turknet.com.tr
 "
 
 # Elle çizilen logolar.

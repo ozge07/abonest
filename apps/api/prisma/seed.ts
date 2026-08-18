@@ -141,6 +141,7 @@ const SAGLAYICILAR: SaglayiciTohumu[] = [
 
   // Spor ve eğitim
   { slug: 'strava', name: 'Strava', kategori: 'spor', website: 'https://www.strava.com', cycle: 'MONTHLY' , color: '#FC4C02' },
+  { slug: 'macfit', name: 'MACFit', kategori: 'spor', website: 'https://www.macfit.com', currency: 'TRY', cycle: 'MONTHLY' },
   { slug: 'duolingo-super', name: 'Duolingo Super', kategori: 'egitim', website: 'https://www.duolingo.com', cycle: 'YEARLY' , color: '#58CC02' },
   { slug: 'udemy', name: 'Udemy', kategori: 'egitim', website: 'https://www.udemy.com', cycle: 'MONTHLY' , color: '#A435F0' },
 
@@ -148,6 +149,7 @@ const SAGLAYICILAR: SaglayiciTohumu[] = [
   { slug: 'turk-telekom', name: 'Türk Telekom', kategori: 'internet', website: 'https://www.turktelekom.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
   { slug: 'turkcell', name: 'Turkcell', kategori: 'internet', website: 'https://www.turkcell.com.tr', currency: 'TRY', cycle: 'MONTHLY' , color: '#FFC900' },
   { slug: 'vodafone', name: 'Vodafone', kategori: 'internet', website: 'https://www.vodafone.com.tr', currency: 'TRY', cycle: 'MONTHLY' , color: '#E60000' },
+  { slug: 'turknet', name: 'TurkNet', kategori: 'internet', website: 'https://www.turknet.com.tr', currency: 'TRY', cycle: 'MONTHLY' },
 ];
 
 async function main(): Promise<void> {
