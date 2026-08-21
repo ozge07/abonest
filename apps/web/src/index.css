@@ -1183,6 +1183,26 @@ body:has(.sahne)::-webkit-scrollbar {
   pointer-events: none;
 }
 
+/*
+ * Hikâyedeki logo halkaları — giriş ekranındaki `.kimlik-yorunge` ile aynı
+ * kurulum, çünkü aynı bileşeni taşıyorlar.
+ *
+ * Ortalama iki tarafta da aynı sabit noktaya bağlı: halkalar burada CSS ile
+ * ekranın tam ortasında, yumurta ise `tuval.ts` içinde kameranın bakış
+ * hedefi olduğu için kadrajın tam ortasında. Hizalama bir hesabın sonucu
+ * değil, ikisinin de aynı yere sabitlenmiş olmasının sonucu.
+ */
+.sahne-yorunge {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(112vh, 96vw);
+  /* Bölüm yazılarının ve giriş panelinin altında, tuvalin üstünde. */
+  z-index: 1;
+  pointer-events: none;
+}
+
 .kimlik-marka {
   position: fixed;
   top: 1.5rem;

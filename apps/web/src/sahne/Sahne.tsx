@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { Baslik, Bolumler, Ilerleme, Imlec, Izgara } from './Katmanlar';
 import { SAHNE } from './yapilandirma';
 import { sahneKur, type SahneTutamagi } from './tuval';
+import { YorungeHalkalari } from '../components/YorungeHalkalari';
 
 /**
  * Girişten sonra açılan sinematik anlatı.
@@ -146,6 +147,27 @@ export function Sahne() {
         aria-hidden
       />
       {!webglVar && <div className="sahne-yedek" aria-hidden />}
+
+      {/*
+        Dar ekranda logolar WebGL diskleri yerine giriş ekranının kendi
+        halkalarıyla çiziliyor — birebir aynı bileşen, aynı CSS.
+
+        WebGL yörüngesi telefonda üç kez düzeltilmeye çalışıldı ve üçünde de
+        "logolar kaymış" olarak geri geldi: disklerin ekranda nereye
+        düşeceği görüş açısına, en-boy oranına ve cihazın piksel oranına
+        bağlı, doğrulaması da ancak simülasyonla yapılabiliyor. Eşmerkezli
+        CSS halkaları ise ortak bir merkezin etrafında kurulum gereği
+        duruyor; yumurtayla hizası da hesaba değil, iki tarafın da ekranın
+        tam ortasına bağlanmasına dayanıyor (`tuval.ts` içinde kamera
+        yumurtanın merkezine bakıyor).
+
+        Yumurta kapalı: o WebGL'de, metal kabuk olarak duruyor.
+      */}
+      {dar && (
+        <div className="sahne-yorunge" aria-hidden>
+          <YorungeHalkalari yumurta={false} />
+        </div>
+      )}
 
       <Izgara dar={dar} />
       <Baslik dar={dar} etkinBolum={etkin} bolumeGit={bolumeGit} />

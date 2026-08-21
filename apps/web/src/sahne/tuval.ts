@@ -340,7 +340,32 @@ export function sahneKur(
     [];
 
   const yukleyici = new TextureLoader();
+  /*
+   * Dar ekranda diskler WebGL'de değil, giriş ekranındaki `YorungeHalkalari`
+   * bileşeniyle çiziliyor (bkz. `Sahne.tsx`).
+   *
+   * Üç kez WebGL yörüngesinin yerleşimi düzeltilmeye çalışıldı — yükseklik,
+   * eğim, yarıçap, kadraja sığma — ve üçünde de telefonda "logolar kaymış"
+   * olarak geri geldi. Sorun tek tek sayılarda değil, yaklaşımdaydı:
+   * disklerin nereye düşeceği görüş açısına, en-boy oranına, kamera
+   * uzaklığına ve cihazın piksel oranına bağlı ve bunların hepsi cihazdan
+   * cihaza değişiyor. Doğrulaması da ancak simülasyonla yapılabiliyordu.
+   *
+   * DOM tarafındaki halkalar bu belirsizliğin tamamını ortadan kaldırıyor:
+   * eşmerkezli daireler ortak bir merkezin etrafında **kurulum gereği**
+   * duruyor. Yumurtayla hizalanmaları da hesaba değil garantiye dayanıyor —
+   * kamera aşağıda yumurtanın merkezine bakıyor ve `lookAt` hedefi her
+   * cihazda kadrajın tam ortasına düşüyor; halkaların kapsayıcısı da CSS
+   * ile tam ortada.
+   */
+  if (dar) {
+    void yukleyici;
+  }
+  const diskleriCiz = !dar;
   SAHNE.yorungeLogolari.forEach((dosya, i) => {
+    if (!diskleriCiz) {
+      return;
+    }
     const gorsel = new Image();
     gorsel.crossOrigin = 'anonymous';
     gorsel.src = `/logolar/${dosya}.png`;
@@ -524,7 +549,16 @@ export function sahneKur(
      * 0,55 birimlik kayma dıştaki halkayı ekranın solundan taşırıyordu.
      */
     const kayma = dar ? 0 : (1 - Math.min(1, yIlerleme / 0.25)) * 0.55;
-    bak.set(kayma, 0.45 - kayma * 0.2, 0);
+    /*
+     * Dar ekranda bakış tam yumurtanın merkezine.
+     *
+     * `lookAt` hedefi, görüş açısından ve en-boy oranından bağımsız olarak
+     * kadrajın tam ortasına düşer. Hedef yumurtanın merkezi olunca yumurta
+     * da her cihazda ekranın tam ortasında oluyor — ve DOM'daki halkalar
+     * zaten CSS ile tam ortada. Hizalama böylece bir hesabın değil, iki
+     * tarafın da aynı sabit noktaya bağlanmasının sonucu.
+     */
+    bak.set(kayma, dar ? YUMURTA_Y : 0.45 - kayma * 0.2, 0);
     kamera.lookAt(bak);
     /*
      * Yumurta ekranın ortasında kalıyor: solda bölüm yazısı, sağda giriş

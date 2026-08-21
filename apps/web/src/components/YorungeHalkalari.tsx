@@ -108,8 +108,16 @@ function okunabilirAd(dosya: string): string {
 
 export function YorungeHalkalari({
   asama = 'dinlenme',
+  yumurta = true,
 }: {
   asama?: GirisAsamasi;
+  /**
+   * Ortadaki yumurta çizilsin mi?
+   *
+   * Hikâye sahnesinde kapatılıyor: orada yumurta WebGL'de, metal kabuk
+   * olarak duruyor. İkisi birden çizilseydi üst üste iki yumurta olurdu.
+   */
+  yumurta?: boolean;
 }) {
   /*
    * Hareket azaltma açıkken hiçbir şey dönmüyor ama diziliş bozulmuyor:
@@ -162,9 +170,11 @@ export function YorungeHalkalari({
           Arkadan geçen simgeler `preserve-3d` sayesinde onun gerisinde
           kalıyor.
         */}
-        <div className="yorunge-yumurta absolute h-[34%] w-[34%]">
-          <Yumurta className="h-full w-full" />
-        </div>
+        {yumurta && (
+          <div className="yorunge-yumurta absolute h-[34%] w-[34%]">
+            <Yumurta className="h-full w-full" />
+          </div>
+        )}
 
         {YORUNGELER.map((yorunge, sira) => {
           // Komşu halkalar ters yönde dönüyor; hepsi aynı yöne dönseydi
