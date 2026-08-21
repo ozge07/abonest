@@ -79,6 +79,26 @@ export function tarihYaz(iso: string): string {
 }
 
 /**
+ * Tarih ve saat: "21 Ağustos 14:32".
+ *
+ * [tarihYaz]'dan ayrı, çünkü o yalnızca gün taşıyan değerler için ve saati
+ * UTC gece yarısına sabitliyor. Burada gerçek bir an var: oturumun ne zaman
+ * açıldığı. Kullanıcının kendi saat diliminde yazılıyor — "başka biri mi
+ * girdi" sorusunun cevabı "o saatte ben neredeydim" ile veriliyor, o yüzden
+ * saatin kullanıcının saati olması şart.
+ *
+ * Yıl yazılmıyor: liste yalnızca son 30 günü gösteriyor.
+ */
+export function tarihSaatYaz(iso: string): string {
+  return new Intl.DateTimeFormat('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso));
+}
+
+/**
  * Kısa tarih: "5 Ağu".
  *
  * Dar sütunlarda tam tarih ("5 Ağustos 2026") satıra sığmayıp kırılıyor.

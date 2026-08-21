@@ -14,7 +14,7 @@ import { OnayKutusu } from '../components/OnayKutusu';
 import { ApiError, api } from '../lib/api';
 import { useAlan } from '../lib/alan';
 import { useOturum } from '../lib/oturum';
-import { tarihYaz } from '../lib/money';
+import { tarihSaatYaz, tarihYaz } from '../lib/money';
 import type { Kullanici } from '../lib/types';
 
 /**
@@ -273,6 +273,8 @@ interface Oturum {
   lastSeenAt: string;
   createdAt: string;
   current: boolean;
+  durum: 'acik' | 'kapali';
+  girisSayisi: number;
 }
 
 function OturumlarBolumu() {
@@ -294,49 +296,71 @@ function OturumlarBolumu() {
 
   return (
     <Bolum
-      baslik="Açık oturumlar"
-      aciklama="Tanımadığın bir cihaz görüyorsan kapat ve şifreni değiştir."
+      baslik="Oturumlar"
+      aciklama="Açık oturumların ve başka bir yerden yapılmış girişler. Tanımadığın bir satır görüyorsan şifreni değiştir."
     >
       {sorgu.isPending ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">Yükleniyor…</p>
+      ) : oturumlar.length === 0 ? (
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Açık oturum yok.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {oturumlar.map((oturum) => (
-            <li
-              key={oturum.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {cihazAdi(oturum.userAgent)}
-                  {oturum.current && (
-                    /*
-                     * Bu işaret olmadan kullanıcı "şüpheli oturumu kapat"
-                     * derken kendini atabiliyordu; hangi satırın kendisi
-                     * olduğunu anlamasının başka yolu yok.
-                     */
-                    <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-normal text-green-800 dark:bg-green-500/15 dark:text-green-300">
-                      bu cihaz
+          {oturumlar.map((oturum) => {
+            const acik = oturum.durum === 'acik';
+            return (
+              <li
+                key={oturum.id}
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    <span className={acik ? '' : 'text-slate-500 dark:text-slate-400'}>
+                      {cihazAdi(oturum.userAgent)}
                     </span>
-                  )}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Son görülme: {tarihYaz(oturum.lastSeenAt.slice(0, 10))}
-                </p>
-              </div>
+                    {oturum.current ? (
+                      /*
+                       * Bu işaret olmadan kullanıcı "şüpheli oturumu kapat"
+                       * derken kendini atabiliyordu; hangi satırın kendisi
+                       * olduğunu anlamasının başka yolu yok.
+                       */
+                      <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-normal text-green-800 dark:bg-green-500/15 dark:text-green-300">
+                        bu cihaz
+                      </span>
+                    ) : !acik ? (
+                      /*
+                       * Kapalı satırın açık gibi görünmesi tehlikeli: kullanıcı
+                       * kapatmaya çalışıp kapatamayınca hesabının ele geçmiş
+                       * olduğunu düşünüyor. Oysa o oturumla artık istek
+                       * yapılamıyor.
+                       */
+                      <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-normal text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        kapandı
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Giriş: {tarihSaatYaz(oturum.createdAt)}
+                    {oturum.girisSayisi > 1 && (
+                      <> · aynı yerden {oturum.girisSayisi} giriş</>
+                    )}
+                  </p>
+                </div>
 
-              {!oturum.current && (
-                <button
-                  type="button"
-                  onClick={() => kapat.mutate(oturum.id)}
-                  disabled={kapat.isPending}
-                  className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
-                >
-                  Kapat
-                </button>
-              )}
-            </li>
-          ))}
+                {acik && !oturum.current && (
+                  <button
+                    type="button"
+                    onClick={() => kapat.mutate(oturum.id)}
+                    disabled={kapat.isPending}
+                    className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                  >
+                    Kapat
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </Bolum>

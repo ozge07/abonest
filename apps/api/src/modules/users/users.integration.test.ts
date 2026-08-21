@@ -25,6 +25,7 @@ import {
 } from '../../infra/email/email-sender.js';
 import { PasswordService } from '../auth/password.service.js';
 import { SessionService } from '../auth/session.service.js';
+import { TokenService } from '../auth/token.service.js';
 import { AuthService } from '../auth/auth.service.js';
 
 const KOK = '/api/v1';
@@ -34,6 +35,7 @@ let app: NestFastifyApplication;
 let prisma: PrismaService;
 let passwords: PasswordService;
 let sessions: SessionService;
+let tokens: TokenService;
 let auth: AuthService;
 
 const gidenler: EmailMessage[] = [];
@@ -156,6 +158,7 @@ beforeAll(async () => {
   prisma = app.get(PrismaService);
   passwords = app.get(PasswordService);
   sessions = app.get(SessionService);
+  tokens = app.get(TokenService);
   auth = app.get(AuthService);
 }, 60_000);
 
@@ -292,6 +295,112 @@ describe('oturum yönetimi', () => {
     const kalanEski = await istek('GET', '/me', eski);
     const kalanYeni = await istek('GET', '/me', yeni);
     expect([kalanEski.kod, kalanYeni.kod]).toContain(401);
+  });
+
+  /**
+   * Belirli bir "yer"den oturum açıyor; istenirse kapanmış hâline getiriyor.
+   *
+   * Kapatma için `lastSeenAt` boşta kalma sınırının ötesine çekiliyor —
+   * gerçekte de oturum böyle kapanıyor: kullanıcı beş dakika işlem yapmıyor
+   * ve o token'la gelen ilk istek reddediliyor.
+   */
+  async function oturumAc(
+    userId: string,
+    yer: { ip?: string; userAgent?: string },
+    { kapali = false }: { kapali?: boolean } = {},
+  ): Promise<string> {
+    const { token } = await sessions.create(userId, yer);
+    if (kapali) {
+      await prisma.session.update({
+        where: { tokenHash: tokens.hash(token) },
+        data: { lastSeenAt: new Date(Date.now() - 10 * 60 * 1000) },
+      });
+    }
+    return token;
+  }
+
+  interface ListeSatiri {
+    id: string;
+    durum: 'acik' | 'kapali';
+    girisSayisi: number;
+    createdAt: string;
+    current: boolean;
+  }
+
+  it('aynı yerden kapanmış oturumları listeye yazmıyor', async () => {
+    /*
+     * Şikâyetin kendisi buydu: oturum beş dakikada kapanıyor ama satırı
+     * duruyor, çünkü kapanan oturumun token'ıyla bir daha istek gelmiyor ve
+     * silinmesi o isteğe bağlı. Aynı tarayıcıdan her giriş listeye kalıcı
+     * bir satır bırakıyordu — hepsi de "açık oturumlar" başlığı altında.
+     */
+    const kullanici = await kullaniciOlustur();
+    const yer = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
+
+    await oturumAc(kullanici.id, yer, { kapali: true });
+    await oturumAc(kullanici.id, yer, { kapali: true });
+    const acik = await oturumAc(kullanici.id, yer);
+
+    const { govde } = await istek('GET', '/me/sessions', acik);
+    const liste = govde as ListeSatiri[];
+
+    expect(liste).toHaveLength(1);
+    expect(liste[0]?.durum).toBe('acik');
+    expect(liste[0]?.current).toBe(true);
+  });
+
+  it('başka yerden kapanmış oturumu kapalı olarak gösteriyor', async () => {
+    // Kapanmış olması onu önemsiz yapmıyor: tanımadığı bir yerden girildiğini
+    // kullanıcının görmesi gereken tek yer bu liste.
+    const kullanici = await kullaniciOlustur();
+    const evde = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
+    const baskaYer = { ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Safari/17' };
+
+    await oturumAc(kullanici.id, baskaYer, { kapali: true });
+    const acik = await oturumAc(kullanici.id, evde);
+
+    const { govde } = await istek('GET', '/me/sessions', acik);
+    const liste = govde as ListeSatiri[];
+
+    expect(liste).toHaveLength(2);
+    // Açık oturum önce: kullanıcının karar vereceği satır o.
+    expect(liste[0]?.durum).toBe('acik');
+    expect(liste[1]?.durum).toBe('kapali');
+  });
+
+  it('aynı yerin birden çok kapalı oturumunu tek satırda topluyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    const evde = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
+    const baskaYer = { ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Safari/17' };
+
+    for (let i = 0; i < 3; i++) {
+      await oturumAc(kullanici.id, baskaYer, { kapali: true });
+    }
+    const acik = await oturumAc(kullanici.id, evde);
+
+    const { govde } = await istek('GET', '/me/sessions', acik);
+    const liste = govde as ListeSatiri[];
+
+    expect(liste).toHaveLength(2);
+    const kapali = liste.find((satir) => satir.durum === 'kapali');
+    // Satır tek ama kaç giriş olduğu kaybolmuyor.
+    expect(kapali?.girisSayisi).toBe(3);
+  });
+
+  it('her satırda girişin saati var ve IP özeti sızmıyor', async () => {
+    const kullanici = await kullaniciOlustur();
+    const jeton = await oturumAc(kullanici.id, {
+      ip: '198.51.100.7',
+      userAgent: 'Mozilla/5.0 Chrome/120',
+    });
+
+    const { govde } = await istek('GET', '/me/sessions', jeton);
+    const liste = govde as ListeSatiri[];
+
+    // Saat ve dakika arayüzde bundan yazılıyor.
+    expect(Number.isNaN(Date.parse(liste[0]?.createdAt ?? ''))).toBe(false);
+    // IP kişisel veri; özeti bile istemciye gitmemeli.
+    expect(JSON.stringify(liste)).not.toMatch(/ipHash/);
   });
 
   it('başkasının oturumunu kapatamıyor', async () => {

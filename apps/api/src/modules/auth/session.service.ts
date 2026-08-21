@@ -46,6 +46,32 @@ export interface SessionUser {
   emailVerifiedAt: Date | null;
 }
 
+/**
+ * Oturum hâlâ kullanılabilir mi?
+ *
+ * `kapali` bir oturumla istek gelirse [validate] onu siliyor; yani kapalı
+ * satır artık bir erişim değil, yalnızca "şu saatte buradan girilmişti"
+ * bilgisi.
+ */
+export type OturumDurumu = 'acik' | 'kapali';
+
+export interface OturumOzeti {
+  id: string;
+  userAgent: string | null;
+  lastSeenAt: Date;
+  createdAt: Date;
+  current: boolean;
+  durum: OturumDurumu;
+  /**
+   * Bu satırın temsil ettiği giriş sayısı.
+   *
+   * Kapalı oturumlar aynı yer için tek satıra indiriliyor; sayı kaç kez
+   * girildiğini kaybetmeden gösteriyor. Açık oturumlarda hep 1: her açık
+   * oturum tek tek kapatılabildiği için birleştirilemez.
+   */
+  girisSayisi: number;
+}
+
 @Injectable()
 export class SessionService {
   constructor(
@@ -171,44 +197,110 @@ export class SessionService {
   }
 
   /**
-   * Kullanıcının açık oturumları.
+   * Kullanıcının oturumları: açık olanların hepsi, kapalı olanların yalnızca
+   * anlatacak bir şeyi olanlar.
+   *
+   * ## Neden ayıklama gerekiyor
+   *
+   * Kapalı oturum satırları kendiliğinden kaybolmuyor. Boşta kalan oturum
+   * ancak o token'la **bir istek geldiğinde** siliniyor ([validate]); oysa
+   * kapanan oturumun token'ı bir daha kullanılmıyor. Sonuç: her giriş kalıcı
+   * bir satır bırakıyordu ve beş dakikalık boşta kalma sınırıyla birlikte
+   * liste "aynı tarayıcıdan girdiğim her sefer" hâline geliyordu — hepsi de
+   * "açık oturum" başlığı altında, ki hiçbiri açık değildi.
+   *
+   * ## Hangi satır kalıyor
+   *
+   * - Açık oturumların hepsi, teker teker. Her biri kapatılabilir bir
+   *   erişim; birleştirmek kullanıcının hangi satırı kapattığını belirsiz
+   *   yapardı.
+   * - Kapalı oturum, aynı yerden **açık** bir oturum varsa gösterilmiyor:
+   *   oradan zaten girilmiş olduğunu kullanıcı açık satırdan görüyor,
+   *   kapanmışını tekrar yazmak gürültü.
+   * - Kapalı oturum başka bir yerdense gösteriliyor. Kapanmış olması onu
+   *   önemsiz yapmıyor; "tanımadığım bir yerden girilmiş" bilgisi tam da
+   *   kullanıcının görmesi gereken şey.
+   * - Aynı yerin birden çok kapalı oturumu tek satıra iniyor, en yenisi
+   *   temsil ediyor ve kaç giriş olduğu `girisSayisi` ile yazılıyor.
+   *
+   * "Yer" = IP özeti + tarayıcı kimliği. İkisi birlikte, çünkü aynı ağdaki
+   * başka bir cihaz da ayrı gösterilmeli. IP'si değişen bağlantılarda (mobil
+   * veri) aynı telefon ayrı yerler gibi görünebilir; bunun alternatifi
+   * yalnızca tarayıcı kimliğine bakmaktı, o da başkasının aynı sürüm
+   * tarayıcıyla açtığı oturumu kullanıcınınkiyle birleştirirdi — sessizce
+   * yanlış tarafa düşen bir hata.
+   *
+   * Süresi tümüyle dolmuş satırlar hiç okunmuyor: onlar artık geçmiş bile
+   * değil, çöp.
    *
    * `current` işareti şart: kullanıcı listede hangi satırın kendi kullandığı
    * cihaz olduğunu göremezse, "şüpheli oturumu kapat" derken kendini
    * atabiliyor. Ham token karşılaştırılmıyor, özeti karşılaştırılıyor —
    * veritabanında zaten yalnızca özet var.
    */
-  async list(
-    userId: string,
-    mevcutToken?: string,
-  ): Promise<
-    {
-      id: string;
-      userAgent: string | null;
-      lastSeenAt: Date;
-      createdAt: Date;
-      current: boolean;
-    }[]
-  > {
+  async list(userId: string, mevcutToken?: string): Promise<OturumOzeti[]> {
     const mevcutOzet =
       mevcutToken === undefined ? null : this.tokens.hash(mevcutToken);
+    const simdi = Date.now();
 
-    const oturumlar = await this.prisma.session.findMany({
-      where: { userId },
+    const satirlar = await this.prisma.session.findMany({
+      where: { userId, expiresAt: { gt: new Date(simdi) } },
       select: {
         id: true,
         userAgent: true,
+        ipHash: true,
         lastSeenAt: true,
         createdAt: true,
         tokenHash: true,
       },
-      orderBy: { lastSeenAt: 'desc' },
+      // En yeni giriş önce: kapalı oturumları birleştirirken ilk gördüğümüz
+      // satır temsilci oluyor.
+      orderBy: { createdAt: 'desc' },
     });
 
-    return oturumlar.map(({ tokenHash, ...oturum }) => ({
-      ...oturum,
+    const oturumlar = satirlar.map(({ tokenHash, ipHash, ...satir }) => ({
+      ...satir,
+      // Parmak izi yalnızca burada kullanılıyor; ipHash istemciye çıkmıyor.
+      parmakIzi: `${ipHash ?? '-'}|${satir.userAgent ?? '-'}`,
       current: mevcutOzet !== null && tokenHash === mevcutOzet,
+      durum: durumBul(satir.lastSeenAt, simdi),
     }));
+
+    const acikYerler = new Set(
+      oturumlar.filter((o) => o.durum === 'acik').map((o) => o.parmakIzi),
+    );
+
+    const gosterilecek: OturumOzeti[] = [];
+    const kapaliTemsilci = new Map<string, OturumOzeti>();
+
+    for (const { parmakIzi, ...oturum } of oturumlar) {
+      if (oturum.durum === 'acik') {
+        gosterilecek.push({ ...oturum, girisSayisi: 1 });
+        continue;
+      }
+
+      if (acikYerler.has(parmakIzi)) {
+        continue;
+      }
+
+      const temsilci = kapaliTemsilci.get(parmakIzi);
+      if (temsilci !== undefined) {
+        temsilci.girisSayisi += 1;
+        continue;
+      }
+
+      const yeni: OturumOzeti = { ...oturum, girisSayisi: 1 };
+      kapaliTemsilci.set(parmakIzi, yeni);
+      gosterilecek.push(yeni);
+    }
+
+    // Açık oturumlar önce; kullanıcının karar vereceği satırlar onlar.
+    return gosterilecek.sort((a, b) => {
+      if (a.durum !== b.durum) {
+        return a.durum === 'acik' ? -1 : 1;
+      }
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
   }
 
   /** Tek bir oturumu kapatır — yalnızca sahibi kapatabilir. */
@@ -219,6 +311,16 @@ export class SessionService {
     });
     return result.count > 0;
   }
+}
+
+/**
+ * Oturum boşta kalma sınırını aştıysa kapalı.
+ *
+ * `validate` ile aynı sınır kullanılıyor: liste "açık" derken o oturumla
+ * istek yapılabildiğini söylüyor olmalı, yoksa kullanıcıya yalan söylenir.
+ */
+function durumBul(lastSeenAt: Date, simdi: number): OturumDurumu {
+  return simdi - lastSeenAt.getTime() <= IDLE_TIMEOUT_MS ? 'acik' : 'kapali';
 }
 
 function hashIp(ip: string): string {

@@ -30,6 +30,8 @@ const BU_CIHAZ = {
   lastSeenAt: '2026-08-12T09:00:00.000Z',
   createdAt: '2026-08-01T09:00:00.000Z',
   current: true,
+  durum: 'acik',
+  girisSayisi: 1,
 };
 
 const BASKA_CIHAZ = {
@@ -38,6 +40,24 @@ const BASKA_CIHAZ = {
   lastSeenAt: '2026-08-11T20:00:00.000Z',
   createdAt: '2026-08-05T20:00:00.000Z',
   current: false,
+  durum: 'acik',
+  girisSayisi: 1,
+};
+
+/**
+ * Kapanmış ama başka bir yerden yapılmış giriş.
+ *
+ * Sunucu bunu listeye bilerek koyuyor: kapanmış olması "tanımadığım bir
+ * yerden girilmiş" bilgisini önemsiz yapmıyor.
+ */
+const KAPALI_BASKA_YER = {
+  id: 'o3',
+  userAgent: 'Mozilla/5.0 (iPhone) Safari/17.0',
+  lastSeenAt: '2026-08-09T14:32:00.000Z',
+  createdAt: '2026-08-09T14:32:00.000Z',
+  current: false,
+  durum: 'kapali',
+  girisSayisi: 3,
 };
 
 interface Cagri {
@@ -271,6 +291,43 @@ describe('açık oturumlar', () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it('kapanmış oturumu kapalı olarak işaretliyor, kapatma düğmesi vermiyor', async () => {
+    /*
+     * Kapalı satırın açık gibi görünmesi tehlikeli: kullanıcı kapatmaya
+     * çalışıyor, bir şey olmuyor ve hesabının ele geçtiğini düşünüyor.
+     * Oysa o oturumla artık istek yapılamıyor.
+     */
+    sunucuKur({
+      '/me': () => json(KULLANICI),
+      '/me/sessions': () => json([BU_CIHAZ, KAPALI_BASKA_YER]),
+    });
+    ciz();
+
+    const satirlar = await screen.findAllByRole('listitem');
+    const kapali = satirlar.find((s) => s.textContent?.includes('kapandı'));
+
+    expect(kapali).toBeDefined();
+    expect(within(kapali!).queryByRole('button', { name: 'Kapat' })).toBeNull();
+  });
+
+  it('girişin saatini ve kaç giriş olduğunu yazıyor', async () => {
+    // "Nerden girdiysem hepsi yazıyor" şikâyetinin diğer yarısı: satırın ne
+    // zaman açıldığı görünmüyordu, yalnızca gün yazıyordu.
+    sunucuKur({
+      '/me': () => json(KULLANICI),
+      '/me/sessions': () => json([BU_CIHAZ, KAPALI_BASKA_YER]),
+    });
+    ciz();
+
+    const satirlar = await screen.findAllByRole('listitem');
+    const kapali = satirlar.find((s) => s.textContent?.includes('kapandı'));
+
+    // Saat:dakika var — hangi saatte girildiği sorusunun cevabı bu.
+    expect(kapali?.textContent).toMatch(/\d{1,2}:\d{2}/);
+    // Aynı yerin üç girişi tek satırda toplandı ama sayısı kaybolmadı.
+    expect(kapali?.textContent).toContain('3 giriş');
   });
 
   it('cihazı okunabilir bir adla gösteriyor', async () => {
