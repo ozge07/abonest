@@ -1,0 +1,67 @@
+name: Uyanık tut
+
+# Ücretsiz barındırma 15 dakika trafik almazsa süreci uyutuyor ve uyanması
+# ~25 saniye sürüyor (ölçüldü). Sıradan bir ziyaretçi bunu bekler; arama
+# motoru beklemez. Googlebot uyuyan bir siteye geldiğinde isteği zaman
+# aşımına düşüyor ve sayfa indekslenmiyor — Search Console'a gönderilen
+# site haritası tam da bu yüzden bir kez "Getirilemedi" döndü.
+#
+# Bu akış siteye düzenli istek atarak uyumasına izin vermiyor.
+#
+# ## Bilinen sınırları
+#
+# GitHub zamanlanmış akışları **en iyi çaba** ile çalıştırıyor: yoğun
+# saatlerde 10-20 dakika gecikebiliyor, yani tek başına uyanıklığı garanti
+# etmiyor. Daha sıkı bir aralık gerekiyorsa dışarıdan bir izleme servisi
+# (UptimeRobot vb.) bunun yerine ya da yanında kullanılabilir.
+#
+# GitHub, 60 gün hiç etkinlik görmeyen depolarda zamanlanmış akışları
+# kendiliğinden durduruyor. Depo hareketsiz kalırsa bu akış sessizce
+# susar; o gün Search Console'da tarama hataları görünmeye başlar.
+on:
+  schedule:
+    # On dakikada bir: uyku sınırı 15 dakika, gecikmelere pay kalıyor.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# Aynı anda birden çok tetikleme birikirse eskisini iptal et: on dakikada
+# bir koşan bir işin kuyruk oluşturmasının anlamı yok.
+concurrency:
+  group: uyanik-tut
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Siteyi uyandır
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        run: |
+          set -euo pipefail
+
+          # Uygulama henüz bir yere kurulmadıysa sessizce çıkıyoruz —
+          # `gunluk-is.yml` ile aynı gerekçe: sürekli kırmızı yanan bir
+          # zamanlayıcı, gerçekten bozulduğunda kimsenin bakmadığı bir
+          # zamanlayıcı olur.
+          if [ -z "${API_URL:-}" ]; then
+            echo "::notice::API_URL sırrı tanımlı değil; atlanıyor."
+            exit 0
+          fi
+
+          # `robots.txt` bilerek seçildi: statik bir dosya, veritabanına
+          # dokunmuyor ve kimlik doğrulaması istemiyor. Ana sayfa da olurdu
+          # ama o React paketini de gönderiyor; uyandırmak için gereksiz.
+          #
+          # Uykudan kalkış ~25 saniye sürüyor, --max-time ona göre.
+          kod=$(curl -sS --max-time 120 -o /dev/null -w '%{http_code}' \
+            "$API_URL/robots.txt")
+
+          echo "HTTP $kod"
+
+          # Başarısızlık uyarı, hata değil: tek bir ping kaçması önemli
+          # değil, on dakika sonra yenisi geliyor. Hata sayılsaydı geçici
+          # bir kesinti her seferinde bildirim üretirdi.
+          if [ "$kod" != "200" ]; then
+            echo "::warning::Uyandırma isteği HTTP $kod döndü."
+          fi
