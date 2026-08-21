@@ -284,8 +284,18 @@ export function sahneKur(
       envMapIntensity: 1.1,
     }),
   );
+  /**
+   * Yumurtanın ölçeği.
+   *
+   * Dar ekranda daha küçük: yörünge oraya sığsın diye zaten daraltılıyor,
+   * yumurta aynı kalınca halkalar ona yapışık duruyordu. Bu değerlerle
+   * yumurta silueti ile dıştaki halkanın oranı giriş ekranındakiyle
+   * (yumurta %34, dış halka %100) aynı yere düşüyor.
+   */
+  const YUMURTA_OLCEK = dar ? 0.5 : 0.6;
+
   yumurta.castShadow = true;
-  yumurta.scale.setScalar(0.6);
+  yumurta.scale.setScalar(YUMURTA_OLCEK);
   // Biraz yukarıda: sol alttaki bölüm yazısına yer bırakıyor.
   yumurta.position.y = YUMURTA_Y;
   const yumurtaGrubu = new Group();
@@ -309,6 +319,9 @@ export function sahneKur(
   sahne.add(dolgu);
 
   // --- Yörüngedeki servis diskleri ---
+
+  /** Dar ekranda disklerin dizildiği eşmerkezli halka sayısı. */
+  const HALKA_SAYISI = 3;
 
   const yorunge = new Group();
   /*
@@ -342,18 +355,55 @@ export function sahneKur(
       );
       sprite.scale.setScalar(dar ? 0.15 : 0.2);
       yorunge.add(sprite);
+
+      /*
+       * Dar ekranda diskler üç temiz halkaya diziliyor.
+       *
+       * Önce yarıçap geniş ekrandakinin 0,36 katına indiriliyor, yüksekliğe
+       * de ±0,32 birimlik bir dağılım veriliyordu. Telefonda sonuç şuydu:
+       * halka yumurtaya iyice yaklaşıyor, yükseklik dağılımı yarıçapla
+       * birlikte küçülmediği için oransal olarak büyüyor ve diskler yörünge
+       * gibi değil, yumurtanın üstüne serpilmiş rozetler gibi duruyordu —
+       * çoğu da üst yarıya toplanıyordu.
+       *
+       * Giriş ekranındaki halkalar bunu zaten doğru yapıyor: sabit sayıda
+       * eşmerkezli halka, her birinde simgeler eşit aralıklı, hepsi tek bir
+       * düzlemde. Buradaki diziliş artık onu izliyor.
+       */
+      const halka = i % HALKA_SAYISI;
+      const halkadakiSira = Math.floor(i / HALKA_SAYISI);
+      const halkadakiAdet = Math.ceil(
+        (SAHNE.yorungeLogolari.length - halka) / HALKA_SAYISI,
+      );
+
       diskler.push({
         sprite,
         /*
          * Geniş yarıçaplar: diskler daha küçük ve daha dışarıda.
          * Önce 1,5–2,6 aralığındaydı ve yumurtanın üstüne biniyorlardı;
          * ekran görüntüsünde YouTube diski yumurtayı örtüyordu.
+         *
+         * Dar ekranın yarıçapları hesaplanarak seçildi, göz kararı değil.
+         * İki sınır var:
+         *
+         * 1. İçteki halka yumurtanın siluetini geçmeli. Dar ekranda siluet
+         *    yarıçapı 0,455 birim (`yumurtaYaricapi` en fazla 0,91 veriyor,
+         *    ölçek 0,5). 0,70 bunun 1,54 katı — giriş ekranında da içteki
+         *    halka yumurtanın 1,53 katı (%52'ye %34).
+         * 2. Dıştaki halka kaydırmanın **her anında** kadraja sığmalı.
+         *    Kamera hikâyenin ortasında yaklaştığı için en dar an orası;
+         *    360x800'den 412x915'e kadar taranıp 1,02 bulundu. Önceki
+         *    1,24'lük değer diskin kendi yarıçapıyla birlikte ekranın
+         *    kenarından taşıyordu.
          */
-        // Dar ekranda yörünge yumurtanın çevresine toplanıyor.
-        yaricap: (2.3 + (i % 3) * 0.62) * (dar ? 0.36 : 1),
-        hiz: (i % 3 === 1 ? -1 : 1) * (0.16 - (i % 3) * 0.035),
-        faz: (i / SAHNE.yorungeLogolari.length) * Math.PI * 2,
-        yukseklik: ((i % 5) - 2) * (dar ? 0.16 : 0.3),
+        yaricap: dar ? 0.7 + halka * 0.16 : 2.3 + halka * 0.62,
+        hiz: (halka === 1 ? -1 : 1) * (0.16 - halka * 0.035),
+        faz: dar
+          ? (halkadakiSira / halkadakiAdet) * Math.PI * 2 + halka * 0.5
+          : (i / SAHNE.yorungeLogolari.length) * Math.PI * 2,
+        // Dar ekranda halka düz: dağılım disklerin yumurtaya binmesine
+        // yol açan şeyin kendisiydi.
+        yukseklik: dar ? 0 : ((i % 5) - 2) * 0.3,
       });
     };
   });
@@ -449,13 +499,31 @@ export function sahneKur(
 
     // Dar ekranda biraz daha geride: geniş açı yakın planda bozuyor.
     const uzaklik = (5.2 - orta * 0.9) * (dar ? 1.25 : 1);
+    /*
+     * Dar ekranda kamera yörünge düzleminin belirgin şekilde üstünde.
+     *
+     * Yükseklik yalnızca `orta`dan gelirken hikâyenin **başında ve sonunda**
+     * kamera tam olarak yörünge düzleminin hizasına oturuyordu (ikisi de
+     * y = 0,35). Halkaya tam yandan bakınca elips değil düz bir çizgi
+     * görünüyor: diskler yumurtanın çevresinde dönmek yerine ortasından
+     * geçen bir şerit hâline geliyordu. Telefonda sayfa en üstte açıldığı
+     * için kullanıcının gördüğü ilk kare tam da buydu.
+     *
+     * Taban yükseklik halkayı ~40°-50° arasında tutuyor; giriş ekranındaki
+     * halkaların eğimi de 44°.
+     */
+    const tabanYukseklik = dar ? 0.9 : 0;
     kamera.position.set(
       Math.sin(aci) * uzaklik,
-      0.35 + orta * 1.15,
+      0.35 + tabanYukseklik + orta * (dar ? 0.35 : 1.15),
       Math.cos(aci) * uzaklik,
     );
-    // Açılış bölümünde bakış biraz kaykılıyor, sonra ortalanıyor.
-    const kayma = (1 - Math.min(1, yIlerleme / 0.25)) * 0.55;
+    /*
+     * Açılış bölümünde bakış biraz kaykılıyor, sonra ortalanıyor. Dar
+     * ekranda kaykılmıyor: kadranın yatay yarı genişliği 1,48 birim ve
+     * 0,55 birimlik kayma dıştaki halkayı ekranın solundan taşırıyordu.
+     */
+    const kayma = dar ? 0 : (1 - Math.min(1, yIlerleme / 0.25)) * 0.55;
     bak.set(kayma, 0.45 - kayma * 0.2, 0);
     kamera.lookAt(bak);
     /*
@@ -475,7 +543,7 @@ export function sahneKur(
     const tepki = secenekler.azalt ? 0.25 : 1;
     yumurtaGrubu.rotation.y = yImlec.x * 0.45 * tepki + t * 0.05;
     yumurtaGrubu.rotation.x = yImlec.y * 0.18 * tepki;
-    yumurta.scale.setScalar(0.6 * (0.82 + acilma * 0.18));
+    yumurta.scale.setScalar(YUMURTA_OLCEK * (0.82 + acilma * 0.18));
     (yumurta.material as MeshStandardMaterial).opacity = acilma;
     (yumurta.material as MeshStandardMaterial).transparent = acilma < 1;
 
