@@ -26,7 +26,7 @@ const KULLANICI = {
 
 const BU_CIHAZ = {
   id: 'o1',
-  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0',
+  cihaz: 'Chrome · Mac',
   lastSeenAt: '2026-08-12T09:00:00.000Z',
   createdAt: '2026-08-01T09:00:00.000Z',
   current: true,
@@ -36,7 +36,7 @@ const BU_CIHAZ = {
 
 const BASKA_CIHAZ = {
   id: 'o2',
-  userAgent: 'Mozilla/5.0 (Linux; Android 14) Chrome/140.0 Mobile',
+  cihaz: 'Chrome · Android',
   lastSeenAt: '2026-08-11T20:00:00.000Z',
   createdAt: '2026-08-05T20:00:00.000Z',
   current: false,
@@ -52,7 +52,7 @@ const BASKA_CIHAZ = {
  */
 const KAPALI_BASKA_YER = {
   id: 'o3',
-  userAgent: 'Mozilla/5.0 (iPhone) Safari/17.0',
+  cihaz: 'Safari · iOS',
   lastSeenAt: '2026-08-09T14:32:00.000Z',
   createdAt: '2026-08-09T14:32:00.000Z',
   current: false,
@@ -332,7 +332,8 @@ describe('açık oturumlar', () => {
 
   it('cihazı okunabilir bir adla gösteriyor', async () => {
     // Ham user-agent metni kullanıcıya "bu ben miydim" sorusunu
-    // sordurmuyor.
+    // sordurmuyor. Etiketi artık sunucu üretiyor: "aynı cihaz mı" kararı da
+    // aynı etikete dayandığı için ölçütle ekranda yazan ayrışamıyor.
     varsayilan();
     ciz();
 

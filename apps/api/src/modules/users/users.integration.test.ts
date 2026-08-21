@@ -321,13 +321,17 @@ describe('oturum yönetimi', () => {
 
   interface ListeSatiri {
     id: string;
+    cihaz: string;
     durum: 'acik' | 'kapali';
     girisSayisi: number;
     createdAt: string;
     current: boolean;
   }
 
-  it('aynı yerden kapanmış oturumları listeye yazmıyor', async () => {
+  const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0';
+  const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Safari/17.0';
+
+  it('aynı cihazdan kapanmış oturumları listeye yazmıyor', async () => {
     /*
      * Şikâyetin kendisi buydu: oturum beş dakikada kapanıyor ama satırı
      * duruyor, çünkü kapanan oturumun token'ıyla bir daha istek gelmiyor ve
@@ -335,11 +339,10 @@ describe('oturum yönetimi', () => {
      * bir satır bırakıyordu — hepsi de "açık oturumlar" başlığı altında.
      */
     const kullanici = await kullaniciOlustur();
-    const yer = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
 
-    await oturumAc(kullanici.id, yer, { kapali: true });
-    await oturumAc(kullanici.id, yer, { kapali: true });
-    const acik = await oturumAc(kullanici.id, yer);
+    await oturumAc(kullanici.id, { userAgent: MAC }, { kapali: true });
+    await oturumAc(kullanici.id, { userAgent: MAC }, { kapali: true });
+    const acik = await oturumAc(kullanici.id, { userAgent: MAC });
 
     const { govde } = await istek('GET', '/me/sessions', acik);
     const liste = govde as ListeSatiri[];
@@ -349,15 +352,60 @@ describe('oturum yönetimi', () => {
     expect(liste[0]?.current).toBe(true);
   });
 
-  it('başka yerden kapanmış oturumu kapalı olarak gösteriyor', async () => {
-    // Kapanmış olması onu önemsiz yapmıyor: tanımadığı bir yerden girildiğini
-    // kullanıcının görmesi gereken tek yer bu liste.
+  it('IP değişse de aynı cihaz sayıyor', async () => {
+    /*
+     * İlk denemede ölçüte IP özeti de katılmıştı ve hata buydu: ev interneti
+     * ile mobil veri IP'yi kendiliğinden değiştirdiği için aynı bilgisayardan
+     * yapılan girişler ayrı ayrı listeleniyordu. Kullanıcı "aynı cihazdan
+     * girmeme rağmen hepsi görünüyor" dedi ve haklıydı.
+     */
     const kullanici = await kullaniciOlustur();
-    const evde = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
-    const baskaYer = { ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Safari/17' };
 
-    await oturumAc(kullanici.id, baskaYer, { kapali: true });
-    const acik = await oturumAc(kullanici.id, evde);
+    await oturumAc(
+      kullanici.id,
+      { ip: '198.51.100.7', userAgent: MAC },
+      { kapali: true },
+    );
+    await oturumAc(
+      kullanici.id,
+      { ip: '203.0.113.55', userAgent: MAC },
+      { kapali: true },
+    );
+    const acik = await oturumAc(kullanici.id, {
+      ip: '192.0.2.31',
+      userAgent: MAC,
+    });
+
+    const { govde } = await istek('GET', '/me/sessions', acik);
+    expect(govde as ListeSatiri[]).toHaveLength(1);
+  });
+
+  it('tarayıcı sürümü değişse de aynı cihaz sayıyor', async () => {
+    // Oturumlar 30 gün yaşıyor, Chrome ise ayda bir sürüm atlıyor. Ham
+    // user-agent ölçüt olsaydı aynı bilgisayar bir ay sonra "başka cihaz"
+    // gibi görünürdü.
+    const kullanici = await kullaniciOlustur();
+
+    await oturumAc(
+      kullanici.id,
+      { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/140.0' },
+      { kapali: true },
+    );
+    const acik = await oturumAc(kullanici.id, {
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/141.0',
+    });
+
+    const { govde } = await istek('GET', '/me/sessions', acik);
+    expect(govde as ListeSatiri[]).toHaveLength(1);
+  });
+
+  it('başka cihazdan kapanmış oturumu kapalı olarak gösteriyor', async () => {
+    // Kapanmış olması onu önemsiz yapmıyor: tanımadığı bir cihazdan
+    // girildiğini kullanıcının görmesi gereken tek yer bu liste.
+    const kullanici = await kullaniciOlustur();
+
+    await oturumAc(kullanici.id, { userAgent: IPHONE }, { kapali: true });
+    const acik = await oturumAc(kullanici.id, { userAgent: MAC });
 
     const { govde } = await istek('GET', '/me/sessions', acik);
     const liste = govde as ListeSatiri[];
@@ -368,15 +416,13 @@ describe('oturum yönetimi', () => {
     expect(liste[1]?.durum).toBe('kapali');
   });
 
-  it('aynı yerin birden çok kapalı oturumunu tek satırda topluyor', async () => {
+  it('aynı cihazın birden çok kapalı oturumunu tek satırda topluyor', async () => {
     const kullanici = await kullaniciOlustur();
-    const evde = { ip: '198.51.100.7', userAgent: 'Mozilla/5.0 Chrome/120' };
-    const baskaYer = { ip: '203.0.113.9', userAgent: 'Mozilla/5.0 Safari/17' };
 
     for (let i = 0; i < 3; i++) {
-      await oturumAc(kullanici.id, baskaYer, { kapali: true });
+      await oturumAc(kullanici.id, { userAgent: IPHONE }, { kapali: true });
     }
-    const acik = await oturumAc(kullanici.id, evde);
+    const acik = await oturumAc(kullanici.id, { userAgent: MAC });
 
     const { govde } = await istek('GET', '/me/sessions', acik);
     const liste = govde as ListeSatiri[];
@@ -387,20 +433,20 @@ describe('oturum yönetimi', () => {
     expect(kapali?.girisSayisi).toBe(3);
   });
 
-  it('her satırda girişin saati var ve IP özeti sızmıyor', async () => {
+  it('okunabilir cihaz adı veriyor, ham user-agent ve IP vermiyor', async () => {
     const kullanici = await kullaniciOlustur();
-    const jeton = await oturumAc(kullanici.id, {
-      ip: '198.51.100.7',
-      userAgent: 'Mozilla/5.0 Chrome/120',
-    });
+    const jeton = await oturumAc(kullanici.id, { ip: '198.51.100.7', userAgent: MAC });
 
     const { govde } = await istek('GET', '/me/sessions', jeton);
     const liste = govde as ListeSatiri[];
 
+    // "Aynı cihaz mı" kararı da bu etikete dayanıyor: ekranda yazan metinle
+    // ölçüt aynı şey olmalı.
+    expect(liste[0]?.cihaz).toBe('Chrome · Mac');
     // Saat ve dakika arayüzde bundan yazılıyor.
     expect(Number.isNaN(Date.parse(liste[0]?.createdAt ?? ''))).toBe(false);
-    // IP kişisel veri; özeti bile istemciye gitmemeli.
-    expect(JSON.stringify(liste)).not.toMatch(/ipHash/);
+    // İkisi de kişisel veri ve arayüzün ikisine de ihtiyacı yok.
+    expect(JSON.stringify(liste)).not.toMatch(/ipHash|Mozilla/);
   });
 
   it('başkasının oturumunu kapatamıyor', async () => {

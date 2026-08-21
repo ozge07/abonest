@@ -57,7 +57,14 @@ export type OturumDurumu = 'acik' | 'kapali';
 
 export interface OturumOzeti {
   id: string;
-  userAgent: string | null;
+  /**
+   * Kullanıcının okuyacağı cihaz adı: "Chrome · Mac".
+   *
+   * Ham `user-agent` yerine bu dönüyor. İki sebep var: metnin kendisi
+   * kullanıcıya hiçbir şey söylemiyor, ve "aynı cihaz mı" kararı da bu
+   * etikete dayanıyor — karar ölçütüyle ekranda yazan aynı şey olmalı.
+   */
+  cihaz: string;
   lastSeenAt: Date;
   createdAt: Date;
   current: boolean;
@@ -213,22 +220,34 @@ export class SessionService {
    *
    * - Açık oturumların hepsi, teker teker. Her biri kapatılabilir bir
    *   erişim; birleştirmek kullanıcının hangi satırı kapattığını belirsiz
-   *   yapardı.
-   * - Kapalı oturum, aynı yerden **açık** bir oturum varsa gösterilmiyor:
-   *   oradan zaten girilmiş olduğunu kullanıcı açık satırdan görüyor,
-   *   kapanmışını tekrar yazmak gürültü.
-   * - Kapalı oturum başka bir yerdense gösteriliyor. Kapanmış olması onu
-   *   önemsiz yapmıyor; "tanımadığım bir yerden girilmiş" bilgisi tam da
-   *   kullanıcının görmesi gereken şey.
-   * - Aynı yerin birden çok kapalı oturumu tek satıra iniyor, en yenisi
+   *   yapardı, gizlemek ise kapatılamaz hâle getirirdi.
+   * - Kapalı oturum, **çağıranın kullandığı cihazdansa** gösterilmiyor.
+   *   Kullanıcı zaten o cihazın başında; kendi geçmiş girişlerini listelemek
+   *   ona bir şey söylemiyor.
+   * - Kapalı oturum **başka bir cihazdansa** gösteriliyor, saatiyle.
+   *   Kapanmış olması onu önemsiz yapmıyor; "tanımadığım bir cihazdan
+   *   girilmiş" bilgisi tam da kullanıcının görmesi gereken şey.
+   * - Aynı cihazın birden çok kapalı oturumu tek satıra iniyor, en yenisi
    *   temsil ediyor ve kaç giriş olduğu `girisSayisi` ile yazılıyor.
    *
-   * "Yer" = IP özeti + tarayıcı kimliği. İkisi birlikte, çünkü aynı ağdaki
-   * başka bir cihaz da ayrı gösterilmeli. IP'si değişen bağlantılarda (mobil
-   * veri) aynı telefon ayrı yerler gibi görünebilir; bunun alternatifi
-   * yalnızca tarayıcı kimliğine bakmaktı, o da başkasının aynı sürüm
-   * tarayıcıyla açtığı oturumu kullanıcınınkiyle birleştirirdi — sessizce
-   * yanlış tarafa düşen bir hata.
+   * ## "Aynı cihaz" ne demek
+   *
+   * Ölçüt [cihazAdi]'nın ürettiği etiket — yani kullanıcının ekranda
+   * **okuduğu** metin ("Chrome · Mac"). İki ayrı ölçüt olsaydı liste
+   * kendi kendisiyle çelişirdi: aynı görünen iki satırdan biri gizlenip
+   * diğeri kalırdı.
+   *
+   * Ham `user-agent` metni ölçüt değil, bilerek: tarayıcı kendini her
+   * güncellediğinde o metin değişiyor (`Chrome/140` -> `Chrome/141`) ve
+   * oturumlar 30 gün yaşadığı için aynı bilgisayar bir ay sonra "başka
+   * cihaz" gibi görünürdü.
+   *
+   * IP de ölçüt değil. Bir önceki sürümde IP özeti de ölçüte katılıyordu ve
+   * hata buydu: ev interneti ya da mobil veri IP'yi kendiliğinden
+   * değiştirdiği için aynı bilgisayardan yapılan girişler ayrı ayrı
+   * listeleniyordu. Bedeli şu: başkası aynı tarayıcı ve işletim sistemiyle
+   * girerse **kapanmış** oturumu gizlenir. Açık oturumu gizlenmediği,
+   * yani hâlâ görülüp kapatılabildiği için kabul edilebilir bir bedel.
    *
    * Süresi tümüyle dolmuş satırlar hiç okunmuyor: onlar artık geçmiş bile
    * değil, çöp.
@@ -248,7 +267,6 @@ export class SessionService {
       select: {
         id: true,
         userAgent: true,
-        ipHash: true,
         lastSeenAt: true,
         createdAt: true,
         tokenHash: true,
@@ -258,39 +276,39 @@ export class SessionService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const oturumlar = satirlar.map(({ tokenHash, ipHash, ...satir }) => ({
+    const oturumlar = satirlar.map(({ tokenHash, userAgent, ...satir }) => ({
       ...satir,
-      // Parmak izi yalnızca burada kullanılıyor; ipHash istemciye çıkmıyor.
-      parmakIzi: `${ipHash ?? '-'}|${satir.userAgent ?? '-'}`,
+      // Ham user-agent istemciye çıkmıyor: tek işi bu etiketi üretmekti.
+      cihaz: cihazAdi(userAgent),
       current: mevcutOzet !== null && tokenHash === mevcutOzet,
       durum: durumBul(satir.lastSeenAt, simdi),
     }));
 
-    const acikYerler = new Set(
-      oturumlar.filter((o) => o.durum === 'acik').map((o) => o.parmakIzi),
-    );
+    const mevcutCihaz =
+      oturumlar.find((oturum) => oturum.current)?.cihaz ?? null;
 
     const gosterilecek: OturumOzeti[] = [];
     const kapaliTemsilci = new Map<string, OturumOzeti>();
 
-    for (const { parmakIzi, ...oturum } of oturumlar) {
+    for (const oturum of oturumlar) {
       if (oturum.durum === 'acik') {
         gosterilecek.push({ ...oturum, girisSayisi: 1 });
         continue;
       }
 
-      if (acikYerler.has(parmakIzi)) {
+      // Kullanıcı zaten bu cihazın başında; kendi geçmiş girişleri gürültü.
+      if (oturum.cihaz === mevcutCihaz) {
         continue;
       }
 
-      const temsilci = kapaliTemsilci.get(parmakIzi);
+      const temsilci = kapaliTemsilci.get(oturum.cihaz);
       if (temsilci !== undefined) {
         temsilci.girisSayisi += 1;
         continue;
       }
 
       const yeni: OturumOzeti = { ...oturum, girisSayisi: 1 };
-      kapaliTemsilci.set(parmakIzi, yeni);
+      kapaliTemsilci.set(oturum.cihaz, yeni);
       gosterilecek.push(yeni);
     }
 
@@ -321,6 +339,49 @@ export class SessionService {
  */
 function durumBul(lastSeenAt: Date, simdi: number): OturumDurumu {
   return simdi - lastSeenAt.getTime() <= IDLE_TIMEOUT_MS ? 'acik' : 'kapali';
+}
+
+/**
+ * Tarayıcı kimliğinden okunabilir bir cihaz adı: "Chrome · Mac".
+ *
+ * Ham `user-agent` metni kullanıcıya hiçbir şey söylemiyor. Buradaki kaba
+ * eşleme "hangi cihazdı" sorusuna yetiyor; tam doğruluk gerekmiyor, çünkü
+ * verilecek karar zaten "bunu ben mi açtım" sorusuna dayanıyor.
+ *
+ * Sürüm numarası bilerek düşüyor: etiket aynı zamanda "aynı cihaz mı"
+ * ölçütü ve tarayıcı her güncellendiğinde değişen bir ölçüt işe yaramaz.
+ *
+ * Sıra önemli: Edge ve Chrome ikisi de `Safari/` içeriyor, Edge ayrıca
+ * `Chrome/` içeriyor — daha özel olan önce sınanıyor.
+ */
+export function cihazAdi(userAgent: string | null): string {
+  if (userAgent === null || userAgent === '') {
+    return 'Bilinmeyen cihaz';
+  }
+
+  const tarayici = /Edg\//.test(userAgent)
+    ? 'Edge'
+    : /Firefox\//.test(userAgent)
+      ? 'Firefox'
+      : /Chrome\//.test(userAgent)
+        ? 'Chrome'
+        : /Safari\//.test(userAgent)
+          ? 'Safari'
+          : 'Tarayıcı';
+
+  const sistem = /iPhone|iPad/.test(userAgent)
+    ? 'iOS'
+    : /Android/.test(userAgent)
+      ? 'Android'
+      : /Mac OS X/.test(userAgent)
+        ? 'Mac'
+        : /Windows/.test(userAgent)
+          ? 'Windows'
+          : /Linux/.test(userAgent)
+            ? 'Linux'
+            : '';
+
+  return sistem === '' ? tarayici : `${tarayici} · ${sistem}`;
 }
 
 function hashIp(ip: string): string {

@@ -269,7 +269,8 @@ function SifreBolumu() {
 
 interface Oturum {
   id: string;
-  userAgent: string | null;
+  /** Sunucudan gelen okunabilir cihaz adı: "Chrome · Mac". */
+  cihaz: string;
   lastSeenAt: string;
   createdAt: string;
   current: boolean;
@@ -317,7 +318,7 @@ function OturumlarBolumu() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
                     <span className={acik ? '' : 'text-slate-500 dark:text-slate-400'}>
-                      {cihazAdi(oturum.userAgent)}
+                      {oturum.cihaz}
                     </span>
                     {oturum.current ? (
                       /*
@@ -365,46 +366,6 @@ function OturumlarBolumu() {
       )}
     </Bolum>
   );
-}
-
-/**
- * Tarayıcı kimliğinden okunabilir bir cihaz adı.
- *
- * Ham `user-agent` metni kullanıcıya hiçbir şey söylemiyor. Buradaki kaba
- * eşleme "hangi cihazdı" sorusuna yetiyor; tam doğruluk gerekmiyor, çünkü
- * verilecek karar zaten "bunu ben mi açtım" sorusuna dayanıyor.
- *
- * Sıra önemli: Edge ve Chrome ikisi de `Safari/` içeriyor, Edge ayrıca
- * `Chrome/` içeriyor — daha özel olan önce sınanıyor.
- */
-function cihazAdi(userAgent: string | null): string {
-  if (userAgent === null || userAgent === '') {
-    return 'Bilinmeyen cihaz';
-  }
-
-  const tarayici = /Edg\//.test(userAgent)
-    ? 'Edge'
-    : /Firefox\//.test(userAgent)
-      ? 'Firefox'
-      : /Chrome\//.test(userAgent)
-        ? 'Chrome'
-        : /Safari\//.test(userAgent)
-          ? 'Safari'
-          : 'Tarayıcı';
-
-  const sistem = /iPhone|iPad/.test(userAgent)
-    ? 'iOS'
-    : /Android/.test(userAgent)
-      ? 'Android'
-      : /Mac OS X/.test(userAgent)
-        ? 'Mac'
-        : /Windows/.test(userAgent)
-          ? 'Windows'
-          : /Linux/.test(userAgent)
-            ? 'Linux'
-            : '';
-
-  return sistem === '' ? tarayici : `${tarayici} · ${sistem}`;
 }
 
 /**
