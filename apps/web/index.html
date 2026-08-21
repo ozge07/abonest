@@ -38,6 +38,53 @@
       name="description"
       content="Aboneliklerini tek yerden takip et: ne kadar gidiyor, sırada ne var, neyi kullanmıyorsun."
     />
+
+    <!--
+      Aşağıdaki mutlak adresler `%SITE_ADRESI%` yer tutucusundan geliyor;
+      değeri `vite.config.ts` dolduruyor. Elle yazılsalardı alan adı
+      değiştiğinde biri güncellenip diğerleri eski adreste kalırdı.
+    -->
+
+    <!--
+      Kanonik adres: aynı sayfaya birden çok yoldan ulaşılabiliyor
+      (`?utm_...` ekli paylaşımlar, `www` varyantı). Kanonik olmadan arama
+      motoru bunları ayrı sayfalar sayıp aralarında sinyal bölüştürüyor.
+    -->
+    <link rel="canonical" href="%SITE_ADRESI%/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Abonest" />
+    <meta property="og:title" content="Abonest — Abonelik takibi" />
+    <meta
+      property="og:description"
+      content="Aboneliklerini tek yerden takip et: ne kadar gidiyor, sırada ne var, neyi kullanmıyorsun."
+    />
+    <meta property="og:url" content="%SITE_ADRESI%/" />
+    <meta property="og:image" content="%SITE_ADRESI%/logo-512.png?v=3" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta name="twitter:card" content="summary" />
+
+    <!--
+      Yapısal veri: arama motoruna sitenin bir uygulama olduğunu ve adının
+      "Abonest" olduğunu makine okunur biçimde söylüyor.
+
+      `type="application/ld+json"` çalıştırılan bir betik değil, veri bloğu;
+      tarayıcı onu yorumlamadığı için `script-src 'self'` politikası
+      engellemiyor (bkz. `app.setup.ts` içindeki ARAYUZ_CSP).
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Abonest",
+        "url": "%SITE_ADRESI%/",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "tr-TR",
+        "description": "Aboneliklerini tek yerden takip et: ne kadar gidiyor, sırada ne var, neyi kullanmıyorsun.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TRY" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
